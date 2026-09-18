@@ -391,7 +391,8 @@ Se você quer entender o projeto rapidamente:
 1. leia o [Processo de ETL](documentacao/processo_etl.md);
 2. consulte a [Arquitetura do Modelo](documentacao/arquitetura_modelo.md);
 3. abra o [Dicionário de Dados](documentacao/dicionario_dados.md);
-4. veja o [Catálogo de Medidas DAX](documentacao/medidas_dax.md).
+4. veja o [Catálogo de Medidas DAX](documentacao/medidas_dax.md);
+5. consulte [Como Reproduzir o Projeto](documentacao/como_reproduzir.md).
 
 ---
 
@@ -404,7 +405,9 @@ Se você quer entender o projeto rapidamente:
 | [Dicionário de dados](documentacao/dicionario_dados.md) | descrição dos principais campos |
 | [Processo de ETL](documentacao/processo_etl.md) | limpeza, tratamento e Data Quality |
 | [Medidas DAX](documentacao/medidas_dax.md) | catálogo das principais medidas |
+| [Guia de Leitura](documentacao/guia_leitura_dashboard.md) | como interpretar cada página do dashboard |
 | [Insights de negócio](documentacao/insights_negocio.md) | interpretações e conclusões |
+| [Como Reproduzir](documentacao/como_reproduzir.md) | sequência técnica para reconstruir o projeto |
 
 ---
 
