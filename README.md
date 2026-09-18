@@ -121,6 +121,8 @@ Principais relacionamentos:
 
 ### 1. Visão Executiva
 
+![Visão Executiva](imagens/visao_executiva.png)
+
 Principais indicadores:
 
 - Receita Total: **R$ 348,4 Mi**
@@ -141,6 +143,8 @@ Análises:
 - Receita realizada x meta ao longo do tempo
 
 ### 2. Análise de Contratos
+
+![Análise de Contratos](imagens/an%C3%A1lise%20de%20contratos.png)
 
 Indicadores:
 
@@ -164,6 +168,8 @@ Classificação:
 
 ### 3. Especialidades e Serviços
 
+![Especialidades e Serviços](imagens/especialidades%20e%20servi%C3%A7os.png)
+
 Indicadores:
 
 - Serviços: **246**
@@ -182,6 +188,8 @@ Análises:
 
 ### 4. Performance e Qualidade
 
+![Performance e Qualidade](imagens/performance%20e%20qualidade.png)
+
 Indicadores:
 
 - Margem: **17,1%**
@@ -197,6 +205,8 @@ Análises:
 - Evolução do absenteísmo
 
 ### 5. Qualidade dos Dados
+
+![Qualidade dos Dados](imagens/qualidade%20e%20dados.png)
 
 Indicadores:
 
