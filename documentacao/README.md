@@ -16,8 +16,14 @@ Esta pasta reúne a documentação usada para explicar como o projeto foi constr
 4. [Medidas DAX](medidas_dax.md)  
    Veja as principais medidas criadas para os indicadores do dashboard.
 
-5. [Insights de Negócio](insights_negocio.md)  
+5. [Guia de Leitura dos Dashboards](guia_leitura_dashboard.md)  
+   Veja como interpretar cada página e cada grupo de indicadores.
+
+6. [Insights de Negócio](insights_negocio.md)  
    Entenda as principais interpretações geradas a partir das análises.
+
+7. [Como Reproduzir o Projeto](como_reproduzir.md)  
+   Siga a sequência técnica para reconstruir a solução.
 
 ## Visão rápida
 
@@ -27,6 +33,8 @@ Esta pasta reúne a documentação usada para explicar como o projeto foi constr
 | Processo de ETL | documentar limpeza, padronização e validação |
 | Dicionário de Dados | descrever os principais campos |
 | Medidas DAX | registrar a lógica dos indicadores |
+| Guia de Leitura | explicar como interpretar cada página |
 | Insights de Negócio | traduzir os dashboards em conclusões gerenciais |
+| Como Reproduzir | mostrar a sequência técnica de construção |
 
 > A base e todos os resultados são fictícios e foram produzidos exclusivamente para estudo e portfólio.
