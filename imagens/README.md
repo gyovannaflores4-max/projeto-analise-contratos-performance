@@ -1,11 +1,11 @@
 # Imagens do Dashboard
 
-Esta pasta é destinada aos screenshots finais das cinco páginas do projeto:
+Esta pasta contém os screenshots finais das cinco páginas do projeto:
 
-1. `01_visao_executiva.png`
-2. `02_analise_contratos.png`
-3. `03_especialidades_servicos.png`
-4. `04_performance_qualidade.png`
-5. `05_qualidade_dados.png`
+1. `visao_executiva.png`
+2. `análise de contratos.png`
+3. `especialidades e serviços.png`
+4. `performance e qualidade.png`
+5. `qualidade e dados.png`
 
-Essas imagens podem ser usadas no README para apresentar o projeto de forma visual no portfólio.
+As imagens são exibidas no README principal para apresentar visualmente o projeto de portfólio.
