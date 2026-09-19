@@ -6,9 +6,9 @@ A base utilizada é **100% fictícia** e foi criada exclusivamente para estudo, 
 
 ## Arquivo principal
 
-Nome sugerido:
+A base já está disponível nesta pasta:
 
-`Projeto_01_Portfolio_Dados_Ficticios.xlsx`
+[**Projeto_01_Portfolio_Dados_Ficticios.xlsx**](Projeto_01_Portfolio_Dados_Ficticios.xlsx)
 
 ## Abas da planilha
 
