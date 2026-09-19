@@ -351,6 +351,7 @@ projeto-analise-contratos-performance/
 ├── README.md
 │
 ├── dados/
+│   ├── Projeto_01_Portfolio_Dados_Ficticios.xlsx
 │   └── README.md
 │
 ├── documentacao/
@@ -372,6 +373,17 @@ projeto-analise-contratos-performance/
 └── powerbi/
     └── README.md
 ```
+
+---
+
+## Arquivos principais
+
+- [Base de dados fictícia em Excel](dados/Projeto_01_Portfolio_Dados_Ficticios.xlsx)
+- [Medidas DAX](documentacao/medidas_dax.md)
+- [Dicionário de Dados](documentacao/dicionario_dados.md)
+- [Processo de ETL](documentacao/processo_etl.md)
+
+> A base Excel está disponível no repositório e pode ser usada para acompanhar a origem dos dados apresentados nos dashboards.
 
 ---
 
