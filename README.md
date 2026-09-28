@@ -4,6 +4,8 @@ Projeto de **Business Intelligence em Power BI** desenvolvido com dados 100% fic
 
 > **Objetivo do portfólio:** demonstrar domínio de Power Query, modelagem de dados, DAX, construção de KPIs, análise de negócio, Data Quality e storytelling com dados.
 
+**Comece pela demonstração:** [▶ Assista à Visão Executiva em vídeo (40 segundos)](videos/visao_executiva.mp4) · [Veja as cinco páginas do relatório](#dashboards) · [Explore as medidas DAX](documentacao/medidas_dax.md)
+
 ---
 
 ## Visão geral em 30 segundos
@@ -157,7 +159,9 @@ Mais detalhes em [Arquitetura do Modelo](documentacao/arquitetura_modelo.md) e [
 
 Resumo da carteira com foco em resultado financeiro, concentração, rentabilidade e evolução de receita.
 
-![Visão Executiva](imagens/visao_executiva.png)
+[▶ **Assista à demonstração da Visão Executiva (40 segundos)**](videos/visao_executiva.mp4)
+
+O vídeo mostra o painel completo e o uso dos filtros interativos de ano, tipo de cliente e UF. Abra o link para visualizar o arquivo de vídeo no GitHub.
 
 ### Principais KPIs
 
@@ -370,6 +374,9 @@ projeto-analise-contratos-performance/
 │   ├── qualidade e dados.png
 │   └── README.md
 │
+├── videos/
+│   └── visao_executiva.mp4
+│
 └── powerbi/
     └── README.md
 ```
@@ -379,6 +386,7 @@ projeto-analise-contratos-performance/
 ## Arquivos principais
 
 - [Base de dados fictícia em Excel](dados/Projeto_01_Portfolio_Dados_Ficticios.xlsx)
+- [Vídeo da Visão Executiva](videos/visao_executiva.mp4)
 - [Medidas DAX](documentacao/medidas_dax.md)
 - [Dicionário de Dados](documentacao/dicionario_dados.md)
 - [Processo de ETL](documentacao/processo_etl.md)
@@ -393,7 +401,7 @@ projeto-analise-contratos-performance/
 
 Se você quer entender o projeto rapidamente:
 
-1. veja a **Visão Executiva**;
+1. assista à [Visão Executiva em vídeo](videos/visao_executiva.mp4);
 2. confira a página **Análise de Contratos**;
 3. leia os [Principais Insights](documentacao/insights_negocio.md);
 4. consulte a página **Qualidade dos Dados** para entender o processo de validação.
