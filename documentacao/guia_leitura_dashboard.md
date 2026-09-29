@@ -28,23 +28,26 @@ Este documento explica **como interpretar cada página** do relatório e o que o
 
 ---
 
-## 2. Análise de Contratos
+## 2. Gestão de Contratos | Risco e Vencimentos
 
 ### Pergunta principal
 **Quais contratos exigem atenção agora?**
 
 ### O que observar
-- quantidade de contratos ativos, vencendo e encerrados;
+- quantidade de contratos ativos, vencendo e encerrados (categorias distintas que somam 80);
 - valor contratado total;
 - valor exposto nos próximos 120 dias;
-- percentual da carteira sob risco de vencimento.
+- percentual do valor contratado associado aos vencimentos;
+- ranking dos dez maiores contratos por valor.
 
 ### Tabela de contratos críticos
-A tabela permite priorizar ações por:
+A tabela de contratos críticos permite comparar:
 - data de vencimento;
 - dias restantes;
 - faixa de risco;
-- valor financeiro.
+- valor contratado.
+
+Na captura de 28/09/2026, oito contratos vencem em até 120 dias. Juntos representam R$ 79,51 Mi, ou 12,2% do valor contratado na carteira fictícia. Cruzar prazo e valor ajuda a definir a ordem de acompanhamento.
 
 ### Faixas
 - **Urgente:** até 30 dias;

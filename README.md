@@ -1,14 +1,16 @@
 # Projeto 01 | Análise Estratégica de Contratos e Performance
 
-Projeto de **Business Intelligence em Power BI** desenvolvido com dados 100% fictícios para simular um cenário real de gestão de contratos, acompanhamento financeiro, performance operacional e qualidade dos dados em uma empresa de serviços de saúde.
+Projeto de **Business Intelligence em Power BI** que transforma dados fictícios de contratos de serviços de saúde em indicadores para acompanhar receita, rentabilidade, operação e risco de vencimento.
 
-> **Objetivo do portfólio:** demonstrar domínio de Power Query, modelagem de dados, DAX, construção de KPIs, análise de negócio, Data Quality e storytelling com dados.
+**Do dado à decisão:** tratei inconsistências no Power Query, organizei o modelo de dados, construí medidas em DAX e reuni os resultados em cinco páginas. O painel de contratos destaca **8 vencimentos em até 120 dias**, associados a **R$ 79,51 milhões** da carteira simulada.
+
+> **Portfólio com dados 100% fictícios:** nomes, contratos e valores foram criados para estudo; os indicadores não representam uma empresa real.
 
 **Comece pela demonstração:** [▶ Assista à Visão Executiva em vídeo (40 segundos)](videos/visao_executiva.mp4) · [Veja as cinco páginas do relatório](#dashboards) · [Explore as medidas DAX](documentacao/medidas_dax.md)
 
 ---
 
-## Visão geral em 30 segundos
+## Projeto em números
 
 | Indicador | Resultado |
 |---|---:|
@@ -184,24 +186,23 @@ O vídeo mostra o painel completo e o uso dos filtros interativos de ano, tipo d
 
 ---
 
-## 2. Análise de Contratos
+## 2. Gestão de Contratos | Risco e Vencimentos
 
-Página dedicada ao risco contratual, vencimentos e exposição financeira.
+**Pergunta de negócio:** quais contratos precisam de atenção primeiro e qual valor da carteira está associado aos próximos vencimentos?
 
-![Análise de Contratos](imagens/an%C3%A1lise%20de%20contratos.png)
+![Painel Gestão de Contratos: indicadores de valor contratado, oito vencimentos em até 120 dias, gráficos por status e tabela de contratos críticos](imagens/an%C3%A1lise%20de%20contratos.png)
 
-### Principais KPIs
+*Captura do painel em 28/09/2026, com dados fictícios.*
 
-- Contratos ativos: **36**
-- Contratos vencendo: **8**
-- Contratos encerrados: **36**
-- Valor contratado total: **R$ 652 Mi**
-- Valor exposto em 120 dias: **R$ 79,51 Mi**
-- Percentual do valor exposto: **12,2%**
+### Leitura rápida
 
-### Priorização dos vencimentos
+- **80 contratos** na carteira simulada: **36 ativos**, **8 vencendo** e **36 encerrados**. As três categorias do gráfico de status somam o total da carteira.
+- **R$ 652 Mi** em valor contratado; **R$ 79,51 Mi (12,2%)** estão associados aos **8 contratos** que vencem em até 120 dias.
+- O ranking mostra os **10 maiores contratos por valor**; a tabela detalha cliente, UF, especialidade, fim da vigência, dias restantes, faixa de risco e valor para orientar a priorização.
 
-Os contratos foram classificados em:
+### Como priorizar
+
+Os vencimentos são organizados por prazo:
 
 | Faixa | Regra |
 |---|---|
@@ -209,7 +210,7 @@ Os contratos foram classificados em:
 | **Atenção** | 31 a 60 dias |
 | **Monitorar** | 61 a 120 dias |
 
-A tabela de contratos críticos permite ordenar a carteira pela urgência e pelo impacto financeiro.
+Na simulação, a leitura conjunta de **dias para vencer** e **valor contratado** ajuda a decidir por onde começar o acompanhamento de renovações. Consulte também o [guia de leitura](documentacao/guia_leitura_dashboard.md) e os [insights de negócio](documentacao/insights_negocio.md).
 
 ---
 
@@ -402,7 +403,7 @@ projeto-analise-contratos-performance/
 Se você quer entender o projeto rapidamente:
 
 1. assista à [Visão Executiva em vídeo](videos/visao_executiva.mp4);
-2. confira a página **Análise de Contratos**;
+2. confira **Gestão de Contratos | Risco e Vencimentos** para ver a priorização por prazo e valor;
 3. leia os [Principais Insights](documentacao/insights_negocio.md);
 4. consulte a página **Qualidade dos Dados** para entender o processo de validação.
 
