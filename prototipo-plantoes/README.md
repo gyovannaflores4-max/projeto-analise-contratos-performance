@@ -1,9 +1,10 @@
 # Revezo: protótipo de plataforma de plantões médicos
 
 Protótipo navegável de uma plataforma no estilo Hub2Med / Quero Plantão. Ela tem as mesmas funções principais e cinco diferenciais.
+
 Arquivos:
 - `index.html`: protótipo navegável (site, app do médico, painel do hospital). Abra no navegador; não precisa de build.
-- `lista-de-espera.html`: página real de lista de espera, pronta para publicar (veja abaixo).
+- O site público (lista de espera) fica em [`../site`](../site). Veja o README de lá para publicar.
 
 ## Telas
 
@@ -39,15 +40,6 @@ Inspirado nas funções de gestão de escalas do Pega Plantão:
 3. **Bolsa de trocas**: médicos repassam plantões a colegas habilitados, com aprovação automática opcional pelo coordenador.
 4. **Guardião de descanso**: limite semanal de horas e descanso mínimo entre turnos, com alerta antes de confirmar.
 5. **Avaliação de mão dupla**: hospitais também são avaliados, inclusive no índice de pagamento em dia.
-
-## Lista de espera (`lista-de-espera.html`)
-Página para validar o interesse antes de construir o produto. Coleta perfil, nome, e-mail, WhatsApp, cidade/UF, especialidade, a maior dificuldade com plantões e o consentimento LGPD. Também gera um link de indicação (`?ref=`).
-
-Para colocar no ar:
-1. Crie um formulário gratuito em [formspree.io](https://formspree.io) e copie o endereço (`https://formspree.io/f/...`).
-2. Cole esse endereço em `FORM_ENDPOINT`, no início do `<script>` da página. Enquanto estiver vazio, a página funciona em modo demonstração e não envia nada.
-3. Publique a pasta no GitHub Pages, Netlify ou Vercel (todos têm plano gratuito).
-4. As inscrições chegam no e-mail e no painel do Formspree, de onde podem ser exportadas em CSV.
 
 ## Próximos passos sugeridos
 - Validar os diferenciais com 5–10 plantonistas e 2–3 coordenadores
