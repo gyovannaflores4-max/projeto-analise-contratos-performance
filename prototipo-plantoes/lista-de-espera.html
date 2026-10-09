@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Revezo · Lista de espera</title>
+<meta name="description" content="Plantões médicos com pagamento em até 24 horas. Entre na lista de espera do Revezo.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Public+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: duas colunas (proposta | formulário), uma coluna no celular */
+:root{
+  --bg:#F2F6F4; --surface:#FFFFFF; --ink:#10211C; --muted:#56685F; --line:#D3DED8;
+  --brand:#1C6B58; --brand-ink:#FFFFFF; --soft:#DDEDE6; --crit:#B83A33; --ok:#2A7F52;
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --f-body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0C1613; --surface:#13201C; --ink:#E4EEE9; --muted:#93A69E; --line:#26372F;
+  --brand:#52C3A2; --brand-ink:#06120E; --soft:#17302A; --crit:#F07D73; --ok:#5FCB8D; color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--f-body);padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+.wrap{max-width:1080px;margin-inline:auto;padding:40px 20px 56px;display:grid;grid-template-columns:1fr minmax(0,440px);gap:48px;align-items:start}
+.logo{display:flex;align-items:center;gap:8px;font:800 21px var(--f-display)}
+.logo svg{width:28px;height:28px}
+h1{font:800 clamp(34px,5vw,56px)/1.05 var(--f-display);letter-spacing:-.03em;margin:28px 0 0;text-wrap:balance}
+h1 em{font-style:normal;color:var(--brand)}
+.lead{color:var(--muted);font-size:18px;max-width:46ch;margin:16px 0 0}
+ul.pts{list-style:none;padding:0;margin:28px 0 0;display:grid;gap:14px}
+ul.pts li{display:grid;grid-template-columns:28px 1fr;gap:10px}
+ul.pts b{display:block}
+ul.pts span{color:var(--muted);font-size:14px}
+.tick{width:24px;height:24px;border-radius:50%;background:var(--soft);color:var(--brand);display:grid;place-items:center;font-weight:700;font-size:13px}
+form,.done{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px;display:grid;gap:14px}
+form h2,.done h2{font:700 22px var(--f-display);margin:0}
+label{display:grid;gap:5px;font-size:13px;font-weight:600}
+input,select,textarea{font:inherit;color:inherit;border:1px solid var(--line);background:var(--bg);border-radius:9px;padding:10px 12px;font-weight:400;width:100%}
+textarea{resize:vertical}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg input{position:absolute;opacity:0;width:1px;height:1px}
+.seg label{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:7px 12px;cursor:pointer;font-weight:600;color:var(--muted)}
+.seg input:checked+label{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.seg input:focus-visible+label{outline:2px solid var(--brand);outline-offset:2px}
+.consent{display:flex;gap:10px;align-items:flex-start;font-weight:400;font-size:13px;color:var(--muted)}
+.consent input{width:18px;height:18px;flex:none;margin-top:2px;accent-color:var(--brand)}
+button{font:inherit;font-weight:700;border:0;border-radius:10px;padding:13px 18px;background:var(--brand);color:var(--brand-ink);cursor:pointer}
+button:disabled{opacity:.6;cursor:wait}
+.err{color:var(--crit);font-size:13px;margin:0}
+.note{font-size:12px;color:var(--muted);margin:0}
+.share{display:flex;gap:8px}
+.share input{flex:1;min-width:0}
+.share button{padding:10px 14px;white-space:nowrap}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+@media (max-width:820px){.wrap{grid-template-columns:1fr;gap:32px;padding-top:24px}}
+@media (max-width:440px){.row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div>
+    <div class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--brand)"/><path d="M4 17h6l2.5-6 4 12 3-9 2 3h6.5" fill="none" stroke="var(--brand-ink)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Revezo</div>
+    <h1>Plantão fechado em minutos. <em>Pago em 24 horas.</em></h1>
+    <p class="lead">Estamos abrindo o Revezo primeiro para um grupo pequeno de profissionais e hospitais. Entre na lista e seja avisado quando chegar à sua cidade.</p>
+    <ul class="pts">
+      <li><span class="tick">✓</span><div><b>Pix em até 24 horas</b><span>O hospital deposita antes do turno. Você recebe depois do check-out.</span></div></li>
+      <li><span class="tick">✓</span><div><b>Só vagas que combinam com você</b><span>Por especialidade, distância e valor por hora.</span></div></li>
+      <li><span class="tick">✓</span><div><b>Trocas registradas</b><span>Passe um plantão para um colega sem depender do grupo de WhatsApp.</span></div></li>
+      <li><span class="tick">✓</span><div><b>Gratuito para profissionais</b><span>Sem mensalidade e sem taxa sobre o seu plantão.</span></div></li>
+    </ul>
+  </div>
+
+  <div>
+    <form id="f" novalidate>
+      <h2>Entrar na lista de espera</h2>
+      <fieldset style="border:0;padding:0;margin:0;display:grid;gap:6px">
+        <legend style="font-size:13px;font-weight:600;padding:0;margin-bottom:6px">Você é</legend>
+        <div class="seg">
+          <input type="radio" name="perfil" id="p1" value="Médico" checked><label for="p1">Médico</label>
+          <input type="radio" name="perfil" id="p2" value="Enfermeiro"><label for="p2">Enfermeiro</label>
+          <input type="radio" name="perfil" id="p3" value="Técnico de enfermagem"><label for="p3">Técnico</label>
+          <input type="radio" name="perfil" id="p4" value="Hospital ou coordenação"><label for="p4">Hospital / coordenação</label>
+        </div>
+      </fieldset>
+      <label for="nome">Nome completo<input id="nome" name="nome" autocomplete="name" required></label>
+      <div class="row">
+        <label for="email">E-mail<input id="email" name="email" type="email" autocomplete="email" required></label>
+        <label for="whats">WhatsApp<input id="whats" name="whatsapp" type="tel" autocomplete="tel" placeholder="(11) 90000-0000"></label>
+      </div>
+      <div class="row">
+        <label for="cidade">Cidade<input id="cidade" name="cidade" autocomplete="address-level2" required></label>
+        <label for="uf">UF<select id="uf" name="uf" required><option value="">Selecione</option></select></label>
+      </div>
+      <label for="esp" id="esp-l">Especialidade<input id="esp" name="especialidade" placeholder="Ex.: Clínica Médica"></label>
+      <label for="dor">O que mais te incomoda hoje nos plantões?<textarea id="dor" name="dor" rows="3" placeholder="Ex.: atraso no pagamento, trocas pelo WhatsApp…"></textarea></label>
+      <label class="consent" for="lgpd"><input type="checkbox" id="lgpd" name="consentimento_lgpd" value="sim" required><span>Autorizo o Revezo a usar estes dados para me avisar sobre o lançamento e para pesquisa sobre o produto. Posso pedir a exclusão a qualquer momento.</span></label>
+      <p class="err" id="err" hidden></p>
+      <button type="submit" id="btn">Quero ser avisado</button>
+      <p class="note" id="demo" hidden>Modo demonstração: o formulário ainda não está ligado a um serviço de envio, então nenhum dado foi salvo.</p>
+    </form>
+
+    <div class="done" id="done" hidden>
+      <h2>Você está na lista</h2>
+      <p>Vamos avisar por e-mail quando o Revezo abrir na sua cidade. Quem indicar colegas entra primeiro.</p>
+      <div class="share"><input id="link" readonly aria-label="Link para indicar colegas"><button type="button" id="copy">Copiar link</button></div>
+      <p class="note" id="demo2" hidden>Modo demonstração: nenhum dado foi enviado.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* CONFIGURAÇÃO: crie um formulário gratuito em https://formspree.io e cole o endereço aqui,
+   por exemplo "https://formspree.io/f/abcdwxyz". Vazio = modo demonstração (nada é enviado). */
+const FORM_ENDPOINT = "";
+
+const UFS="AC AL AP AM BA CE DF ES GO MA MT MS MG PA PB PR PE PI RJ RN RS RO RR SC SP SE TO".split(" ");
+const uf=document.getElementById('uf');UFS.forEach(u=>uf.add(new Option(u,u)));
+const f=document.getElementById('f'),err=document.getElementById('err'),btn=document.getElementById('btn');
+const esp=document.getElementById('esp-l');
+f.querySelectorAll('[name=perfil]').forEach(r=>r.onchange=()=>{esp.hidden=f.perfil.value!=='Médico'});
+if(!FORM_ENDPOINT)document.getElementById('demo').hidden=false;
+
+f.addEventListener('submit',async e=>{
+  e.preventDefault();err.hidden=true;
+  const miss=[];
+  if(!f.nome.value.trim())miss.push('nome');
+  if(!/^\S+@\S+\.\S+$/.test(f.email.value.trim()))miss.push('e-mail válido');
+  if(!f.cidade.value.trim())miss.push('cidade');
+  if(!f.uf.value)miss.push('UF');
+  if(!f.lgpd.checked)miss.push('autorização de uso dos dados');
+  if(miss.length){err.textContent='Falta preencher: '+miss.join(', ')+'.';err.hidden=false;return}
+  const data=Object.fromEntries(new FormData(f));
+  const ref=new URLSearchParams(location.search).get('ref');if(ref)data.indicado_por=ref;
+  data.enviado_em=new Date().toISOString();
+  btn.disabled=true;btn.textContent='Enviando…';
+  try{
+    if(FORM_ENDPOINT){
+      const r=await fetch(FORM_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(data)});
+      if(!r.ok)throw new Error('status '+r.status);
+    }
+    const code=btoa(unescape(encodeURIComponent(data.email))).replace(/[^a-z0-9]/gi,'').slice(0,8).toLowerCase();
+    document.getElementById('link').value=location.origin+location.pathname+'?ref='+code;
+    if(!FORM_ENDPOINT)document.getElementById('demo2').hidden=false;
+    f.hidden=true;document.getElementById('done').hidden=false;
+  }catch(x){
+    err.textContent='Não conseguimos enviar agora. Verifique sua conexão e tente de novo.';err.hidden=false;
+  }finally{btn.disabled=false;btn.textContent='Quero ser avisado'}
+});
+document.getElementById('copy').onclick=async()=>{
+  const i=document.getElementById('link'),b=document.getElementById('copy');
+  try{await navigator.clipboard.writeText(i.value);b.textContent='Copiado'}catch(x){i.select();b.textContent='Selecionado'}
+};
+</script>
+</body>
+</html>

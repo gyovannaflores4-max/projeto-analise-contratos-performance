@@ -1,7 +1,9 @@
 # Revezo: protótipo de plataforma de plantões médicos
 
 Protótipo navegável de uma plataforma no estilo Hub2Med / Quero Plantão. Ela tem as mesmas funções principais e cinco diferenciais.
-Tudo está em um único arquivo (`index.html`). Abra o arquivo no navegador; não precisa de build.
+Arquivos:
+- `index.html`: protótipo navegável (site, app do médico, painel do hospital). Abra no navegador; não precisa de build.
+- `lista-de-espera.html`: página real de lista de espera, pronta para publicar (veja abaixo).
 
 ## Telas
 
@@ -9,7 +11,20 @@ Tudo está em um único arquivo (`index.html`). Abra o arquivo no navegador; nã
 |---|---|
 | **Site** | Página pública com proposta de valor, diferenciais, passo a passo, comparativo e chamadas para médico e hospital |
 | **App do médico** | Vagas com % de match, filtros por turno, raio e ordenação; confirmação com checagem de descanso; bolsa de trocas; agenda semanal; carteira |
-| **Painel do hospital** | Indicadores (cobertura, vagas abertas, trocas), escala semanal por setor, publicação de vagas com estimativa de médicos compatíveis e fila de trocas com aprovação automática |
+| **Painel do hospital** | Abas de gestão de escalas (detalhadas abaixo) |
+
+### Painel do hospital (gestão de escalas)
+Inspirado nas funções de gestão de escalas do Pega Plantão:
+
+| Aba | Funções |
+|---|---|
+| Escala | Grade semanal por setor e turno, plantões sem cobertura, anúncio de plantão (individual ou em lote), estimativa de profissionais compatíveis, candidaturas para aprovar |
+| Escala fixa | Regras recorrentes por profissional (dia da semana, 12×36, 24 h) e geração do mês inteiro, com feriados e conflitos de descanso sinalizados |
+| Equipe e documentos | Médicos, enfermeiros e técnicos, registro CRM/COREN, horas no mês, documentos vencidos ou a vencer, cobrança de documento |
+| Presença | Check-in por GPS ou QR code, atrasos, ausências e acionamento de substituto com urgência |
+| Trocas | Fila de aprovação, aprovação automática por regra e histórico com data e hora para auditoria |
+| Financeiro | Fechamento mensal por profissional (plantões, horas, valor, situação), pagamento via Pix e exportação para a contabilidade |
+| Comunicados | Avisos por setor ou para toda a equipe, prioridade alta (push/SMS) e confirmação de leitura |
 
 ## Funções em comum com Hub2Med e Quero Plantão
 - Cadastro do médico com CRM/RQE
@@ -24,6 +39,15 @@ Tudo está em um único arquivo (`index.html`). Abra o arquivo no navegador; nã
 3. **Bolsa de trocas**: médicos repassam plantões a colegas habilitados, com aprovação automática opcional pelo coordenador.
 4. **Guardião de descanso**: limite semanal de horas e descanso mínimo entre turnos, com alerta antes de confirmar.
 5. **Avaliação de mão dupla**: hospitais também são avaliados, inclusive no índice de pagamento em dia.
+
+## Lista de espera (`lista-de-espera.html`)
+Página para validar o interesse antes de construir o produto. Coleta perfil, nome, e-mail, WhatsApp, cidade/UF, especialidade, a maior dificuldade com plantões e o consentimento LGPD. Também gera um link de indicação (`?ref=`).
+
+Para colocar no ar:
+1. Crie um formulário gratuito em [formspree.io](https://formspree.io) e copie o endereço (`https://formspree.io/f/...`).
+2. Cole esse endereço em `FORM_ENDPOINT`, no início do `<script>` da página. Enquanto estiver vazio, a página funciona em modo demonstração e não envia nada.
+3. Publique a pasta no GitHub Pages, Netlify ou Vercel (todos têm plano gratuito).
+4. As inscrições chegam no e-mail e no painel do Formspree, de onde podem ser exportadas em CSV.
 
 ## Próximos passos sugeridos
 - Validar os diferenciais com 5–10 plantonistas e 2–3 coordenadores

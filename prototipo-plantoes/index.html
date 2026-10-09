@@ -192,6 +192,19 @@ form.pub input,form.pub select{border:1px solid var(--line);background:var(--bg)
 .estimate{background:var(--soft);border-radius:10px;padding:12px;font-size:13px;display:grid;gap:4px}
 .estimate b{font-family:var(--f-display);font-size:22px;color:var(--brand)}
 
+/* tabelas do painel */
+table.tbl{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+.tbl th,.tbl td{padding:10px 8px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+.tbl th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.tbl tr:last-child td{border-bottom:0}
+.tbl td.num,.tbl th.num{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.tbl tfoot td{font-weight:700;border-top:2px solid var(--line)}
+.log{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:0}
+.log li{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;font-size:13px;padding:8px 0;border-bottom:1px dashed var(--line)}
+.log li:last-child{border-bottom:0}
+.log time{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.cand{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+
 /* modal + toast */
 .scrim{position:fixed;inset:0;background:rgba(6,14,11,.5);display:grid;place-items:center;z-index:50;padding:16px}
 .modal{background:var(--surface);border-radius:16px;max-width:460px;width:100%;padding:22px;display:grid;gap:14px;box-shadow:var(--shadow)}
@@ -446,51 +459,146 @@ form.pub input,form.pub select{border:1px solid var(--line);background:var(--bg)
         <p class="eyebrow">Hospital Santa Clara · Coordenação médica</p>
         <h2 style="font-size:30px;margin-top:6px">Escala de 12 a 18 de outubro</h2>
       </div>
-      <button class="btn primary" id="pub-all">Publicar todas as vagas abertas</button>
+      <button class="btn primary" id="pub-all">Anunciar todos os plantões sem cobertura</button>
     </div>
 
     <div class="kpis">
       <div class="panel kpi"><span class="eyebrow">Cobertura da escala</span><b class="mono" id="k-cov">—</b><span class="delta muted" id="k-cov-d"></span></div>
-      <div class="panel kpi"><span class="eyebrow">Vagas abertas</span><b class="mono" id="k-open">—</b><span class="delta muted">sem médico escalado</span></div>
+      <div class="panel kpi"><span class="eyebrow">Vagas abertas</span><b class="mono" id="k-open">—</b><span class="delta muted">plantões sem cobertura</span></div>
       <div class="panel kpi"><span class="eyebrow">Tempo para preencher</span><b class="mono">38 min</b><span class="delta" style="color:var(--ok)">mediana dos últimos 30 dias</span></div>
       <div class="panel kpi"><span class="eyebrow">Trocas aguardando</span><b class="mono" id="k-swap">—</b><span class="delta muted">precisam da sua aprovação</span></div>
     </div>
 
-    <div class="panel" style="padding:18px;margin-top:20px">
-      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><b>Escala semanal</b><span class="muted" style="font-size:13px">Clique em uma vaga aberta para publicá-la</span></div>
-      <div class="grid-wrap"><table class="escala" id="escala"></table></div>
-      <div class="legend">
-        <span><i style="background:var(--surface);border:1px solid var(--line)"></i>Escalado</span>
-        <span><i style="background:var(--crit-soft)"></i>Aberta</span>
-        <span><i style="background:var(--warn-soft)"></i>Publicada, aguardando médico</span>
-        <span><i style="background:var(--signal-soft)"></i>Troca em andamento</span>
+    <div class="tabs" role="tablist" aria-label="Seções do painel" style="margin-top:24px">
+      <button role="tab" aria-selected="true" data-gtab="escala">Escala</button>
+      <button role="tab" aria-selected="false" data-gtab="modelos">Escala fixa</button>
+      <button role="tab" aria-selected="false" data-gtab="equipe">Equipe e documentos</button>
+      <button role="tab" aria-selected="false" data-gtab="presenca">Presença <span class="count" id="c-pres">0</span></button>
+      <button role="tab" aria-selected="false" data-gtab="trocas">Trocas</button>
+      <button role="tab" aria-selected="false" data-gtab="financeiro">Financeiro</button>
+      <button role="tab" aria-selected="false" data-gtab="comunicados">Comunicados</button>
+    </div>
+
+    <!-- Escala -->
+    <div id="g-escala">
+      <div class="panel" style="padding:18px;margin-top:16px">
+        <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><b>Escala semanal</b><span class="muted" style="font-size:13px">Clique em uma vaga aberta para anunciá-la</span></div>
+        <div class="grid-wrap"><table class="escala" id="escala"></table></div>
+        <div class="legend">
+          <span><i style="background:var(--surface);border:1px solid var(--line)"></i>Escalado</span>
+          <span><i style="background:var(--crit-soft)"></i>Sem cobertura</span>
+          <span><i style="background:var(--warn-soft)"></i>Anunciada, aguardando candidato</span>
+          <span><i style="background:var(--signal-soft)"></i>Troca em andamento</span>
+        </div>
+      </div>
+      <div class="g2">
+        <form class="panel pub" id="pubform">
+          <b>Anunciar plantão</b>
+          <div class="fr">
+            <label for="f-setor">Setor<select id="f-setor"><option>PS Adulto</option><option>UTI Adulto</option><option>Enfermaria</option><option>Pediatria</option></select></label>
+            <label for="f-turno">Turno<select id="f-turno"><option value="12">Noturno 19–07 (12 h)</option><option value="12d">Diurno 07–19 (12 h)</option><option value="24">24 h</option></select></label>
+          </div>
+          <div class="fr">
+            <label for="f-data">Data<input id="f-data" type="date" value="2026-10-17"></label>
+            <label for="f-valor">Valor do plantão (R$)<input id="f-valor" type="number" min="500" step="50" value="1800"></label>
+          </div>
+          <div class="fr">
+            <label for="f-cat">Categoria<select id="f-cat"><option>Médico</option><option>Enfermeiro</option><option>Técnico de enfermagem</option></select></label>
+            <label for="f-req">Requisito<select id="f-req"><option value="0">Clínica Médica</option><option value="1">RQE em Medicina Intensiva</option><option value="2">ATLS / ACLS válido</option></select></label>
+          </div>
+          <div class="estimate" aria-live="polite">
+            <span class="muted">Profissionais compatíveis disponíveis nessa data</span>
+            <b class="mono" id="est-n">—</b>
+            <span id="est-t" class="muted"></span>
+          </div>
+          <button class="btn primary" type="submit" style="justify-self:start">Anunciar plantão</button>
+        </form>
+        <div class="panel swaps">
+          <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b>Candidaturas a plantões sem cobertura</b><span class="pill" id="c-cand"></span></div>
+          <div id="cands" style="display:grid;gap:10px"></div>
+        </div>
       </div>
     </div>
 
-    <div class="g2">
-      <form class="panel pub" id="pubform">
-        <b>Nova vaga</b>
-        <div class="fr">
-          <label for="f-setor">Setor<select id="f-setor"><option>PS Adulto</option><option>UTI Adulto</option><option>Enfermaria</option><option>Pediatria</option></select></label>
-          <label for="f-turno">Turno<select id="f-turno"><option value="12">Noturno 19–07 (12 h)</option><option value="12d">Diurno 07–19 (12 h)</option><option value="24">24 h</option></select></label>
+    <!-- Escala fixa -->
+    <div id="g-modelos" hidden>
+      <div class="g2">
+        <div class="panel" style="padding:18px;min-width:0">
+          <b>Regras da escala fixa</b>
+          <p class="muted" style="font-size:13px;margin-top:4px">Cada regra repete o plantão toda semana. Gere o mês inteiro de uma vez e ajuste só as exceções.</p>
+          <div class="grid-wrap"><table class="tbl" id="regras"></table></div>
         </div>
-        <div class="fr">
-          <label for="f-data">Data<input id="f-data" type="date" value="2026-10-17"></label>
-          <label for="f-valor">Valor do plantão (R$)<input id="f-valor" type="number" min="500" step="50" value="1800"></label>
+        <div class="panel pub" style="padding:18px;display:grid;gap:12px;align-content:start">
+          <b>Gerar escala do mês</b>
+          <label for="m-mes" style="display:grid;gap:4px;font-size:13px;font-weight:600">Mês<select id="m-mes" style="border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:8px 10px"><option value="nov">Novembro de 2026</option><option value="dez">Dezembro de 2026</option></select></label>
+          <label class="toggle" for="m-fer"><input type="checkbox" id="m-fer" checked> Deixar feriados sem cobertura para anunciar com valor diferenciado</label>
+          <button class="btn primary" id="m-gerar" style="justify-self:start">Gerar escala</button>
+          <div id="m-res" class="estimate" hidden></div>
         </div>
-        <label for="f-req">Requisito<select id="f-req"><option value="0">Clínica Médica</option><option value="1">RQE em Medicina Intensiva</option><option value="2">ATLS / ACLS válido</option></select></label>
-        <div class="estimate" aria-live="polite">
-          <span class="muted">Médicos compatíveis disponíveis nessa data</span>
-          <b class="mono" id="est-n">—</b>
-          <span id="est-t" class="muted"></span>
-        </div>
-        <button class="btn primary" type="submit" style="justify-self:start">Publicar vaga</button>
-      </form>
+      </div>
+    </div>
 
-      <div class="panel swaps">
-        <b>Trocas de plantão</b>
-        <label class="toggle" for="auto"><input type="checkbox" id="auto"> Aprovar automaticamente quando o colega tiver o mesmo RQE e respeitar o descanso</label>
-        <div id="swapq" style="display:grid;gap:10px"></div>
+    <!-- Equipe -->
+    <div id="g-equipe" hidden>
+      <div class="filters">
+        <button class="chip" aria-pressed="true" data-cat="todos">Todos</button>
+        <button class="chip" aria-pressed="false" data-cat="Médico">Médicos</button>
+        <button class="chip" aria-pressed="false" data-cat="Enfermeiro">Enfermeiros</button>
+        <button class="chip" aria-pressed="false" data-cat="Técnico">Técnicos</button>
+        <span class="sep"></span>
+        <button class="btn sm" id="eq-convidar">Convidar profissional</button>
+      </div>
+      <div class="panel grid-wrap" style="margin-top:0;padding:6px 10px"><table class="tbl" id="equipe"></table></div>
+    </div>
+
+    <!-- Presença -->
+    <div id="g-presenca" hidden>
+      <p class="muted" style="padding-block:16px 12px">Hoje, sexta 09/10. Check-in por geolocalização (raio de 150 m do hospital) ou QR code fixado no setor.</p>
+      <div class="panel grid-wrap" style="margin-top:0;padding:6px 10px"><table class="tbl" id="presenca"></table></div>
+    </div>
+
+    <!-- Trocas -->
+    <div id="g-trocas" hidden>
+      <div class="g2">
+        <div class="panel swaps">
+          <b>Trocas aguardando aprovação</b>
+          <label class="toggle" for="auto"><input type="checkbox" id="auto"> Aprovar automaticamente quando o substituto tiver a mesma qualificação e respeitar o descanso</label>
+          <div id="swapq" style="display:grid;gap:10px"></div>
+        </div>
+        <div class="panel" style="padding:18px;min-width:0">
+          <b>Histórico de trocas e alterações</b>
+          <p class="muted" style="font-size:13px;margin-top:4px">Registro com data e hora para auditoria. Não pode ser editado.</p>
+          <ol class="log" id="log"></ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- Financeiro -->
+    <div id="g-financeiro" hidden>
+      <div class="filters" style="justify-content:space-between">
+        <span><b>Fechamento de outubro de 2026</b> <span class="muted" style="font-size:13px">· período de 01 a 31/10</span></span>
+        <span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" id="fin-exp">Exportar planilha</button><button class="btn primary sm" id="fin-fechar">Fechar mês e pagar</button></span>
+      </div>
+      <div class="panel grid-wrap" style="margin-top:0;padding:6px 10px"><table class="tbl" id="fin"></table></div>
+      <p class="note">Valores em custódia já foram depositados pelo hospital e são liberados ao profissional em D+1 após o check-out.</p>
+    </div>
+
+    <!-- Comunicados -->
+    <div id="g-comunicados" hidden>
+      <div class="g2">
+        <form class="panel pub" id="comform">
+          <b>Novo comunicado</b>
+          <div class="fr">
+            <label for="c-para">Para<select id="c-para"><option>Toda a equipe</option><option>UTI Adulto</option><option>PS Adulto</option><option>Enfermaria</option><option>Pediatria</option></select></label>
+            <label for="c-prio">Prioridade<select id="c-prio"><option value="normal">Normal</option><option value="alta">Alta (push e SMS)</option></select></label>
+          </div>
+          <label for="c-txt">Mensagem<textarea id="c-txt" rows="4" style="border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:8px 10px;font:inherit;font-weight:400;resize:vertical">A partir de 19/10 a passagem de plantão da UTI será às 06:45, no posto 2.</textarea></label>
+          <button class="btn primary" type="submit" style="justify-self:start">Enviar comunicado</button>
+        </form>
+        <div class="panel swaps">
+          <b>Enviados</b>
+          <div id="coms" style="display:grid;gap:10px"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -658,38 +766,153 @@ const swapQ=[
 function renderEscala(){
   let html='<thead><tr><th>Setor</th>'+dias.map(([,l])=>`<th colspan="2">${l}</th>`).join('')+'</tr></thead><tbody>';
   setores.forEach(s=>{html+=`<tr><th style="white-space:nowrap">${s}</th>`;dias.forEach(([k])=>['D','N'].forEach(t=>{const c=escala[s][k+t],lab=t==='D'?'07–19':'19–07';
-    html+=`<td>${c.st==='open'?`<button class="cell open" data-open="${s}|${k+t}"><span class="t">${lab}</span>Aberta</button>`:c.st==='pub'?`<div class="cell pub"><span class="t">${lab}</span>Publicada</div>`:`<div class="cell${c.st==='swap'?' swap':''}"><span class="t">${lab}</span>${c.n}${c.st==='swap'?' ⇄':''}</div>`}</td>`}));html+='</tr>'});
+    html+=`<td>${c.st==='open'?`<button class="cell open" data-open="${s}|${k+t}"><span class="t">${lab}</span>Aberta</button>`:c.st==='pub'?`<div class="cell pub"><span class="t">${lab}</span>Anunciada</div>`:`<div class="cell${c.st==='swap'?' swap':''}"><span class="t">${lab}</span>${c.n}${c.st==='swap'?' ⇄':''}</div>`}</td>`}));html+='</tr>'});
   $('#escala').innerHTML=html+'</tbody>';
-  $$('[data-open]').forEach(b=>b.onclick=()=>{const[s,k]=b.dataset.open.split('|');escala[s][k]={st:'pub'};renderEscala();toast(`Vaga publicada. ${12+Math.floor(rnd()*20)} médicos compatíveis foram avisados.`)});
+  $$('[data-open]').forEach(b=>b.onclick=()=>{const[s,k]=b.dataset.open.split('|');escala[s][k]={st:'pub'};renderEscala();addLog(`Plantão ${s} de ${dias.find(d=>d[0]===k.slice(0,3))[1]} (${k.endsWith('N')?'noturno':'diurno'}) anunciado`);toast(`Plantão anunciado. ${12+Math.floor(rnd()*20)} profissionais compatíveis foram avisados.`)});
   const all=setores.flatMap(s=>Object.values(escala[s])),open=all.filter(c=>c.st==='open').length,cov=all.filter(c=>c.st==='ok'||c.st==='swap').length;
-  $('#k-cov').textContent=Math.round(cov/all.length*100)+'%';$('#k-cov-d').textContent=`${cov} de ${all.length} turnos com médico`;
+  $('#k-cov').textContent=Math.round(cov/all.length*100)+'%';$('#k-cov-d').textContent=`${cov} de ${all.length} turnos cobertos`;
   $('#k-open').textContent=open;$('#pub-all').disabled=!open;
 }
-$('#pub-all').onclick=()=>{let n=0;setores.forEach(s=>Object.keys(escala[s]).forEach(k=>{if(escala[s][k].st==='open'){escala[s][k]={st:'pub'};n++}}));renderEscala();toast(`${n} vagas publicadas e enviadas para os médicos compatíveis.`)};
+$('#pub-all').onclick=()=>{let n=0;setores.forEach(s=>Object.keys(escala[s]).forEach(k=>{if(escala[s][k].st==='open'){escala[s][k]={st:'pub'};n++}}));renderEscala();addLog(`${n} plantões sem cobertura anunciados de uma vez`);toast(`${n} plantões anunciados para os profissionais compatíveis.`)};
+
+/* ---------- histórico (auditoria) ---------- */
+const logs=[
+ ['09/10 07:02','Dra. Ana Siqueira fez check-in na UTI Adulto por QR code'],
+ ['08/10 22:41','Troca aprovada automaticamente: Dr. Okafor → Dr. Campos (Enfermaria, 11/10 diurno)'],
+ ['08/10 16:10','Plantão PS Adulto 13/10 noturno anunciado por R$ 1.700'],
+ ['08/10 09:35','Dr. Teixeira assumiu o plantão sem cobertura da Pediatria em 10/10'],
+ ['07/10 18:02','Escala fixa de outubro gerada: 236 plantões a partir de 7 regras'],
+];
+let clock=[9,7,15];
+function now(){clock[2]+=3;if(clock[2]>59){clock[2]-=60;clock[1]++}return `09/10 ${String(clock[1]).padStart(2,'0')}:${String(clock[2]).padStart(2,'0')}`}
+function addLog(t){logs.unshift([now(),t]);renderLog()}
+function renderLog(){$('#log').innerHTML=logs.map(([d,t])=>`<li><time>${d}</time><span>${t}</span></li>`).join('')}
 
 function renderQ(){
   const auto=$('#auto').checked;
-  const pend=swapQ.filter(q=>!q.res&&!(auto&&q.ok));
+  if(auto)swapQ.forEach(q=>{if(q.ok&&!q.res){q.res='auto';addLog(`Troca aprovada automaticamente: ${q.sai} → ${q.entra} (${q.setor}, ${q.quando})`)}});
+  const pend=swapQ.filter(q=>!q.res);
   $('#k-swap').textContent=pend.length;
-  $('#swapq').innerHTML=swapQ.map((q,i)=>{const res=q.res||(auto&&q.ok?'auto':null);
-    return `<div class="swapitem"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b>${q.setor}</b><span class="mono muted" style="font-size:12px">${q.quando}</span></div>
+  $('#swapq').innerHTML=swapQ.map((q,i)=>`<div class="swapitem"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b>${q.setor}</b><span class="mono muted" style="font-size:12px">${q.quando}</span></div>
     <span style="font-size:14px">${q.sai} → <b>${q.entra}</b></span>
-    <span class="pill ${q.ok?'ok':'crit'}" style="justify-self:start">${q.ok?'Mesmo RQE · descanso respeitado':q.mot}</span>
-    ${res?`<span class="pill ${res==='rej'?'crit':'brand'}" style="justify-self:start">${res==='auto'?'Aprovada automaticamente':res==='ok'?'Aprovada por você':'Recusada'}</span>`:`<div class="acts"><button class="btn primary sm" data-q="${i}|ok">Aprovar</button><button class="btn sm" data-q="${i}|rej">Recusar</button></div>`}</div>`}).join('');
-  $$('[data-q]').forEach(b=>b.onclick=()=>{const[i,r]=b.dataset.q.split('|');swapQ[i].res=r;renderQ();toast(r==='ok'?'Troca aprovada. A escala foi atualizada.':'Troca recusada. Os dois médicos foram avisados.')});
+    <span class="pill ${q.ok?'ok':'crit'}" style="justify-self:start">${q.ok?'Mesma qualificação · descanso respeitado':q.mot}</span>
+    ${q.res?`<span class="pill ${q.res==='rej'?'crit':'brand'}" style="justify-self:start">${q.res==='auto'?'Aprovada automaticamente':q.res==='ok'?'Aprovada por você':'Recusada'}</span>`:`<div class="acts"><button class="btn primary sm" data-q="${i}|ok">Aprovar</button><button class="btn sm" data-q="${i}|rej">Recusar</button></div>`}</div>`).join('');
+  $$('[data-q]').forEach(b=>b.onclick=()=>{const[i,r]=b.dataset.q.split('|'),q=swapQ[i];q.res=r;addLog(`Troca ${r==='ok'?'aprovada':'recusada'} pela coordenação: ${q.sai} → ${q.entra} (${q.setor}, ${q.quando})`);renderQ();toast(r==='ok'?'Troca aprovada. A escala foi atualizada.':'Troca recusada. Os dois profissionais foram avisados.')});
 }
 $('#auto').onchange=renderQ;
 
-function estimate(){
-  const base=[46,19,31][+$('#f-req').value],v=+$('#f-valor').value||0,t=$('#f-turno').value;
-  let n=Math.round(base*(0.5+Math.min(v,3000)/3000)*(t==='24'?.6:1));
-  $('#est-n').textContent=n+' médicos';
-  const mins=Math.max(12,Math.round(160/Math.max(n,1)*10));
-  $('#est-t').textContent=n<10?'Poucos médicos disponíveis. Aumentar o valor amplia o alcance.':`Previsão de preenchimento: cerca de ${mins} min`;
+/* ---------- candidaturas ---------- */
+const cands=[
+ {nome:'Dra. Helena Prado',reg:'CRM-SP 184.552',vaga:'UTI Adulto · Sáb 17/10 noturno',nota:4.9,plantoes:6},
+ {nome:'Dr. Gustavo Neri',reg:'CRM-SP 201.330',vaga:'UTI Adulto · Sáb 17/10 noturno',nota:4.6,plantoes:0},
+ {nome:'Dr. Paulo Vidal',reg:'CRM-SP 176.004',vaga:'PS Adulto · Dom 18/10 diurno',nota:4.8,plantoes:14},
+];
+function renderCands(){
+  const p=cands.filter(c=>!c.res).length;$('#c-cand').textContent=p+' pendente'+(p===1?'':'s');
+  $('#cands').innerHTML=cands.map((c,i)=>`<div class="cand"><div style="display:grid;gap:2px;min-width:0"><b>${c.nome}</b><span class="muted" style="font-size:12px"><span class="mono">${c.reg}</span> · ${c.vaga}</span><span style="font-size:12px">Nota ${c.nota.toLocaleString('pt-BR')} ★ · ${c.plantoes?c.plantoes+' plantões neste setor':'primeiro plantão no hospital'}</span></div>
+    ${c.res?`<span class="pill ${c.res==='ok'?'ok':'crit'}">${c.res==='ok'?'Escalado':'Recusado'}</span>`:`<div class="acts" style="display:flex;gap:6px"><button class="btn primary sm" data-c="${i}|ok">Escalar</button><button class="btn sm" data-c="${i}|rej">Recusar</button></div>`}</div>`).join('');
+  $$('[data-c]').forEach(b=>b.onclick=()=>{const[i,r]=b.dataset.c.split('|'),c=cands[i];c.res=r;
+    if(r==='ok'){cands.forEach(o=>{if(o!==c&&o.vaga===c.vaga&&!o.res)o.res='rej'});
+      const [setor,rest]=c.vaga.split(' · '),dia=rest.slice(0,3).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''),t=rest.includes('noturno')?'N':'D';
+      if(escala[setor])escala[setor][dia+t]={st:'ok',n:c.nome.split(' ').pop()};renderEscala();}
+    addLog(`${c.nome} ${r==='ok'?'escalado':'recusado'} para ${c.vaga}`);renderCands();toast(r==='ok'?`${c.nome} foi escalado e avisado.`:'Candidatura recusada.')});
 }
-['#f-req','#f-valor','#f-turno','#f-setor','#f-data'].forEach(s=>$(s).addEventListener('input',estimate));
-$('#pubform').addEventListener('submit',e=>{e.preventDefault();toast(`Vaga de ${$('#f-setor').value} publicada para ${$('#est-n').textContent}.`)});
 
-renderGauge();renderList();renderSwaps();renderAgenda();renderEscala();renderQ();estimate();
+/* ---------- escala fixa ---------- */
+const regras=[
+ ['Dra. Ana Siqueira','UTI Adulto','Segunda','Diurno 07–19'],['Dr. Rafael Moura','UTI Adulto','Quarta','Noturno 19–07'],
+ ['Dra. Carla Duarte','PS Adulto','Terça e quinta','Diurno 07–19'],['Dr. Paulo Vidal','PS Adulto','Sexta','Noturno 19–07'],
+ ['Enf. Marta Lopes','UTI Adulto','Seg a sex','Diurno 07–19'],['Téc. João Batista','Enfermaria','12×36 (dias pares)','Noturno 19–07'],
+ ['Dr. Ícaro Lima','Pediatria','Sábado','24 h'],
+];
+$('#regras').innerHTML='<thead><tr><th>Profissional</th><th>Setor</th><th>Recorrência</th><th>Turno</th></tr></thead><tbody>'+regras.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td class="mono" style="font-size:12px">${r[3]}</td></tr>`).join('')+'</tbody>';
+$('#m-gerar').onclick=()=>{const nov=$('#m-mes').value==='nov',fer=$('#m-fer').checked,tot=nov?244:252,ferN=nov?(fer?6:0):(fer?8:0);
+  const r=$('#m-res');r.hidden=false;
+  r.innerHTML=`<span class="muted">${nov?'Novembro':'Dezembro'} de 2026</span><b class="mono">${tot-ferN} plantões gerados</b><span>${ferN?`${ferN} plantões de feriado (${nov?'02/11, 15/11 e 20/11':'25/12'}) ficaram sem cobertura para anunciar. `:''}2 conflitos de descanso para revisar: Dr. Moura (04 e 05/${nov?'11':'12'}).</span>`;
+  addLog(`Escala fixa de ${nov?'novembro':'dezembro'} gerada: ${tot-ferN} plantões a partir de ${regras.length} regras`);toast('Escala do mês gerada. Revise os conflitos antes de publicar.')};
+
+/* ---------- equipe e documentos ---------- */
+const equipe=[
+ {n:'Dra. Ana Siqueira',c:'Médico',r:'CRM-SP 150.221',s:'UTI Adulto',h:132,doc:['ok']},
+ {n:'Dr. Rafael Moura',c:'Médico',r:'CRM-SP 162.908',s:'UTI Adulto',h:96,doc:['warn','ACLS vence em 12 dias']},
+ {n:'Dra. Carla Duarte',c:'Médico',r:'CRM-SP 171.450',s:'PS Adulto',h:108,doc:['ok']},
+ {n:'Dr. Tomás Ribeiro',c:'Médico',r:'CRM-SP 199.017',s:'PS Adulto',h:60,doc:['crit','Certidão do CRM vencida']},
+ {n:'Enf. Marta Lopes',c:'Enfermeiro',r:'COREN-SP 412.778',s:'UTI Adulto',h:144,doc:['ok']},
+ {n:'Enf. Diego Prates',c:'Enfermeiro',r:'COREN-SP 388.105',s:'PS Adulto',h:120,doc:['warn','Vacina hepatite B pendente']},
+ {n:'Téc. João Batista',c:'Técnico',r:'COREN-SP 1.204.551',s:'Enfermaria',h:180,doc:['ok']},
+ {n:'Téc. Priscila Rocha',c:'Técnico',r:'COREN-SP 1.310.882',s:'Pediatria',h:156,doc:['crit','ASO vencido']},
+];
+let cat='todos';
+function renderEquipe(){
+  const rows=equipe.filter(p=>cat==='todos'||p.c===cat);
+  $('#equipe').innerHTML='<thead><tr><th>Profissional</th><th>Registro</th><th>Setor</th><th class="num">Horas no mês</th><th>Documentos</th><th></th></tr></thead><tbody>'+rows.map(p=>{const i=equipe.indexOf(p);
+    return `<tr><td><b>${p.n}</b><br><span class="muted" style="font-size:12px">${p.c==='Técnico'?'Técnico de enfermagem':p.c}</span></td><td class="mono" style="font-size:12px">${p.r}</td><td>${p.s}</td><td class="num">${p.h} h</td>
+    <td><span class="pill ${p.doc[0]==='ok'?'ok':p.doc[0]}">${p.doc[0]==='ok'?'Em dia':p.doc[1]}</span></td>
+    <td>${p.doc[0]==='ok'?'':p.cob?'<span class="muted" style="font-size:12px">Cobrança enviada</span>':`<button class="btn sm" data-cob="${i}">Cobrar documento</button>`}</td></tr>`}).join('')+'</tbody>';
+  $$('[data-cob]').forEach(b=>b.onclick=()=>{const p=equipe[b.dataset.cob];p.cob=true;renderEquipe();toast(`${p.n} recebeu um pedido para enviar o documento pelo app.`)});
+}
+$$('[data-cat]').forEach(b=>b.onclick=()=>{cat=b.dataset.cat;$$('[data-cat]').forEach(x=>x.setAttribute('aria-pressed',x===b));renderEquipe()});
+$('#eq-convidar').onclick=()=>toast('Convite enviado. O profissional recebe um link para validar o registro e enviar documentos.');
+
+/* ---------- presença ---------- */
+const pres=[
+ {n:'Dra. Ana Siqueira',s:'UTI Adulto',prev:'07:00',real:'07:02',m:'QR code',st:'ok'},
+ {n:'Enf. Marta Lopes',s:'UTI Adulto',prev:'07:00',real:'06:51',m:'GPS',st:'ok'},
+ {n:'Dra. Carla Duarte',s:'PS Adulto',prev:'07:00',real:'07:19',m:'GPS',st:'warn'},
+ {n:'Dr. Tomás Ribeiro',s:'PS Adulto',prev:'07:00',real:'',m:'',st:'crit'},
+ {n:'Téc. Priscila Rocha',s:'Pediatria',prev:'07:00',real:'07:00',m:'QR code',st:'ok'},
+ {n:'Dr. Paulo Vidal',s:'PS Adulto',prev:'19:00',real:'',m:'',st:'fut'},
+];
+function renderPres(){
+  const aus=pres.filter(p=>p.st==='crit').length;$('#c-pres').textContent=aus;
+  $('#presenca').innerHTML='<thead><tr><th>Profissional</th><th>Setor</th><th class="num">Previsto</th><th class="num">Check-in</th><th>Método</th><th>Situação</th><th></th></tr></thead><tbody>'+pres.map((p,i)=>{
+    const lab={ok:['ok','No horário'],warn:['warn','Atraso de 19 min'],crit:['crit','Sem check-in'],fut:['','Ainda não começou'],sub:['brand','Substituto acionado']}[p.st];
+    return `<tr><td><b>${p.n}</b></td><td>${p.s}</td><td class="num">${p.prev}</td><td class="num">${p.real||'—'}</td><td>${p.m||'—'}</td><td><span class="pill ${lab[0]}">${lab[1]}</span></td>
+    <td>${p.st==='crit'?`<button class="btn primary sm" data-sub="${i}">Acionar substituto</button>`:''}</td></tr>`}).join('')+'</tbody>';
+  $$('[data-sub]').forEach(b=>b.onclick=()=>{const p=pres[b.dataset.sub];p.st='sub';addLog(`Plantão de ${p.n} (${p.s}) anunciado com urgência por ausência`);renderPres();toast('Plantão anunciado com urgência para 23 profissionais compatíveis a até 10 km.')});
+}
+
+/* ---------- financeiro ---------- */
+const fin=[
+ ['Dra. Ana Siqueira','Médico',11,132,19800,'pago'],['Dr. Rafael Moura','Médico',8,96,15600,'cust'],
+ ['Dra. Carla Duarte','Médico',9,108,13500,'cust'],['Dr. Tomás Ribeiro','Médico',5,60,7500,'pend'],
+ ['Enf. Marta Lopes','Enfermeiro',12,144,5760,'pago'],['Enf. Diego Prates','Enfermeiro',10,120,4800,'cust'],
+ ['Téc. João Batista','Técnico',15,180,4500,'cust'],['Téc. Priscila Rocha','Técnico',13,156,3900,'pend'],
+];
+function renderFin(){
+  const lab={pago:['ok','Pago via Pix'],cust:['brand','Em custódia'],pend:['warn','A pagar']};
+  const tot=fin.reduce((a,f)=>[a[0]+f[2],a[1]+f[3],a[2]+f[4]],[0,0,0]);
+  $('#fin').innerHTML='<thead><tr><th>Profissional</th><th>Categoria</th><th class="num">Plantões</th><th class="num">Horas</th><th class="num">Valor</th><th>Situação</th></tr></thead><tbody>'+
+    fin.map(f=>`<tr><td><b>${f[0]}</b></td><td>${f[1]}</td><td class="num">${f[2]}</td><td class="num">${f[3]}</td><td class="num">${brl(f[4])}</td><td><span class="pill ${lab[f[5]][0]}">${lab[f[5]][1]}</span></td></tr>`).join('')+
+    `</tbody><tfoot><tr><td>Total</td><td></td><td class="num">${tot[0]}</td><td class="num">${tot[1]}</td><td class="num">${brl(tot[2])}</td><td></td></tr></tfoot>`;
+  $('#fin-fechar').disabled=!fin.some(f=>f[5]!=='pago');
+}
+$('#fin-fechar').onclick=()=>{const v=fin.filter(f=>f[5]!=='pago').reduce((a,f)=>a+f[4],0);fin.forEach(f=>f[5]='pago');renderFin();addLog(`Fechamento de outubro: ${brl(v)} pagos via Pix com notas fiscais emitidas`);toast(`${brl(v)} pagos via Pix. Os profissionais receberam o comprovante e a nota fiscal.`)};
+$('#fin-exp').onclick=()=>toast('No produto final, isto baixa a planilha do fechamento (.xlsx) para a contabilidade.');
+
+/* ---------- comunicados ---------- */
+const coms=[
+ {para:'UTI Adulto',txt:'Novo protocolo de sedação disponível no app, na aba Documentos.',quando:'07/10 14:20',lidos:17,total:19,prio:'normal'},
+ {para:'Toda a equipe',txt:'Atualizem a carteira de vacinação até 31/10.',quando:'02/10 09:00',lidos:58,total:64,prio:'alta'},
+];
+function renderComs(){$('#coms').innerHTML=coms.map(c=>`<div class="swapitem"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b>${c.para}</b><span class="mono muted" style="font-size:12px">${c.quando}</span></div><span style="font-size:14px">${c.txt}</span>
+  <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pill ${c.lidos===c.total?'ok':''}">Lido por ${c.lidos} de ${c.total}</span>${c.prio==='alta'?'<span class="pill warn">Prioridade alta</span>':''}</div></div>`).join('')}
+$('#comform').addEventListener('submit',e=>{e.preventDefault();const txt=$('#c-txt').value.trim();if(!txt){toast('Escreva a mensagem antes de enviar.');return}
+  const para=$('#c-para').value,total={'Toda a equipe':64,'UTI Adulto':19,'PS Adulto':22,'Enfermaria':14,'Pediatria':9}[para];
+  coms.unshift({para,txt,quando:now(),lidos:0,total,prio:$('#c-prio').value});renderComs();addLog(`Comunicado enviado para ${para}`);toast(`Comunicado enviado para ${total} profissionais.`)});
+
+$$('[data-gtab]').forEach(b=>b.onclick=()=>{$$('[data-gtab]').forEach(x=>x.setAttribute('aria-selected',x===b));['escala','modelos','equipe','presenca','trocas','financeiro','comunicados'].forEach(k=>$('#g-'+k).hidden=k!==b.dataset.gtab)});
+
+function estimate(){
+  const base=[46,19,31][+$('#f-req').value],v=+$('#f-valor').value||0,t=$('#f-turno').value,c=$('#f-cat').value;
+  let n=Math.round(base*(0.5+Math.min(v,3000)/3000)*(t==='24'?.6:1)*(c==='Médico'?1:2.4));
+  $('#est-n').textContent=n+' profissionais';
+  const mins=Math.max(12,Math.round(160/Math.max(n,1)*10));
+  $('#est-t').textContent=n<10?'Poucos profissionais disponíveis. Aumentar o valor amplia o alcance.':`Previsão de preenchimento: cerca de ${mins} min`;
+}
+['#f-req','#f-valor','#f-turno','#f-setor','#f-data','#f-cat'].forEach(s=>$(s).addEventListener('input',estimate));
+$('#pubform').addEventListener('submit',e=>{e.preventDefault();addLog(`Plantão ${$('#f-setor').value} anunciado por ${brl(+$('#f-valor').value||0)}`);toast(`Plantão de ${$('#f-setor').value} anunciado para ${$('#est-n').textContent}.`)});
+
+renderGauge();renderList();renderSwaps();renderAgenda();renderEscala();renderLog();renderQ();renderCands();renderEquipe();renderPres();renderFin();renderComs();estimate();
 })();
 </script>
