@@ -67,7 +67,7 @@ button,input,select{font:inherit;color:inherit}
 .side-foot b{color:var(--ink)}
 
 .main{min-width:0;display:flex;flex-direction:column}
-.content{width:100%;max-width:1080px;margin-inline:auto;padding:28px clamp(16px,3vw,36px) 64px;display:flex;flex-direction:column;gap:20px}
+.content{width:100%;max-width:1400px;margin-inline:auto;padding:28px clamp(16px,3vw,36px) 64px;display:flex;flex-direction:column;gap:20px}
 .page-h{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 16px}
 .page-h h1{font-size:clamp(22px,2.6vw,28px)}
 .page-h p{color:var(--ink-2);margin-top:4px}
@@ -151,6 +151,57 @@ body{margin:0}
 .r-val b{display:block;font-weight:600;font-variant-numeric:tabular-nums}
 .r-val small{font-size:12.5px;color:var(--ink-3)}
 .r-act{display:flex;gap:6px;align-items:center}
+/* Tabela de editais: texto pequeno, uma linha por edital */
+.tbl-wrap{overflow-x:auto}
+.tbl{width:100%;min-width:980px;border-collapse:collapse;font-size:13px;line-height:1.4}
+.tbl th{position:sticky;top:0;background:var(--surface);font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:bottom}
+.tbl td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:middle;color:var(--ink-2)}
+.tbl tbody tr{cursor:pointer}
+.tbl tbody tr:last-child td{border-bottom:0}
+.tbl tbody tr:hover td{background:var(--surface-2)}
+.tbl tbody tr.sel td{background:var(--accent-soft)}
+.tbl tbody tr.prio td:first-child{box-shadow:inset 3px 0 0 var(--crit)}
+.c-org{width:31%;min-width:0}
+.c-org .wrap2{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;align-items:start}
+.mais{appearance:none;display:grid;place-items:center;width:28px;height:28px;border:1px solid var(--line);border-radius:7px;background:var(--surface-2);color:var(--ink-2);font-size:16px;line-height:1;cursor:pointer}
+.mais:hover{border-color:var(--accent);color:var(--accent)}
+.t-org{font-weight:700;font-size:12.5px;color:var(--ink);text-transform:uppercase;letter-spacing:.01em;overflow-wrap:anywhere}
+.t-tags{display:flex;flex-wrap:wrap;gap:4px;margin:3px 0 2px}
+.t-tag{font-size:10px;font-weight:700;letter-spacing:.04em;padding:1px 6px;border-radius:4px;background:var(--ok-soft);color:var(--ok);text-transform:uppercase}
+.t-tag.novo{background:var(--accent-soft);color:var(--accent)}
+.t-num{font-size:12px;color:var(--ink-3);overflow-wrap:anywhere}
+.t-obj{font-size:12px;color:var(--ink-2);margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.t-mun{font-size:11.5px;color:var(--ink-3);margin-top:3px;min-width:84px;overflow-wrap:normal;word-break:normal;hyphens:auto}
+.uf{display:inline-grid;place-items:center;min-width:32px;height:26px;padding:0 6px;border-radius:6px;background:var(--surface-2);font-weight:700;font-size:12px;color:var(--ink)}
+.t-prazo b{display:block;color:var(--ink);font-weight:600;white-space:nowrap}
+.t-prazo small{font-size:11.5px;color:var(--ink-3)}
+.t-prazo.crit small{color:var(--crit);font-weight:600}
+.t-prazo.warn small{color:var(--warn);font-weight:600}
+.t-val{font-weight:700;color:var(--ink);white-space:nowrap;font-variant-numeric:tabular-nums}
+.t-val.nd{font-weight:600;color:var(--ink-3)}
+.prio-pill{display:inline-block;white-space:nowrap;padding:3px 9px;border-radius:6px;font-size:11.5px;font-weight:700}
+.prio-pill.alta{background:var(--crit-soft);color:var(--crit)}
+.prio-pill.media{background:var(--warn-soft);color:var(--warn)}
+.prio-pill.normal{background:var(--surface-2);color:var(--ink-2)}
+.t-salvar{appearance:none;display:block;margin-top:6px;border:0;background:none;padding:0;font-size:11.5px;color:var(--ink-3);cursor:pointer}
+.t-salvar[aria-pressed="true"]{color:var(--accent);font-weight:600}
+.t-salvar:hover{color:var(--accent)}
+.t-pub a{font-weight:700;font-size:13px;text-decoration:none;white-space:nowrap}
+.t-pub a:hover{text-decoration:underline}
+.t-pub small{display:block;font-size:11px;color:var(--ink-3);max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:860px){
+  .tbl{min-width:0}
+  .tbl thead{display:none}
+  .tbl,.tbl tbody,.tbl tr,.tbl td{display:block}
+  .tbl tbody tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px;padding:14px;border-bottom:1px solid var(--line)}
+  .tbl tbody tr:last-child{border-bottom:0}
+  .tbl td{padding:0;border:0;min-width:0}
+  .tbl tbody tr:hover td,.tbl tbody tr.sel td{background:none}
+  .tbl tbody tr.sel{background:var(--accent-soft)}
+  .tbl tbody tr.prio td:first-child{box-shadow:none}
+  .tbl td.c-org{grid-column:1/-1;width:auto}
+  .tbl td[data-l]::before{content:attr(data-l);display:block;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin-bottom:2px}
+}
 .icon-btn{appearance:none;display:inline-grid;place-items:center;width:40px;height:40px;border:1px solid var(--line-2);border-radius:8px;background:var(--surface);cursor:pointer;color:var(--ink-3)}
 .icon-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8}
 .icon-btn:hover{border-color:var(--accent);color:var(--accent)}
@@ -340,17 +391,37 @@ body{margin:0}
   const valorTxt = it => it.valor > 0 ? brl.format(it.valor) : (it.valorNota || "Não divulgado");
   const ICON_STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg>';
 
-  function row(it){
-    const n = dias(it), salvo = S.star.has(it.id);
-    return '<div class="row' + (S.sel === it.id ? " sel" : "") + '" data-row="' + esc(it.id) + '" tabindex="0" aria-label="Abrir resumo: ' + esc(it.objeto) + '">' +
-      '<div class="due ' + nivel(it) + '" title="Prazo para propostas"><b>' + n + "</b><span>" + (n === 1 ? "dia" : "dias") + "</span></div>" +
-      '<div class="r-main"><div class="r-top"><span class="portal-tag">' + esc(portal(it.fonte).nome) + "</span><span>" + esc(it.modalidade) + "</span>" + (it.edital ? '<span class="mono">' + esc(it.edital) + "</span>" : "") + (it.novo ? '<span class="new">Novo</span>' : "") + "</div>" +
-        '<div class="r-obj">' + esc(it.objeto) + '</div><div class="r-org">' + esc(it.orgao) + " · " + esc(it.municipio) + "/" + esc(it.uf) + "</div></div>" +
-      '<div class="r-val"><b' + (it.valor > 0 ? "" : ' class="muted" style="font-weight:500"') + ">" + esc(valorTxt(it)) + "</b><small>até " + fDia.format(it.prazo) + "</small></div>" +
-      '<div class="r-act"><a class="btn btn-primary" href="' + esc(urlEdital(it)) + '" target="_blank" rel="noopener" data-stop>Ver edital ↗</a>' +
-        '<button type="button" class="icon-btn" data-star="' + esc(it.id) + '" aria-pressed="' + salvo + '" aria-label="' + (salvo ? "Remover dos salvos" : "Salvar edital") + '" title="' + (salvo ? "Salvo" : "Salvar") + '">' + ICON_STAR + "</button></div>" +
-    "</div>";
+  const ESPEC = {hemodialise:"Hemodiálise e TRS", plantoes:"Plantões médicos", urgencia:"Urgência e emergência"};
+  const fPrazo = new Intl.DateTimeFormat("pt-BR",{day:"2-digit",month:"short",year:"numeric",timeZone:"America/Sao_Paulo"});
+  const brl2 = new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"});
+  function especTxt(it){
+    if (ESPEC[it.especialidade]) return ESPEC[it.especialidade];
+    const t = TEMAS.find(x => temasDe(it).includes(x[0]));
+    return t ? t[1] : "Outros serviços médicos";
   }
+  function prioridade(it){
+    const n = dias(it);
+    return n <= 7 || it.especialidade === "hemodialise" ? ["alta","Alta prioridade"] : n <= 15 ? ["media","Média prioridade"] : ["normal","Acompanhar"];
+  }
+  function row(it){
+    const n = dias(it), salvo = S.star.has(it.id), pr = prioridade(it);
+    const num = [it.edital, it.processo ? "Processo " + it.processo : ""].filter(Boolean).join(" • ");
+    return '<tr class="' + (S.sel === it.id ? "sel " : "") + (pr[0] === "alta" ? "prio" : "") + '" data-row="' + esc(it.id) + '" tabindex="0" aria-label="Abrir resumo: ' + esc(it.objeto) + '">' +
+      '<td class="c-org"><div class="wrap2"><button type="button" class="mais" data-open="' + esc(it.id) + '" aria-label="Abrir resumo do edital" title="Resumo do edital">+</button><div style="min-width:0">' +
+        '<div class="t-org">' + esc(it.orgao) + "</div>" +
+        ((it.ebserh || it.novo) ? '<div class="t-tags">' + (it.ebserh ? '<span class="t-tag">EBSERH</span>' : "") + (it.novo ? '<span class="t-tag novo">Novo</span>' : "") + "</div>" : "") +
+        (num ? '<div class="t-num">' + esc(num) + "</div>" : "") +
+        '<div class="t-obj" title="' + esc(it.objeto) + '">' + esc(it.objeto) + "</div></div></div></td>" +
+      '<td data-l="Modalidade">' + esc(it.modalidade || "—") + "</td>" +
+      '<td data-l="Especialidade">' + esc(especTxt(it)) + "</td>" +
+      '<td data-l="UF"><span class="uf">' + esc(it.uf || "—") + "</span>" + (it.municipio ? '<div class="t-mun">' + esc(it.municipio) + "</div>" : "") + "</td>" +
+      '<td data-l="Prazo informado" class="t-prazo ' + nivel(it) + '"><b>' + fPrazo.format(it.prazo).replace(/\./g, "").replace(/ de /g, " ") + " • " + fHora.format(it.prazo) + "</b><small>" + (n === 0 ? "vence hoje" : n === 1 ? "1 dia" : n + " dias") + "</small></td>" +
+      '<td data-l="Valor estimado">' + (it.valor > 0 ? '<span class="t-val">' + brl2.format(it.valor) + "</span>" : '<span class="t-val nd">Não informado</span>') + "</td>" +
+      '<td data-l="Acompanhamento"><span class="prio-pill ' + pr[0] + '">' + pr[1] + '</span><button type="button" class="t-salvar" data-star="' + esc(it.id) + '" aria-pressed="' + salvo + '">' + (salvo ? "★ Salvo" : "☆ Salvar") + "</button></td>" +
+      '<td data-l="Publicação" class="t-pub"><a href="' + esc(urlEdital(it)) + '" target="_blank" rel="noopener" data-stop>Ver publicação ↗</a><small>' + esc(portal(it.fonte).nome) + (it.pub ? " • publicada " + fCurta.format(it.pub) : "") + "</small></td>" +
+    "</tr>";
+  }
+  const tabela = lista => '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Órgão / Objeto</th><th>Modalidade</th><th>Especialidade</th><th>UF</th><th>Prazo informado</th><th>Valor estimado</th><th>Acompanhamento</th><th>Publicação</th></tr></thead><tbody>' + lista.map(row).join("") + "</tbody></table></div>";
   const vazio = (t, s) => '<div class="empty"><b>' + t + "</b>" + s + "</div>";
   function vazioBase(){
     return S.phase === "loading" ? vazio("Buscando editais no PNCP", "A lista mostra órgão, objeto, prazo e valor de cada edital com prazo aberto.")
@@ -425,12 +496,12 @@ body{margin:0}
     $("summary").innerHTML = S.phase !== "ready" ? "" : "<span><b class=\"num\">" + lista.length + "</b> " + (lista.length === 1 ? "edital com prazo aberto" : "editais com prazo aberto") + (q ? " para “" + esc(q) + "”" : "") + "</span>" +
       (sete ? '<span class="alert"><b class="num">' + sete + "</b> " + (sete === 1 ? "vence" : "vencem") + " em até 7 dias</span>" : "") +
       (comValor.length ? '<span><b class="num">' + brlC.format(total) + "</b> estimados em " + comValor.length + " com valor divulgado</span>" : "");
-    $("list").innerHTML = !base.length ? vazioBase() : lista.length ? lista.map(row).join("")
+    $("list").innerHTML = !base.length ? vazioBase() : lista.length ? tabela(lista)
       : vazio("Nenhum edital com esses filtros", "Remova algum filtro acima ou busque direto em " + (S.fonte ? '<a href="' + esc(portal(S.fonte).url(q)) + '" target="_blank" rel="noopener">' + esc(portal(S.fonte).nome) + " ↗</a>" : '<a href="' + esc(PORTAIS[0].url(q)) + '" target="_blank" rel="noopener">PNCP ↗</a>') + ".");
   }
   function renderSalvos(){
     const lista = abertos().filter(it => S.star.has(it.id)).sort((a,b) => a.prazo - b.prazo);
-    $("listSalvos").innerHTML = lista.length ? lista.map(row).join("") : S.phase !== "ready" ? vazioBase() : vazio("Nenhum edital salvo", "Na busca, toque no ícone ao lado de Ver edital para guardar o edital aqui.");
+    $("listSalvos").innerHTML = lista.length ? tabela(lista) : S.phase !== "ready" ? vazioBase() : vazio("Nenhum edital salvo", "Na busca, toque em Salvar na coluna Acompanhamento para guardar o edital aqui.");
   }
   function renderPortais(){
     const q = $("q").value.trim(), base = abertos();
@@ -548,6 +619,7 @@ body{margin:0}
     const st = ev.target.closest("[data-star]");
     if (st) { const id = st.dataset.star; S.star.has(id) ? S.star.delete(id) : S.star.add(id); store.set("rl_star_real", [...S.star]); return render(); }
     if (ev.target.closest("[data-stop]")) return;
+    const op = ev.target.closest("[data-open]"); if (op) return abrir(op.dataset.open);
     const tira = ev.target.closest("[data-tira]");
     if (tira) { const k = tira.dataset.tira; if (k === "fonte") S.fonte = ""; else { F[k] = ""; if (k === "uf") F.mun = ""; } return render(); }
     const f = ev.target.closest("[data-fonte]"); if (f) { S.fonte = f.dataset.fonte; return render(); }
