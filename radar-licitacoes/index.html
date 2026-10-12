@@ -69,6 +69,17 @@ button,input,select{font:inherit;color:inherit}
 .updated{font-size:13px;color:var(--ink-3);display:flex;align-items:center;gap:6px}
 .updated::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--warn)}
 .updated.ok::before{background:var(--ok)}
+.updated.run::before{background:var(--accent);animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.3}}
+.refresh{display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:0}
+.refresh-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:8px 12px}
+.refresh .btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2}
+.refresh .btn[aria-busy="true"] svg{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.btn:disabled{opacity:.6;cursor:default}
+.refresh-msg{font-size:13px;color:var(--ink-2);max-width:46ch;text-align:right}
+.refresh-msg.err{color:var(--crit)}
+@media (max-width:720px){.refresh{align-items:flex-start;width:100%}.refresh-row{justify-content:flex-start}.refresh-msg{text-align:left}}
 
 /* Busca */
 .searchbox{display:flex;flex-direction:column;gap:12px;padding:18px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
@@ -216,7 +227,14 @@ button,input,select{font:inherit;color:inherit}
     <div class="content">
       <header class="page-h">
         <div><h1 id="pageTitle">Buscar editais</h1><p id="pageText">Editais com prazo aberto coletados do PNCP, com o portal onde a disputa acontece.</p></div>
-        <span class="updated" id="updated">Carregando a coleta</span>
+        <div class="refresh">
+          <div class="refresh-row">
+            <span class="updated" id="updated">Carregando a coleta</span>
+            <button type="button" class="btn" id="btnAtualizar" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg><span>Atualizar agora</span></button>
+          </div>
+          <p class="refresh-msg" id="refreshMsg" role="status" hidden></p>
+        </div>
       </header>
 
       <section id="vBuscar" class="content" style="padding:0;max-width:none;gap:16px">
@@ -282,7 +300,7 @@ button,input,select{font:inherit;color:inherit}
   const portal = id => PORTAIS.find(p => p.id === id) || {id, nome:id || "Outro portal", url:() => "", desc:""};
 
   const store = { get(k){ try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }, set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
-  const S = {view:"buscar", fonte:"", star:new Set(store.get("rl_star_real") || []), sel:null, checks:store.get("rl_checks_real") || {}, lastFocus:null, items:[], coleta:null, phase:"loading"};
+  const S = {view:"buscar", fonte:"", star:new Set(store.get("rl_star_real") || []), sel:null, checks:store.get("rl_checks_real") || {}, lastFocus:null, items:[], coleta:null, phase:"loading", db:null, mcp:null, triggerId:"", firing:false, nota:"", notaErr:false};
   const h = (location.hash || "").slice(1); if (["buscar","salvos","portais"].includes(h)) S.view = h;
 
   // Datas do PNCP vêm no horário de Brasília, sem fuso
@@ -365,13 +383,59 @@ button,input,select{font:inherit;color:inherit}
 
   function renderStatus(){
     const el = $("updated"), c = toDate(S.coleta && S.coleta.coletadaEm), foot = $("sideFoot");
-    el.classList.toggle("ok", S.phase === "ready" && !!S.items.length);
+    const run = rodando();
+    el.classList.toggle("ok", S.phase === "ready" && !!S.items.length && !run);
+    el.classList.toggle("run", run);
     if (S.phase === "loading") el.textContent = "Carregando a coleta";
     else if (S.phase === "offline") el.textContent = "Base indisponível";
+    else if (run) el.textContent = "Buscando editais no PNCP";
     else if (!S.items.length) el.textContent = "Nenhuma coleta registrada";
-    else el.textContent = "Coleta do PNCP em " + (c ? fCurta.format(c) + ", " + fHora.format(c) : "data não informada");
+    else el.textContent = "Atualizado " + (c ? ha(c) + " · " + fCurta.format(c) + ", " + fHora.format(c) : "em data não informada");
+    const b = $("btnAtualizar"), msg = $("refreshMsg"), st = S.coleta && S.coleta.status;
+    b.disabled = !S.db || S.firing || run;
+    b.setAttribute("aria-busy", String(S.firing || run));
+    b.querySelector("span").textContent = run ? "Atualizando…" : S.firing ? "Iniciando…" : "Atualizar agora";
+    const ini = toDate(S.coleta && S.coleta.iniciadaEm);
+    const texto = S.nota ? S.nota
+      : run ? "Busca começou às " + (ini ? fHora.format(ini) : "agora") + ". Leva de 5 a 10 minutos e a lista se atualiza sozinha."
+      : st === "falhou" ? "A última atualização não terminou. " + (S.coleta.mensagem || "")
+      : st === "concluida" && S.coleta.mensagem ? S.coleta.mensagem : "";
+    msg.hidden = !texto; msg.textContent = texto;
+    msg.classList.toggle("err", S.notaErr || (!S.nota && st === "falhou"));
     const vencidos = S.items.length - abertos().length;
     foot.innerHTML = "<b>Fonte: PNCP.</b> " + (S.phase === "ready" && S.items.length ? S.items.length + " editais na coleta" + (vencidos > 0 ? ", " + vencidos + " com prazo encerrado ocultos" : "") + ". " : "") + "Confira prazos e anexos no portal antes de participar.";
+  }
+
+  // Atualização: o botão dispara a rotina que consulta o PNCP e grava na base da página
+  function rodando(){
+    const c = S.coleta; if (!c || c.status !== "processando") return false;
+    const t = toDate(c.iniciadaEm); return !!t && Date.now() - t < 20 * 60000;
+  }
+  function ha(d){
+    const m = Math.round((Date.now() - d) / 60000);
+    return m < 1 ? "agora há pouco" : m < 60 ? "há " + m + " min" : m < 1440 ? "há " + Math.floor(m / 60) + " h" : "há " + Math.floor(m / 1440) + (m < 2880 ? " dia" : " dias");
+  }
+  function erroMsg(c){
+    return c === "not_in_manifest" || c === "not_granted" || c === "approval_required" || c === "consent_required" ? "Para atualizar, permita o conector Claude Code Remote nesta página e toque em Atualizar agora de novo."
+      : c === "server_not_connected" || c === "selection_required" || c === "server_not_found" ? "O conector Claude Code Remote não está disponível na sua conta. Peça a quem administra o radar para atualizar."
+      : c === "needs_reauth" ? "Reconecte o Claude Code Remote em Configurações, Conectores, e tente de novo."
+      : c === "blocked_by_policy" ? "A política da sua organização bloqueia a atualização por esta página."
+      : c === "capability_disabled" ? "Esta visualização não consegue atualizar. Abra o radar no app do Claude."
+      : c === "tool_error" ? "A rotina de atualização não foi encontrada na sua conta. Só quem criou o radar consegue atualizar."
+      : c === "server_unavailable" ? "O serviço não respondeu agora. Tente de novo em alguns minutos."
+      : "Não consegui iniciar a atualização agora. Tente de novo em alguns minutos.";
+  }
+  async function atualizar(){
+    if (S.firing || rodando()) return;
+    if (!S.triggerId) { S.nota = "A atualização automática ainda não foi configurada."; S.notaErr = true; return render(); }
+    S.firing = true; S.nota = ""; S.notaErr = false; render();
+    try {
+      if (!S.mcp) S.mcp = await window.claude.use("mcp");
+      if (!S.mcp) throw {code:"capability_disabled"};
+      await S.mcp.callTool("Claude Code Remote", "fire_trigger", {trigger_id: S.triggerId, text: "Atualização pedida pelo botão do site em " + new Date().toISOString() + "."});
+      S.nota = "Atualização iniciada. Em alguns minutos os editais novos aparecem aqui.";
+    } catch (e) { S.nota = erroMsg(e && e.code); S.notaErr = true; }
+    S.firing = false; render();
   }
 
   const TITULOS = {buscar:["Buscar editais","Editais com prazo aberto coletados do PNCP, com o portal onde a disputa acontece."], salvos:["Salvos","Editais que você guardou para analisar. Ficam salvos neste navegador."], portais:["Portais","Os portais de disputa. Abra qualquer um direto daqui."]};
@@ -425,6 +489,8 @@ button,input,select{font:inherit;color:inherit}
   $("form").addEventListener("submit", e => { e.preventDefault(); render(); });
   $("q").addEventListener("input", render);
   $("ord").addEventListener("change", render);
+  $("btnAtualizar").addEventListener("click", atualizar);
+  setInterval(() => { if (S.coleta && S.coleta.status !== "processando" && S.nota && !S.notaErr) S.nota = ""; renderStatus(); }, 60000);
   render();
 
   // Base da página: os editais ficam fora do HTML e chegam pela coleta do PNCP
@@ -432,8 +498,15 @@ button,input,select{font:inherit;color:inherit}
     let db = null;
     try { db = window.claude && window.claude.use ? await window.claude.use("db") : null; } catch { db = null; }
     if (!db) { S.phase = "offline"; return render(); }
+    S.db = db;
+    db.doc("config/atualizacao").onSnapshot(snap => { S.triggerId = snap.exists ? String(snap.data().triggerId || "") : ""; renderStatus(); }, () => {});
     let docs = null;
-    db.doc("coleta/atual").onSnapshot(snap => { S.coleta = snap.exists ? snap.data() : null; if (docs) carregar(docs); else render(); }, () => {});
+    db.doc("coleta/atual").onSnapshot(snap => {
+      const antes = S.coleta && S.coleta.status;
+      S.coleta = snap.exists ? snap.data() : null;
+      if (S.coleta && S.coleta.status !== antes) { S.nota = ""; S.notaErr = false; }
+      if (docs) carregar(docs); else render();
+    }, () => {});
     db.collection("editais").onSnapshot(
       snap => { docs = snap.docs.map(d => Object.assign({id:d.id}, d.data())); carregar(docs); },
       () => { if (S.phase !== "ready") { S.phase = "offline"; render(); } }
