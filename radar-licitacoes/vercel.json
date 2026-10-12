@@ -1,6 +1,13 @@
 {
-  "regions": ["gru1"],
+  "regions": [
+    "gru1"
+  ],
   "functions": {
-    "api/editais.js": { "maxDuration": 60 }
+    "api/editais.js": {
+      "maxDuration": 60
+    },
+    "api/arquivos.js": {
+      "maxDuration": 30
+    }
   }
 }

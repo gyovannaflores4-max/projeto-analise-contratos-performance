@@ -237,6 +237,15 @@ body{margin:0}
 .dl dd{margin:2px 0 0;overflow-wrap:anywhere}
 .dl .wide{grid-column:1/-1}
 .checks h3{font-size:14.5px;margin-bottom:8px}
+.docs h3{font-size:14.5px;margin-bottom:8px}
+.docs ul{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.docs li a{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 12px;border-top:1px solid var(--line);text-decoration:none;color:var(--ink);font-size:14px}
+.docs li:first-child a{border-top:0}
+.docs li a:hover{background:var(--surface-2);color:var(--accent)}
+.docs li small{color:var(--ink-3);font-size:12px;white-space:nowrap}
+.docs .info{font-size:13.5px;color:var(--ink-2)}
+.docs .links-alt{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:13.5px}
+.t-pub .alt{display:inline-block;margin-top:3px;font-size:11.5px;font-weight:600}
 .checks label{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--line);font-size:14.5px;cursor:pointer}
 .checks input{width:17px;height:17px;margin-top:2px;accent-color:var(--accent)}
 .d-foot{display:flex;gap:8px;padding:14px 22px;border-top:1px solid var(--line)}
@@ -418,7 +427,8 @@ body{margin:0}
       '<td data-l="Prazo informado" class="t-prazo ' + nivel(it) + '"><b>' + fPrazo.format(it.prazo).replace(/\./g, "").replace(/ de /g, " ") + " • " + fHora.format(it.prazo) + "</b><small>" + (n === 0 ? "vence hoje" : n === 1 ? "1 dia" : n + " dias") + "</small></td>" +
       '<td data-l="Valor estimado">' + (it.valor > 0 ? '<span class="t-val">' + brl2.format(it.valor) + "</span>" : '<span class="t-val nd">Não informado</span>') + "</td>" +
       '<td data-l="Acompanhamento"><span class="prio-pill ' + pr[0] + '">' + pr[1] + '</span><button type="button" class="t-salvar" data-star="' + esc(it.id) + '" aria-pressed="' + salvo + '">' + (salvo ? "★ Salvo" : "☆ Salvar") + "</button></td>" +
-      '<td data-l="Publicação" class="t-pub"><a href="' + esc(urlEdital(it)) + '" target="_blank" rel="noopener" data-stop>Ver publicação ↗</a><small>' + esc(portal(it.fonte).nome) + (it.pub ? " • publicada " + fCurta.format(it.pub) : "") + "</small></td>" +
+      '<td data-l="Publicação" class="t-pub"><a href="' + esc(urlEdital(it)) + '" target="_blank" rel="noopener" data-stop>Ver publicação ↗</a><small>' + esc(portal(it.fonte).nome) + (it.pub ? " • publicada " + fCurta.format(it.pub) : "") + "</small>" +
+        (it.linkOrigem ? '<a class="alt" href="' + esc(it.linkOrigem) + '" target="_blank" rel="noopener" data-stop>Portal de origem ↗</a>' : "") + "</td>" +
     "</tr>";
   }
   const tabela = lista => '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Órgão / Objeto</th><th>Modalidade</th><th>Especialidade</th><th>UF</th><th>Prazo informado</th><th>Valor estimado</th><th>Acompanhamento</th><th>Publicação</th></tr></thead><tbody>' + lista.map(row).join("") + "</tbody></table></div>";
@@ -512,6 +522,32 @@ body{margin:0}
     }).join("");
   }
 
+  // Documentos do edital (PDFs publicados no PNCP), carregados quando o resumo abre
+  const DOCS = {};
+  async function carregarDocs(id){
+    DOCS[id] = {estado:"carregando"};
+    try {
+      const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 30000);
+      const r = await fetch("/api/arquivos?id=" + encodeURIComponent(id), {signal: ctrl.signal});
+      clearTimeout(t);
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || !Array.isArray(j.arquivos)) throw new Error();
+      DOCS[id] = {estado:"ok", arquivos:j.arquivos};
+    } catch { DOCS[id] = {estado:"erro"}; }
+    if (S.sel === id) renderDrawer();
+  }
+  function docsHtml(it){
+    if (!/^\d{14}-\d{4}-\d+$/.test(it.id)) return "";
+    const d = DOCS[it.id];
+    if (!d) { carregarDocs(it.id); }
+    const alt = '<div class="links-alt"><a href="' + esc(urlEdital(it)) + '" target="_blank" rel="noopener">Página do edital no PNCP ↗</a>' +
+      (it.linkOrigem ? '<a href="' + esc(it.linkOrigem) + '" target="_blank" rel="noopener">Portal de origem ↗</a>' : "") + "</div>";
+    const corpo = !d || d.estado === "carregando" ? '<p class="info">Buscando os documentos no PNCP…</p>'
+      : d.estado === "erro" ? '<p class="info">O PNCP não respondeu agora. <button type="button" class="t-salvar" style="display:inline;margin:0;color:var(--accent);font-weight:600" data-docs="' + esc(it.id) + '">Tentar de novo</button></p>'
+      : !d.arquivos.length ? '<p class="info">Nenhum documento publicado no PNCP para este edital.</p>'
+      : "<ul>" + d.arquivos.map(a => '<li><a href="' + esc(a.url) + '" target="_blank" rel="noopener"><span>' + esc(a.titulo) + "</span><small>" + esc(a.tipo && a.tipo !== a.titulo ? a.tipo + " · " : "") + "abrir ↗</small></a></li>").join("") + "</ul>";
+    return '<div class="docs"><h3>Documentos do edital</h3>' + corpo + alt + "</div>";
+  }
   function renderDrawer(){
     const it = S.items.find(x => x.id === S.sel), d = $("drawer");
     $("shade").hidden = d.hidden = !it;
@@ -529,6 +565,7 @@ body{margin:0}
       '<div class="d-body">' +
         '<div class="d-due ' + nivel(it) + '"><div class="due ' + nivel(it) + '"><b>' + n + "</b><span>" + (n === 1 ? "dia" : "dias") + "</span></div><p><b>Propostas até " + esc(fData.format(it.prazo)) + "</b>Horário de Brasília, como informado no PNCP. Confirme situação e retificações no edital.</p></div>" +
         '<dl class="dl">' + campos.map(([k,v,c]) => '<div class="' + (c || "") + '"><dt>' + k + "</dt><dd>" + v + "</dd></div>").join("") + "</dl>" +
+        docsHtml(it) +
         '<div class="checks"><h3>Conferência do edital</h3>' + itens.map((t,i) => '<label><input type="checkbox" id="ck-' + esc(it.id) + "-" + i + '" data-ck="' + i + '"' + (ck.includes(i) ? " checked" : "") + "><span>" + t + "</span></label>").join("") + "</div>" +
       "</div>" +
       '<div class="d-foot"><a class="btn btn-primary" href="' + esc(urlEdital(it)) + '" target="_blank" rel="noopener">Ver edital no PNCP ↗</a><button type="button" class="btn" data-star="' + esc(it.id) + '" aria-pressed="' + salvo + '">' + (salvo ? "Salvo" : "Salvar") + "</button></div>";
@@ -565,7 +602,8 @@ body{margin:0}
     S.buscando = true; S.nota = ""; S.notaErr = false; render();
     try {
       const url = "/api/editais" + (nova ? "?t=" + Math.floor(Date.now() / 300000) : "");
-      const r = await fetch(url, {cache: nova ? "no-store" : "default"});
+      const ctrl = new AbortController(), limite = setTimeout(() => ctrl.abort(), 75000);
+      const r = await fetch(url, {cache: nova ? "no-store" : "default", signal: ctrl.signal}).finally(() => clearTimeout(limite));
       const j = await r.json().catch(() => ({}));
       if (!r.ok || !Array.isArray(j.editais)) throw new Error(j.erro || "O servidor não respondeu.");
       S.coleta = {base: j.base, coletadaEm: j.coletadaEm}; S.reserva = false;
@@ -619,6 +657,7 @@ body{margin:0}
     const st = ev.target.closest("[data-star]");
     if (st) { const id = st.dataset.star; S.star.has(id) ? S.star.delete(id) : S.star.add(id); store.set("rl_star_real", [...S.star]); return render(); }
     if (ev.target.closest("[data-stop]")) return;
+    const dc = ev.target.closest("[data-docs]"); if (dc) { carregarDocs(dc.dataset.docs); return renderDrawer(); }
     const op = ev.target.closest("[data-open]"); if (op) return abrir(op.dataset.open);
     const tira = ev.target.closest("[data-tira]");
     if (tira) { const k = tira.dataset.tira; if (k === "fonte") S.fonte = ""; else { F[k] = ""; if (k === "uf") F.mun = ""; } return render(); }
