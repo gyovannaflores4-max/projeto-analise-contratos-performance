@@ -1,37 +1,43 @@
 <title>Radar de Licitações Protótipos</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
 <style>
 /* Layout: barra com seletor de protótipo (A, B, C); cada protótipo é uma versão enxuta do Radar
    com a mesma base de exemplo. A = busca única, B = quadro por prazo, C = termos monitorados. */
 :root{
-  --bg:#F1F5F4; --surface:#FFFFFF; --surface-2:#E7EEEC; --line:#D3DEDB;
-  --ink:#10282B; --ink-2:#47605F; --ink-3:#6B8180;
-  --accent:#0A6E66; --accent-ink:#FFFFFF; --accent-soft:#DCEFEA;
-  --crit:#B3261E; --crit-soft:#FBE4E1; --warn:#8A5300; --warn-soft:#FBEBCF;
-  --f-display:"Bricolage Grotesque","Trebuchet MS",system-ui,sans-serif;
+  --bg:#F3F5F8; --surface:#FFFFFF; --surface-2:#EAEEF3; --line:#D5DCE5;
+  --ink:#152235; --ink-2:#4A5A70; --ink-3:#6E7C90;
+  --accent:#1D4E89; --accent-ink:#FFFFFF; --accent-soft:#E3ECF7;
+  --head:#13294B; --head-ink:#FFFFFF; --head-2:#B8C7DC;
+  --ok:#1E7A4C; --ok-soft:#E1F2E8;
+  --crit:#B42318; --crit-soft:#FDE7E4; --warn:#8A5300; --warn-soft:#FCEFD6;
+  --f-display:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#0C1A1C; --surface:#13262A; --surface-2:#1B3237; --line:#284347;
-    --ink:#E6F0EE; --ink-2:#A9BFBC; --ink-3:#839B98;
-    --accent:#4FC7B5; --accent-ink:#06211E; --accent-soft:#143A38;
+    --bg:#0E1622; --surface:#16212F; --surface-2:#1E2B3C; --line:#2B3A4E;
+    --ink:#E7EDF5; --ink-2:#AEBBCC; --ink-3:#8796AA;
+    --accent:#7FB0F0; --accent-ink:#0B1A2E; --accent-soft:#1C3150;
+    --head:#0A1220; --head-ink:#E7EDF5; --head-2:#8796AA;
+    --ok:#6FD39C; --ok-soft:#143425;
     --crit:#FF8A80; --crit-soft:#4A1D1A; --warn:#F2B658; --warn-soft:#43300F;
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#0C1A1C; --surface:#13262A; --surface-2:#1B3237; --line:#284347;
-  --ink:#E6F0EE; --ink-2:#A9BFBC; --ink-3:#839B98;
-  --accent:#4FC7B5; --accent-ink:#06211E; --accent-soft:#143A38;
+  --bg:#0E1622; --surface:#16212F; --surface-2:#1E2B3C; --line:#2B3A4E;
+  --ink:#E7EDF5; --ink-2:#AEBBCC; --ink-3:#8796AA;
+  --accent:#7FB0F0; --accent-ink:#0B1A2E; --accent-soft:#1C3150;
+  --head:#0A1220; --head-ink:#E7EDF5; --head-2:#8796AA;
+  --ok:#6FD39C; --ok-soft:#143425;
   --crit:#FF8A80; --crit-soft:#4A1D1A; --warn:#F2B658; --warn-soft:#43300F;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
 h1,h2,h3,p{margin:0}
-h1,h2,h3{font-family:var(--f-display);text-wrap:balance;letter-spacing:-.01em}
+h1,h2,h3{font-family:var(--f-display);font-weight:600;text-wrap:balance;letter-spacing:-.005em}
 a{color:var(--accent)}
 button,input,select{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -42,17 +48,19 @@ button,input,select{font:inherit;color:inherit}
 .eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
 
 /* Barra de protótipos */
-.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--head);color:var(--head-ink)}
 .top-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 20px;padding-block:12px}
-.brand{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-weight:700;font-size:18px;white-space:nowrap}
-.proto{display:flex;gap:4px;padding:4px;border-radius:10px;background:var(--surface-2);overflow-x:auto;max-width:100%}
-.proto button{appearance:none;border:0;background:none;padding:7px 12px;border-radius:7px;cursor:pointer;color:var(--ink-2);white-space:nowrap;font-size:14px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:17px;white-space:nowrap}
+.brand small{font-weight:400;color:var(--head-2);font-size:13px;border-left:1px solid var(--head-2);padding-left:10px}
+.proto{display:flex;gap:2px;overflow-x:auto;max-width:100%}
+.proto button{appearance:none;border:0;background:none;padding:8px 12px;border-radius:6px;cursor:pointer;color:var(--head-2);white-space:nowrap;font-size:14px}
+.proto button:hover{color:var(--head-ink)}
 .proto button b{font-family:var(--f-mono);font-weight:500;margin-right:6px}
-.proto button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgb(0 0 0 / .12)}
+.proto button[aria-pressed="true"]{background:rgb(255 255 255 / .12);color:var(--head-ink)}
 
 main{display:flex;flex-direction:column;gap:22px;padding-block:24px 56px}
 .intro{display:flex;flex-direction:column;gap:6px}
-.intro h1{font-size:clamp(24px,3.6vw,34px);line-height:1.12}
+.intro h1{font-size:clamp(22px,3vw,28px);line-height:1.2}
 .intro p{color:var(--ink-2);max-width:68ch}
 .exemplo{display:flex;gap:10px;align-items:flex-start;padding:10px 14px;border-radius:8px;background:var(--warn-soft);font-size:13.5px}
 .exemplo::before{content:"";flex:none;width:9px;height:9px;margin-top:6px;border-radius:50%;background:var(--warn)}
@@ -60,7 +68,7 @@ main{display:flex;flex-direction:column;gap:22px;padding-block:24px 56px}
 /* Controles comuns */
 .search{display:flex;gap:8px;flex-wrap:wrap}
 .search input{flex:1 1 260px;min-width:0;height:46px;padding:0 16px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font-size:16px}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 14px;border-radius:8px;border:1px solid var(--line);background:var(--surface);font-weight:500;text-decoration:none;color:var(--ink);cursor:pointer;white-space:nowrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 14px;border-radius:6px;border:1px solid var(--line);background:var(--surface);font-weight:500;text-decoration:none;color:var(--ink);cursor:pointer;white-space:nowrap}
 .btn:hover{border-color:var(--accent)}
 .btn-primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .search .btn{height:46px}
@@ -77,18 +85,32 @@ main{display:flex;flex-direction:column;gap:22px;padding-block:24px 56px}
 .star[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent)}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:10px}
 .empty{padding:32px 20px;text-align:center;color:var(--ink-2)}
-.empty b{display:block;font-family:var(--f-display);font-size:17px;color:var(--ink);margin-bottom:4px}
+.empty b{display:block;font-size:16px;color:var(--ink);margin-bottom:4px}
 
 /* A: busca única */
 .res-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:6px 16px}
 .res-head h2{font-size:19px}
-.item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 18px;padding:16px 18px;border-bottom:1px solid var(--line)}
+.item{display:grid;grid-template-columns:92px minmax(0,1fr) auto;gap:4px 18px;padding:16px 18px;border-bottom:1px solid var(--line);align-items:start}
 .item:last-child{border-bottom:0}
+.when{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 6px;border-radius:8px;background:var(--surface-2);text-align:center}
+.when.crit{background:var(--crit-soft);color:var(--crit)} .when.warn{background:var(--warn-soft);color:var(--warn)}
+.when b{font-size:24px;line-height:1;font-weight:700;font-variant-numeric:tabular-nums}
+.when span{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.when small{font-size:11.5px;color:var(--ink-2);font-family:var(--f-mono)}
 .item .org{font-weight:600}
-.item .obj{color:var(--ink-2);margin-top:2px}
-.item .meta{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:8px;font-size:12.5px;color:var(--ink-3);align-items:center}
-.item .side{display:flex;flex-direction:column;align-items:flex-end;gap:6px;text-align:right}
-.item .side b{font-family:var(--f-mono);font-weight:500;font-size:14px}
+.item .obj{color:var(--ink);margin-top:2px}
+.item .meta{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;font-size:13px;color:var(--ink-3);align-items:center}
+.item .meta b{color:var(--ink);font-weight:600}
+.acts{display:flex;flex-direction:column;align-items:stretch;gap:6px;min-width:150px}
+.acts .btn{height:36px;font-size:14px}
+.status-ok{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--ok)}
+.status-ok::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.resumo{grid-column:2/-1;margin-top:10px;padding:14px 16px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.resumo dl{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px 18px;margin:0}
+.resumo dt{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
+.resumo dd{margin:2px 0 0;font-size:14px}
+.resumo .check{margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:13.5px;color:var(--ink-2)}
+.resumo .check ul{margin:6px 0 0;padding-left:18px;display:grid;gap:2px}
 .portais{display:flex;flex-direction:column;gap:10px}
 .portais h3{font-size:15px}
 .links{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
@@ -112,7 +134,8 @@ main{display:flex;flex-direction:column;gap:22px;padding-block:24px 56px}
 .card .org{font-weight:600;font-size:14px}
 .card .obj{font-size:13.5px;color:var(--ink-2)}
 .card .foot{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
-.card .foot b{font-family:var(--f-mono);font-weight:500;font-size:13px}
+.card .foot b{font-weight:600;font-size:14px}
+.card .foot .btn{height:32px;font-size:13px}
 
 /* C: termos monitorados */
 .mon{display:grid;grid-template-columns:280px minmax(0,1fr);gap:18px;align-items:start}
@@ -126,15 +149,18 @@ main{display:flex;flex-direction:column;gap:22px;padding-block:24px 56px}
 .add input{flex:1 1 auto;min-width:0;height:34px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
 .feed-h{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px 12px;margin-bottom:10px}
 .feed-h h2{font-size:19px}
-.badge-new{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.badge-new{display:inline-block;margin-bottom:4px;padding:1px 7px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;background:var(--accent-soft);color:var(--accent)}
 
 @media (max-width:860px){
   .board{grid-template-columns:1fr}
   .mon{grid-template-columns:1fr}
 }
-@media (max-width:520px){
-  .item{grid-template-columns:1fr}
-  .item .side{flex-direction:row;flex-wrap:wrap;align-items:center;text-align:left}
+@media (max-width:640px){
+  .item{grid-template-columns:72px minmax(0,1fr)}
+  .acts{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;min-width:0;margin-top:8px}
+  .acts .btn,.acts .star{flex:1 1 auto}
+  .resumo{grid-column:1/-1}
+  .when b{font-size:20px}
 }
 @media (prefers-reduced-motion:no-preference){
   .btn,.fonte,.star,.term,.proto button{transition:background-color .15s,border-color .15s}
@@ -145,13 +171,13 @@ main{display:flex;flex-direction:column;gap:22px;padding-block:24px 56px}
   <div class="wrap top-row">
     <div class="brand">
       <svg width="28" height="28" viewBox="0 0 30 30" aria-hidden="true">
-        <circle cx="15" cy="15" r="14" fill="var(--accent)"/>
-        <circle cx="15" cy="15" r="9" fill="none" stroke="var(--accent-ink)" stroke-opacity=".5"/>
-        <circle cx="15" cy="15" r="4" fill="none" stroke="var(--accent-ink)" stroke-opacity=".5"/>
-        <path d="M15 15 L24 8" stroke="var(--accent-ink)" stroke-width="2" stroke-linecap="round"/>
-        <circle cx="20" cy="18" r="1.6" fill="var(--accent-ink)"/>
+        <circle cx="15" cy="15" r="14" fill="var(--head-ink)" fill-opacity=".14"/>
+        <circle cx="15" cy="15" r="9" fill="none" stroke="var(--head-ink)" stroke-opacity=".5"/>
+        <circle cx="15" cy="15" r="4" fill="none" stroke="var(--head-ink)" stroke-opacity=".5"/>
+        <path d="M15 15 L24 8" stroke="var(--head-ink)" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="20" cy="18" r="1.6" fill="var(--head-ink)"/>
       </svg>
-      <span>Radar de Licitações</span>
+      <span>Radar de Licitações</span><small>Protótipos</small>
     </div>
     <nav class="proto" aria-label="Protótipos">
       <button type="button" data-p="a" aria-pressed="true"><b>A</b>Busca única</button>
@@ -224,7 +250,8 @@ main{display:flex;flex-direction:column;gap:22px;padding-block:24px 56px}
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const norm = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const brl = new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL",maximumFractionDigits:0});
-  const fData = new Intl.DateTimeFormat("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit",timeZone:"America/Sao_Paulo"});
+  const fData = new Intl.DateTimeFormat("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",timeZone:"America/Sao_Paulo"});
+  const fDia = new Intl.DateTimeFormat("pt-BR",{day:"2-digit",month:"2-digit",timeZone:"America/Sao_Paulo"});
   const DIA = 86400000;
 
   // Portais. Só o PNCP aceita o termo direto na URL; os demais abrem a página de busca pública.
@@ -261,7 +288,7 @@ main{display:flex;flex-direction:column;gap:22px;padding-block:24px 56px}
   });
 
   const store = { get(k){ try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }, set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
-  const S = {p:"a", fontes:new Set(), star:new Set(store.get("rl_star") || []), termos:store.get("rl_termos") || ["hemodiálise","plantão médico","ambulância"], termo:null};
+  const S = {p:"a", fontes:new Set(), star:new Set(store.get("rl_star") || []), termos:store.get("rl_termos") || ["hemodiálise","plantão médico","ambulância"], termo:null, open:new Set()};
   const h = (location.hash || "").slice(1); if (["a","b","c"].includes(h)) S.p = h;
 
   const dias = it => Math.max(0, Math.ceil((it.prazo - Date.now()) / DIA));
@@ -272,16 +299,28 @@ main{display:flex;flex-direction:column;gap:22px;padding-block:24px 56px}
   const vazio = (t, s) => '<div class="empty"><b>' + t + "</b>" + s + "</div>";
 
   const TEXT = {
-    a:["Protótipo A","Uma busca, todos os portais","Uma caixa de busca e uma lista. Cada resultado mostra só órgão, objeto, prazo, valor e o portal de origem. Toque num portal para filtrar."],
+    a:["Protótipo A","Uma busca, todos os portais","Busque uma vez e veja os editais abertos de todos os portais. Os dias que faltam aparecem à esquerda, o botão Ver edital leva direto à publicação e o resumo abre na própria linha."],
     b:["Protótipo B","O que vence primeiro","Os editais abertos em três colunas por prazo. Bom para quem decide a semana olhando o que fecha antes."],
     c:["Protótipo C","Seus termos, vigiados","Você cadastra os termos que importam e o radar mostra o que apareceu em cada um, com os novos marcados."]
   };
 
   // A
+  const CRIT = {"Pregão eletrônico":"Menor preço por item","Concorrência":"Técnica e preço","Credenciamento":"Preço fixo da tabela","Dispensa eletrônica":"Menor preço global"};
+  const urlEdital = it => PORTAIS.find(x => x.id === it.fonte).url(it.edital);
+  const nomePortal = it => PORTAIS.find(x => x.id === it.fonte).nome;
   function itemA(it){
-    return '<div class="item"><div style="min-width:0"><div class="org">' + esc(it.orgao) + '</div><div class="obj">' + esc(it.objeto) + "</div>" +
-      '<div class="meta"><span class="tag">' + esc(it.fonte) + "</span><span>" + esc(it.modalidade) + '</span><span class="mono">' + esc(it.edital) + "</span><span>" + esc(it.municipio) + "/" + esc(it.uf) + "</span>" + linkPortal(it) + "</div></div>" +
-      '<div class="side"><b class="num">' + fData.format(it.prazo) + "</b>" + pill(it) + '<span class="num">' + brl.format(it.valor) + "</span>" + starBtn(it) + "</div></div>";
+    const n = dias(it), cls = n <= 7 ? "crit" : n <= 15 ? "warn" : "", aberto = S.open.has(it.id);
+    return '<div class="item"><div class="when ' + cls + '"><b>' + n + "</b><span>" + (n === 1 ? "dia" : "dias") + "</span><small>" + fDia.format(it.prazo) + "</small></div>" +
+      '<div style="min-width:0"><span class="status-ok">Recebendo propostas</span><div class="org">' + esc(it.orgao) + '</div><div class="obj">' + esc(it.objeto) + "</div>" +
+      '<div class="meta"><span>Valor estimado <b class="num">' + brl.format(it.valor) + "</b></span><span>" + esc(it.modalidade) + '</span><span class="mono">' + esc(it.edital) + "</span><span>" + esc(it.municipio) + "/" + esc(it.uf) + '</span><span class="tag">' + esc(it.fonte) + "</span></div></div>" +
+      '<div class="acts"><a class="btn btn-primary" href="' + esc(urlEdital(it)) + '" target="_blank" rel="noopener">Ver edital ↗</a>' +
+      '<button type="button" class="btn" data-open="' + it.id + '" aria-expanded="' + aberto + '">' + (aberto ? "Fechar resumo" : "Resumo do edital") + "</button>" + starBtn(it) + "</div>" +
+      (aberto ? '<div class="resumo"><dl>' +
+        [["Nº do edital", '<span class="mono">' + esc(it.edital) + "</span>"],["Modalidade", esc(it.modalidade)],["Critério de julgamento", esc(CRIT[it.modalidade] || "Ver edital")],
+         ["Limite para propostas", fData.format(it.prazo) + " (Brasília)"],["Valor estimado", brl.format(it.valor)],["Portal da disputa", esc(nomePortal(it))],
+         ["Órgão", esc(it.orgao)],["Local", esc(it.municipio) + "/" + esc(it.uf)]].map(([k,v]) => "<div><dt>" + k + "</dt><dd>" + v + "</dd></div>").join("") +
+        '</dl><div class="check"><b>Antes de participar, confira no edital:</b><ul><li>Habilitação técnica e documentos exigidos</li><li>Retificações e esclarecimentos publicados</li><li>Prazo de impugnação e data da sessão</li></ul></div></div>' : "") +
+      "</div>";
   }
   function renderA(){
     const q = $("qA").value.trim();
@@ -303,7 +342,7 @@ main{display:flex;flex-direction:column;gap:22px;padding-block:24px 56px}
     $("board").innerHTML = cols.map(([cls,nome,a,b]) => {
       const g = lista.filter(it => dias(it) >= a && dias(it) <= b);
       return '<div class="col ' + cls + '"><div class="col-h"><h3>' + nome + '</h3><span class="muted num">' + g.length + "</span></div>" +
-        (g.length ? g.map(it => '<div class="card"><div class="top2"><span>' + esc(it.fonte) + " · " + esc(it.uf) + '</span><span class="mono">' + fData.format(it.prazo) + '</span></div><div class="org">' + esc(it.orgao) + '</div><div class="obj">' + esc(it.objeto) + '</div><div class="foot"><b class="num">' + brl.format(it.valor) + "</b>" + starBtn(it) + "</div></div>").join("")
+        (g.length ? g.map(it => '<div class="card"><div class="top2"><span>' + esc(it.fonte) + " · " + esc(it.uf) + '</span><span class="mono">' + fData.format(it.prazo) + '</span></div><div>' + pill(it) + '</div><div class="org">' + esc(it.orgao) + '</div><div class="obj">' + esc(it.objeto) + '</div><div class="foot"><b class="num">' + brl.format(it.valor) + '</b><a class="btn btn-primary" href="' + esc(urlEdital(it)) + '" target="_blank" rel="noopener">Ver edital ↗</a></div></div>').join("")
           : '<div class="card muted" style="font-size:13.5px">Nenhum edital nesta faixa.</div>') + "</div>";
     }).join("");
   }
@@ -320,7 +359,7 @@ main{display:flex;flex-direction:column;gap:22px;padding-block:24px 56px}
     const lista = ativo ? ITENS.filter(it => casa(it, ativo)).sort((a,b) => (b.novo - a.novo) || (a.prazo - b.prazo)) : [];
     $("feedTitle").textContent = ativo ? "Resultados para “" + ativo + "”" : "Resultados";
     $("feedCount").textContent = ativo ? lista.length + (lista.length === 1 ? " edital" : " editais") : "";
-    $("feed").innerHTML = lista.length ? lista.map(it => itemA(it).replace('<div class="org">', (it.novo ? '<span class="badge-new">Novo desde ontem</span>' : "") + '<div class="org">')).join("")
+    $("feed").innerHTML = lista.length ? lista.map(it => itemA(it).replace('<span class="status-ok">', (it.novo ? '<span class="badge-new">Novo desde ontem</span> ' : "") + '<span class="status-ok">')).join("")
       : vazio(ativo ? "Nenhum edital aberto com esse termo" : "Sem termos", ativo ? "O radar avisa quando aparecer algo novo." : "Cadastre um termo à esquerda.");
   }
 
@@ -340,6 +379,8 @@ main{display:flex;flex-direction:column;gap:22px;padding-block:24px 56px}
     if (f) { const id = f.dataset.fonte; if (!id) S.fontes.clear(); else S.fontes.has(id) ? S.fontes.delete(id) : S.fontes.add(id); return render(); }
     const s = ev.target.closest("[data-star]");
     if (s) { const id = s.dataset.star; S.star.has(id) ? S.star.delete(id) : S.star.add(id); store.set("rl_star", [...S.star]); return render(); }
+    const o = ev.target.closest("[data-open]");
+    if (o) { const id = o.dataset.open; S.open.has(id) ? S.open.delete(id) : S.open.add(id); return render(); }
     const t = ev.target.closest("[data-term]"); if (t) { S.termo = t.dataset.term; return render(); }
   });
   $("formA").addEventListener("submit", e => { e.preventDefault(); render(); });
