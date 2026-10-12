@@ -104,6 +104,17 @@ body{margin:0}
 .sugest button:hover{border-color:var(--accent);color:var(--accent)}
 
 /* Filtros por portal */
+.filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;gap:10px 12px;align-items:end}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
+.field select{width:100%;min-width:0;height:40px;padding:0 10px;border:1px solid var(--line-2);border-radius:8px;background:var(--surface);font-size:14.5px}
+.field select:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-soft)}
+.field select.on{border-color:var(--accent);background:var(--accent-soft)}
+.field select:disabled{opacity:.55}
+.chips-ativos{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13.5px;color:var(--ink-3)}
+.chip-x{appearance:none;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border:1px solid var(--accent);border-radius:99px;background:var(--accent-soft);color:var(--accent);font-weight:600;font-size:13px;cursor:pointer}
+.chip-x span{font-size:15px;line-height:1}
+@media (max-width:860px){.filters{grid-template-columns:repeat(2,minmax(0,1fr))}.filters .btn{grid-column:1/-1}}
 .portal-filter{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin}
 .pf{appearance:none;flex:none;display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);cursor:pointer;font-size:14px;color:var(--ink-2);white-space:nowrap}
 .pf .n{font-size:12.5px;color:var(--ink-3);font-variant-numeric:tabular-nums}
@@ -256,6 +267,14 @@ body{margin:0}
           </div>
           <div class="sugest" id="sugest">Sugestões:</div>
         </form>
+        <div class="filters" role="group" aria-label="Filtros">
+          <div class="field"><label for="fTema">Palavra-chave</label><select id="fTema"><option value="">Todas</option></select></div>
+          <div class="field"><label for="fUf">Estado</label><select id="fUf"><option value="">Todos</option></select></div>
+          <div class="field"><label for="fMun">Município</label><select id="fMun"><option value="">Todos</option></select></div>
+          <div class="field"><label for="fMod">Modalidade</label><select id="fMod"><option value="">Todas</option></select></div>
+          <button type="button" class="btn" id="limpar">Limpar filtros</button>
+        </div>
+        <div class="chips-ativos" id="ativos" hidden></div>
         <div class="portal-filter" id="pfilter" role="group" aria-label="Filtrar por portal"></div>
         <div class="toolbar">
           <div class="summary" id="summary"></div>
@@ -339,20 +358,75 @@ body{margin:0}
       : vazio("Nenhum edital com prazo aberto", "A busca não trouxe editais com prazo futuro. Toque em Atualizar agora para buscar de novo.");
   }
 
+  // Filtros: palavra-chave (temas do objeto), estado, município e modalidade
+  const TEMAS = [
+    ["hemodialise","Hemodiálise e nefrologia",/hemodial|dialise|nefrolog|renal/],
+    ["plantao","Plantões médicos",/plantao|plantoes|plantonista/],
+    ["urgencia","Urgência e emergência",/urgencia|emergencia|pronto.?socorro|pronto atendimento|\bupa|samu/],
+    ["uti","UTI e terapia intensiva",/\buti\b|utis\b|terapia intensiva/],
+    ["clinica","Clínica geral e atenção básica",/clinica geral|clinica medica|atencao (basica|primaria)|\bubs\b|\besf\b/],
+    ["especialidades","Especialidades médicas",/especializad|especialidade|oftalmo|ortoped|cardiolog|pediatr|obstetr|ginecolog|psiqui|anestes|neurolog/],
+    ["exames","Exames e imagem",/exame|imagem|ressonancia|tomografia|ultrassom|ultrassonografia|raio.?x|laborator/],
+    ["cirurgia","Cirurgias",/cirurg/],
+    ["ambulancia","Ambulância e remoção",/ambulanc|remocao|samu/]
+  ];
+  const temasDe = it => it.temas || (it.temas = TEMAS.filter(t => t[2].test(norm(it.objeto + " " + (it.edital || "")))).map(t => t[0]));
+  function modGrupo(m){
+    const n = norm(m);
+    return /preg/.test(n) ? "Pregão" : /dispensa/.test(n) ? "Dispensa" : /credenc|chamamento/.test(n) ? "Credenciamento" : /concorr/.test(n) ? "Concorrência" : /inexig/.test(n) ? "Inexigibilidade" : /leil/.test(n) ? "Leilão" : /dialogo/.test(n) ? "Diálogo competitivo" : m || "Outra";
+  }
+  const F = {tema:"", uf:"", mun:"", mod:""};
+  function passa(it, sem){
+    return (sem === "tema" || !F.tema || temasDe(it).includes(F.tema))
+      && (sem === "uf" || !F.uf || it.uf === F.uf)
+      && (sem === "mun" || !F.mun || it.uf + "|" + it.municipio === F.mun)
+      && (sem === "mod" || !F.mod || modGrupo(it.modalidade) === F.mod)
+      && (sem === "fonte" || !S.fonte || it.fonte === S.fonte);
+  }
+  function opcoes(id, todos, itens, atual){
+    const sel = $(id);
+    sel.innerHTML = '<option value="">' + todos + "</option>" + itens.map(([v,t,n]) => '<option value="' + esc(v) + '"' + (v === atual ? " selected" : "") + ">" + esc(t) + " (" + n + ")</option>").join("");
+    if (atual && !itens.some(i => i[0] === atual)) { sel.insertAdjacentHTML("beforeend", '<option value="' + esc(atual) + '" selected>' + esc(atual.split("|").pop()) + " (0)</option>"); }
+    sel.classList.toggle("on", !!atual);
+  }
+  const contar = (lista, chave) => { const m = new Map(); lista.forEach(it => [].concat(chave(it)).forEach(k => { if (k) m.set(k, (m.get(k) || 0) + 1); })); return m; };
+  function renderFiltros(porTermo){
+    const cT = contar(porTermo.filter(it => passa(it, "tema")), temasDe);
+    opcoes("fTema", "Todas", TEMAS.filter(t => cT.get(t[0])).map(t => [t[0], t[1], cT.get(t[0])]), F.tema);
+    const cU = contar(porTermo.filter(it => passa(it, "uf")), it => it.uf);
+    opcoes("fUf", "Todos", [...cU].sort((a,b) => a[0].localeCompare(b[0])).map(([u,n]) => [u, u + " · " + (UFS[u] || u), n]), F.uf);
+    const cM = contar(porTermo.filter(it => passa(it, "mun")), it => it.municipio ? it.uf + "|" + it.municipio : "");
+    opcoes("fMun", F.uf ? "Todos de " + F.uf : "Todos", [...cM].sort((a,b) => a[0].split("|")[1].localeCompare(b[0].split("|")[1], "pt-BR")).map(([k,n]) => [k, k.split("|")[1] + (F.uf ? "" : "/" + k.split("|")[0]), n]), F.mun);
+    const cMo = contar(porTermo.filter(it => passa(it, "mod")), it => modGrupo(it.modalidade));
+    opcoes("fMod", "Todas", [...cMo].sort((a,b) => b[1] - a[1]).map(([m,n]) => [m, m, n]), F.mod);
+    const ativos = [];
+    if (F.tema) ativos.push(["tema", (TEMAS.find(t => t[0] === F.tema) || [,F.tema])[1]]);
+    if (F.uf) ativos.push(["uf", UFS[F.uf] || F.uf]);
+    if (F.mun) ativos.push(["mun", F.mun.split("|")[1] + "/" + F.mun.split("|")[0]]);
+    if (F.mod) ativos.push(["mod", F.mod]);
+    if (S.fonte) ativos.push(["fonte", portal(S.fonte).nome]);
+    $("ativos").hidden = !ativos.length;
+    $("ativos").innerHTML = "Filtrando por:" + ativos.map(([k,t]) => '<button type="button" class="chip-x" data-tira="' + k + '" aria-label="Remover filtro ' + esc(t) + '">' + esc(t) + ' <span aria-hidden="true">×</span></button>').join("");
+    $("limpar").disabled = !ativos.length && !$("q").value.trim();
+  }
+  const UFS = {AC:"Acre",AL:"Alagoas",AP:"Amapá",AM:"Amazonas",BA:"Bahia",CE:"Ceará",DF:"Distrito Federal",ES:"Espírito Santo",GO:"Goiás",MA:"Maranhão",MT:"Mato Grosso",MS:"Mato Grosso do Sul",MG:"Minas Gerais",PA:"Pará",PB:"Paraíba",PR:"Paraná",PE:"Pernambuco",PI:"Piauí",RJ:"Rio de Janeiro",RN:"Rio Grande do Norte",RS:"Rio Grande do Sul",RO:"Rondônia",RR:"Roraima",SC:"Santa Catarina",SP:"São Paulo",SE:"Sergipe",TO:"Tocantins"};
+
   function renderBuscar(){
     const q = $("q").value.trim(), base = abertos();
     const porTermo = base.filter(it => casa(it, q));
-    $("pfilter").innerHTML = '<button type="button" class="pf" data-fonte="" aria-pressed="' + !S.fonte + '">Todos os portais <span class="n">' + porTermo.length + "</span></button>" +
-      PORTAIS.map(p => '<button type="button" class="pf" data-fonte="' + esc(p.id) + '" aria-pressed="' + (S.fonte === p.id) + '">' + esc(p.nome) + ' <span class="n">' + porTermo.filter(it => it.fonte === p.id).length + "</span></button>").join("");
+    renderFiltros(porTermo);
+    const pBase = porTermo.filter(it => passa(it, "fonte"));
+    $("pfilter").innerHTML = '<button type="button" class="pf" data-fonte="" aria-pressed="' + !S.fonte + '">Todos os portais <span class="n">' + pBase.length + "</span></button>" +
+      PORTAIS.map(p => '<button type="button" class="pf" data-fonte="' + esc(p.id) + '" aria-pressed="' + (S.fonte === p.id) + '">' + esc(p.nome) + ' <span class="n">' + pBase.filter(it => it.fonte === p.id).length + "</span></button>").join("");
     const o = $("ord").value;
-    const lista = porTermo.filter(it => !S.fonte || it.fonte === S.fonte)
+    const lista = porTermo.filter(it => passa(it))
       .sort((a,b) => o === "valor" ? (b.valor || 0) - (a.valor || 0) : o === "novo" ? (b.pub || 0) - (a.pub || 0) || (a.prazo - b.prazo) : a.prazo - b.prazo);
     const sete = lista.filter(it => dias(it) <= 7).length, comValor = lista.filter(it => it.valor > 0), total = comValor.reduce((s,it) => s + it.valor, 0);
     $("summary").innerHTML = S.phase !== "ready" ? "" : "<span><b class=\"num\">" + lista.length + "</b> " + (lista.length === 1 ? "edital com prazo aberto" : "editais com prazo aberto") + (q ? " para “" + esc(q) + "”" : "") + "</span>" +
       (sete ? '<span class="alert"><b class="num">' + sete + "</b> " + (sete === 1 ? "vence" : "vencem") + " em até 7 dias</span>" : "") +
       (comValor.length ? '<span><b class="num">' + brlC.format(total) + "</b> estimados em " + comValor.length + " com valor divulgado</span>" : "");
     $("list").innerHTML = !base.length ? vazioBase() : lista.length ? lista.map(row).join("")
-      : vazio("Nenhum edital nesta coleta", "A coleta guarda só parte do PNCP. Busque direto em " + (S.fonte ? '<a href="' + esc(portal(S.fonte).url(q)) + '" target="_blank" rel="noopener">' + esc(portal(S.fonte).nome) + " ↗</a>" : '<a href="' + esc(PORTAIS[0].url(q)) + '" target="_blank" rel="noopener">PNCP ↗</a>') + ".");
+      : vazio("Nenhum edital com esses filtros", "Remova algum filtro acima ou busque direto em " + (S.fonte ? '<a href="' + esc(portal(S.fonte).url(q)) + '" target="_blank" rel="noopener">' + esc(portal(S.fonte).nome) + " ↗</a>" : '<a href="' + esc(PORTAIS[0].url(q)) + '" target="_blank" rel="noopener">PNCP ↗</a>') + ".");
   }
   function renderSalvos(){
     const lista = abertos().filter(it => S.star.has(it.id)).sort((a,b) => a.prazo - b.prazo);
@@ -474,6 +548,8 @@ body{margin:0}
     const st = ev.target.closest("[data-star]");
     if (st) { const id = st.dataset.star; S.star.has(id) ? S.star.delete(id) : S.star.add(id); store.set("rl_star_real", [...S.star]); return render(); }
     if (ev.target.closest("[data-stop]")) return;
+    const tira = ev.target.closest("[data-tira]");
+    if (tira) { const k = tira.dataset.tira; if (k === "fonte") S.fonte = ""; else { F[k] = ""; if (k === "uf") F.mun = ""; } return render(); }
     const f = ev.target.closest("[data-fonte]"); if (f) { S.fonte = f.dataset.fonte; return render(); }
     const sg = ev.target.closest("[data-sug]"); if (sg) { $("q").value = sg.dataset.sug; return render(); }
     if (ev.target.closest("[data-close]") || ev.target.id === "shade") return fechar();
@@ -491,6 +567,13 @@ body{margin:0}
   $("form").addEventListener("submit", e => { e.preventDefault(); render(); });
   $("q").addEventListener("input", render);
   $("ord").addEventListener("change", render);
+  [["fTema","tema"],["fUf","uf"],["fMun","mun"],["fMod","mod"]].forEach(([id,k]) => $(id).addEventListener("change", () => {
+    F[k] = $(id).value;
+    if (k === "uf" && F.mun && F.mun.split("|")[0] !== F.uf) F.mun = "";
+    if (k === "mun" && F.mun) F.uf = F.mun.split("|")[0];
+    render();
+  }));
+  $("limpar").addEventListener("click", () => { F.tema = F.uf = F.mun = F.mod = ""; S.fonte = ""; $("q").value = ""; ["fTema","fUf","fMun","fMod"].forEach(id => $(id).value = ""); render(); });
   $("btnAtualizar").addEventListener("click", () => buscar(true));
   setInterval(renderStatus, 60000);
   render();
