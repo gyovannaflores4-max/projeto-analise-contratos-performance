@@ -23,15 +23,24 @@ const PORTAIS = [
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-async function getJson(url, timeoutMs) {
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), timeoutMs);
-  try {
-    const r = await fetch(url, { signal: ctrl.signal, headers: { accept: "application/json", "user-agent": "radar-licitacoes/1.0" } });
-    if (r.status === 204) return null;
-    if (!r.ok) throw new Error("HTTP " + r.status);
-    return await r.json();
-  } finally { clearTimeout(t); }
+// Busca JSON no PNCP com tempo limite e uma nova tentativa quando o PNCP falha
+// ou pede para esperar (429, 5xx, tempo esgotado).
+async function getJson(url, timeoutMs, tentativas = 2) {
+  for (let i = 0; ; i++) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      const r = await fetch(url, { signal: ctrl.signal, headers: { accept: "application/json", "user-agent": "radar-licitacoes/1.0" } });
+      if (r.status === 204) return null;
+      if (r.status === 429 || r.status >= 500) throw Object.assign(new Error("HTTP " + r.status), { repetir: true });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return await r.json();
+    } catch (e) {
+      const repetir = e.repetir || e.name === "AbortError" || e.name === "TypeError";
+      if (!repetir || i + 1 >= tentativas) throw e;
+      await sleep(600 * (i + 1) + Math.random() * 400);
+    } finally { clearTimeout(t); }
+  }
 }
 
 // Datas do PNCP vêm no horário de Brasília. Normaliza para "AAAA-MM-DDTHH:MM:SS" sem fuso.
@@ -98,7 +107,8 @@ function montar(k, it, det) {
     ebserh: /ebserh|servi[cç]os hospitalares/i.test(orgao),
     especialidade: especialidade(objeto),
     fonte: fonte(d.usuarioNome, d.linkSistemaOrigem),
-    url: PNCP + "/app/editais/" + k.cnpj + "/" + k.ano + "/" + k.seq
+    url: PNCP + "/app/editais/" + k.cnpj + "/" + k.ano + "/" + k.seq,
+    linkOrigem: /^https?:\/\//i.test(String(d.linkSistemaOrigem || "")) ? String(d.linkSistemaOrigem) : null
   };
   if (!doc.valor) doc.valorNota = det ? "Não divulgado no PNCP" : "Não consultado nesta busca";
   return doc;
@@ -139,7 +149,7 @@ async function coletar() {
       if (prazoFuturo(doc.prazo)) editais.push(doc);
     }
   }
-  await Promise.all(Array.from({ length: 6 }, trabalhador));
+  await Promise.all(Array.from({ length: 4 }, trabalhador));
   if (fila.length) avisos.push(fila.length + " editais ficaram de fora porque o PNCP demorou a responder.");
 
   editais.sort((a, b) => a.prazo.localeCompare(b.prazo));
@@ -157,4 +167,5 @@ module.exports = async (req, res) => {
   }
 };
 module.exports.coletar = coletar;
+module.exports.getJson = getJson;
 module.exports.montar = montar;
