@@ -1,0 +1,528 @@
+<title>Radar de Licitações</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Source+Sans+3:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: app interno com menu lateral (Buscar, Salvos, Portais), busca no topo da área principal,
+   lista de editais em linhas com o prazo à esquerda e um painel lateral com o resumo do edital. */
+:root{
+  --bg:#F4F6F9; --surface:#FFFFFF; --surface-2:#EDF1F6; --line:#DDE3EB; --line-2:#C9D2DE;
+  --ink:#101A2B; --ink-2:#4A586C; --ink-3:#738197;
+  --accent:#1C5FD4; --accent-hover:#174FB3; --accent-ink:#FFFFFF; --accent-soft:#E7EEFC;
+  --ok:#17804F; --ok-soft:#E2F4EA; --crit:#C0362C; --crit-soft:#FCE8E6; --warn:#9A5B00; --warn-soft:#FDF0D9;
+  --shade:rgb(16 26 43 / .42);
+  --f-display:"Manrope","Segoe UI",system-ui,sans-serif;
+  --f-body:"Source Sans 3","Segoe UI",system-ui,-apple-system,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D131D; --surface:#151D2A; --surface-2:#1C2636; --line:#273347; --line-2:#34435B;
+    --ink:#E8EDF4; --ink-2:#AEB9C9; --ink-3:#8593A8;
+    --accent:#6E9CF5; --accent-hover:#8BB0F8; --accent-ink:#0A1630; --accent-soft:#1B2B4A;
+    --ok:#62CE96; --ok-soft:#133224; --crit:#FF8C82; --crit-soft:#46201D; --warn:#F1B65C; --warn-soft:#3F2E12;
+    --shade:rgb(0 0 0 / .55);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D131D; --surface:#151D2A; --surface-2:#1C2636; --line:#273347; --line-2:#34435B;
+  --ink:#E8EDF4; --ink-2:#AEB9C9; --ink-3:#8593A8;
+  --accent:#6E9CF5; --accent-hover:#8BB0F8; --accent-ink:#0A1630; --accent-soft:#1B2B4A;
+  --ok:#62CE96; --ok-soft:#133224; --crit:#FF8C82; --crit-soft:#46201D; --warn:#F1B65C; --warn-soft:#3F2E12;
+  --shade:rgb(0 0 0 / .55);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{min-height:100%}
+body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15.5px;line-height:1.5}
+h1,h2,h3,p{margin:0}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;letter-spacing:-.015em;text-wrap:balance}
+a{color:var(--accent)}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-size:.86em}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--ink-3)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* Estrutura */
+.app{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh}
+.side{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:22px;padding:22px 16px;background:var(--surface);border-right:1px solid var(--line)}
+.logo{display:flex;align-items:center;gap:10px;padding:0 8px;font-family:var(--f-display);font-weight:800;font-size:16.5px;letter-spacing:-.01em}
+.logo small{display:block;font-family:var(--f-body);font-weight:400;font-size:12.5px;color:var(--ink-3);letter-spacing:0}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav button{appearance:none;display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border:0;border-radius:8px;background:none;color:var(--ink-2);text-align:left;cursor:pointer;font-weight:500}
+.nav button svg{flex:none;width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8}
+.nav button .c{margin-left:auto;font-size:12.5px;padding:0 7px;border-radius:99px;background:var(--surface-2);color:var(--ink-2)}
+.nav button:hover{background:var(--surface-2);color:var(--ink)}
+.nav button[aria-current="page"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.side-foot{margin-top:auto;padding:12px;border-radius:8px;background:var(--surface-2);font-size:13px;color:var(--ink-2)}
+.side-foot b{color:var(--ink)}
+
+.main{min-width:0;display:flex;flex-direction:column}
+.content{width:100%;max-width:1080px;margin-inline:auto;padding:28px clamp(16px,3vw,36px) 64px;display:flex;flex-direction:column;gap:20px}
+.page-h{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 16px}
+.page-h h1{font-size:clamp(22px,2.6vw,28px)}
+.page-h p{color:var(--ink-2);margin-top:4px}
+.updated{font-size:13px;color:var(--ink-3);display:flex;align-items:center;gap:6px}
+.updated::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--warn)}
+.updated.ok::before{background:var(--ok)}
+.updated.run::before{background:var(--accent);animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.3}}
+.refresh{display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:0}
+.refresh-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:8px 12px}
+.refresh .btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2}
+.refresh .btn[aria-busy="true"] svg{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.btn:disabled{opacity:.6;cursor:default}
+.refresh-msg{font-size:13px;color:var(--ink-2);max-width:46ch;text-align:right}
+.refresh-msg.err{color:var(--crit)}
+@media (max-width:720px){.refresh{align-items:flex-start;width:100%}.refresh-row{justify-content:flex-start}.refresh-msg{text-align:left}}
+
+/* Busca */
+.searchbox{display:flex;flex-direction:column;gap:12px;padding:18px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.sb-row{display:flex;gap:10px;flex-wrap:wrap}
+.sb-in{position:relative;flex:1 1 280px;min-width:0}
+.sb-in svg{position:absolute;left:14px;top:50%;width:20px;height:20px;transform:translateY(-50%);stroke:var(--ink-3);fill:none;stroke-width:2}
+.sb-in input{width:100%;height:50px;padding:0 14px 0 44px;border:1px solid var(--line-2);border-radius:8px;background:var(--surface);font-size:16.5px}
+.sb-in input:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-soft)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:40px;padding:0 16px;border:1px solid var(--line-2);border-radius:8px;background:var(--surface);color:var(--ink);font-weight:600;font-size:14.5px;text-decoration:none;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn-primary:hover{background:var(--accent-hover);border-color:var(--accent-hover);color:var(--accent-ink)}
+.sb-row .btn{height:50px;padding:0 22px}
+.sugest{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13.5px;color:var(--ink-3)}
+.sugest button{appearance:none;border:1px dashed var(--line-2);background:none;border-radius:99px;padding:2px 10px;cursor:pointer;color:var(--ink-2)}
+.sugest button:hover{border-color:var(--accent);color:var(--accent)}
+
+/* Filtros por portal */
+.portal-filter{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin}
+.pf{appearance:none;flex:none;display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);cursor:pointer;font-size:14px;color:var(--ink-2);white-space:nowrap}
+.pf .n{font-size:12.5px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.pf:hover{border-color:var(--line-2);color:var(--ink)}
+.pf[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.pf[aria-pressed="true"] .n{color:var(--surface);opacity:.75}
+
+/* Resumo e ordenação */
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px}
+.summary{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:14.5px;color:var(--ink-2)}
+.summary b{color:var(--ink);font-weight:600}
+.summary .alert b{color:var(--crit)}
+.sort{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink-3)}
+.sort select{height:36px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+
+/* Lista de editais */
+.list{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.row{display:grid;grid-template-columns:76px minmax(0,1fr) 150px auto;gap:6px 20px;align-items:center;padding:16px 18px;border-bottom:1px solid var(--line);cursor:pointer}
+.row:last-child{border-bottom:0}
+.row:hover{background:var(--surface-2)}
+.row.sel{background:var(--accent-soft)}
+.due{display:flex;flex-direction:column;align-items:center;justify-content:center;height:68px;border-radius:8px;background:var(--surface-2);color:var(--ink-2)}
+.due b{font-family:var(--f-display);font-size:24px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.due span{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-top:3px}
+.due.crit{background:var(--crit-soft);color:var(--crit)}
+.due.warn{background:var(--warn-soft);color:var(--warn)}
+.r-main{min-width:0}
+.r-top{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;font-size:12.5px;color:var(--ink-3)}
+.portal-tag{font-weight:600;color:var(--ink-2)}
+.new{padding:0 7px;border-radius:4px;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:11px;letter-spacing:.05em;text-transform:uppercase}
+.r-obj{font-weight:600;margin-top:3px;color:var(--ink);overflow-wrap:anywhere}
+.r-org{color:var(--ink-2);font-size:14.5px;overflow-wrap:anywhere}
+.r-val{text-align:right}
+.r-val b{display:block;font-weight:600;font-variant-numeric:tabular-nums}
+.r-val small{font-size:12.5px;color:var(--ink-3)}
+.r-act{display:flex;gap:6px;align-items:center}
+.icon-btn{appearance:none;display:inline-grid;place-items:center;width:40px;height:40px;border:1px solid var(--line-2);border-radius:8px;background:var(--surface);cursor:pointer;color:var(--ink-3)}
+.icon-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8}
+.icon-btn:hover{border-color:var(--accent);color:var(--accent)}
+.icon-btn[aria-pressed="true"]{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
+.icon-btn[aria-pressed="true"] svg{fill:currentColor}
+.empty{padding:44px 20px;text-align:center;color:var(--ink-2)}
+.empty b{display:block;font-family:var(--f-display);font-size:17px;color:var(--ink);margin-bottom:4px}
+
+/* Portais */
+.portals{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.pcard{display:flex;flex-direction:column;gap:10px;padding:16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);min-width:0}
+.pcard h3{font-size:16px}
+.pcard p{font-size:14px;color:var(--ink-2)}
+.pcard .foot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:auto}
+.pcard .foot span{font-size:13.5px;color:var(--ink-3)}
+.pcard .term{font-size:12px;font-weight:600;color:var(--ok)}
+
+/* Painel do edital */
+.shade{position:fixed;inset:0;z-index:40;background:var(--shade)}
+.drawer{position:fixed;top:0;right:0;bottom:0;z-index:41;width:min(460px,100%);display:flex;flex-direction:column;background:var(--surface);border-left:1px solid var(--line);box-shadow:-12px 0 32px rgb(0 0 0 / .14);padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.d-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:20px 22px 16px;border-bottom:1px solid var(--line)}
+.d-head h2{font-size:19px;line-height:1.3}
+.d-head .r-top{margin-bottom:6px}
+.d-body{flex:1 1 auto;overflow-y:auto;padding:18px 22px;display:flex;flex-direction:column;gap:18px}
+.d-due{display:flex;align-items:center;gap:14px;padding:14px;border-radius:8px;background:var(--surface-2)}
+.d-due.crit{background:var(--crit-soft)} .d-due.warn{background:var(--warn-soft)}
+.d-due .due{height:56px;width:62px;background:var(--surface)}
+.d-due p{font-size:14px;color:var(--ink-2)}
+.d-due p b{display:block;color:var(--ink);font-size:15px}
+.dl{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin:0}
+.dl div{min-width:0}
+.dl dt{font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
+.dl dd{margin:2px 0 0;overflow-wrap:anywhere}
+.dl .wide{grid-column:1/-1}
+.checks h3{font-size:14.5px;margin-bottom:8px}
+.checks label{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--line);font-size:14.5px;cursor:pointer}
+.checks input{width:17px;height:17px;margin-top:2px;accent-color:var(--accent)}
+.d-foot{display:flex;gap:8px;padding:14px 22px;border-top:1px solid var(--line)}
+.d-foot .btn{flex:1 1 auto;height:44px}
+
+/* Celular e tablet */
+@media (max-width:960px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .side{min-width:0}
+  .side{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:10px 16px;border-right:0;border-bottom:1px solid var(--line)}
+  .logo small,.side-foot{display:none}
+  .nav{flex-direction:row;overflow-x:auto;flex:1 1 auto;min-width:0}
+  .nav button{width:auto;white-space:nowrap}
+}
+@media (max-width:720px){
+  .row{grid-template-columns:64px minmax(0,1fr);align-items:start}
+  .r-val{grid-column:2;text-align:left}
+  .r-val b{display:inline;margin-right:6px}
+  .r-act{grid-column:1/-1}
+  .r-act .btn{flex:1 1 auto}
+  .due{height:60px}
+  .due b{font-size:21px}
+  .sb-row .btn{flex:1 1 100%}
+}
+@media (prefers-reduced-motion:no-preference){
+  .drawer{animation:slide .2s ease-out}
+  @keyframes slide{from{transform:translateX(24px);opacity:.6}to{transform:none;opacity:1}}
+  .btn,.pf,.nav button,.icon-btn,.row{transition:background-color .15s,border-color .15s,color .15s}
+}
+</style>
+
+<div class="app">
+  <aside class="side">
+    <div class="logo">
+      <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="8" fill="var(--accent)"/>
+        <circle cx="16" cy="16" r="9" fill="none" stroke="var(--accent-ink)" stroke-opacity=".45" stroke-width="1.5"/>
+        <circle cx="16" cy="16" r="4.5" fill="none" stroke="var(--accent-ink)" stroke-opacity=".45" stroke-width="1.5"/>
+        <path d="M16 16 L23.5 9.5" stroke="var(--accent-ink)" stroke-width="2.2" stroke-linecap="round"/>
+        <circle cx="21" cy="19.5" r="1.8" fill="var(--accent-ink)"/>
+      </svg>
+      <div>Radar de Licitações<small>Uso interno</small></div>
+    </div>
+    <nav class="nav" aria-label="Menu">
+      <button type="button" data-view="buscar" aria-current="page">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Buscar editais</button>
+      <button type="button" data-view="salvos">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg>Salvos<span class="c num" id="cSalvos">0</span></button>
+      <button type="button" data-view="portais">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 20V9"/></svg>Portais<span class="c num" id="cPortais">0</span></button>
+    </nav>
+    <p class="side-foot" id="sideFoot"><b>Fonte: PNCP.</b> Confira prazos e anexos no portal antes de participar.</p>
+  </aside>
+
+  <div class="main">
+    <div class="content">
+      <header class="page-h">
+        <div><h1 id="pageTitle">Buscar editais</h1><p id="pageText">Editais com prazo aberto coletados do PNCP, com o portal onde a disputa acontece.</p></div>
+        <div class="refresh">
+          <div class="refresh-row">
+            <span class="updated" id="updated">Carregando a coleta</span>
+            <button type="button" class="btn" id="btnAtualizar" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg><span>Atualizar agora</span></button>
+          </div>
+          <p class="refresh-msg" id="refreshMsg" role="status" hidden></p>
+        </div>
+      </header>
+
+      <section id="vBuscar" class="content" style="padding:0;max-width:none;gap:16px">
+        <form class="searchbox" id="form" role="search">
+          <div class="sb-row">
+            <label class="sb-in"><span class="sr">O que você procura</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+              <input id="q" type="search" autocomplete="off" placeholder="Objeto, órgão, cidade ou número do edital">
+            </label>
+            <button class="btn btn-primary" type="submit">Buscar</button>
+          </div>
+          <div class="sugest" id="sugest">Sugestões:</div>
+        </form>
+        <div class="portal-filter" id="pfilter" role="group" aria-label="Filtrar por portal"></div>
+        <div class="toolbar">
+          <div class="summary" id="summary"></div>
+          <label class="sort">Ordenar por
+            <select id="ord"><option value="prazo">Prazo mais próximo</option><option value="valor">Maior valor</option><option value="novo">Novos primeiro</option></select>
+          </label>
+        </div>
+        <div class="list" id="list"></div>
+      </section>
+
+      <section id="vSalvos" hidden>
+        <div class="list" id="listSalvos"></div>
+      </section>
+
+      <section id="vPortais" hidden>
+        <div class="portals" id="portals"></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="shade" id="shade" hidden></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dTitle" hidden></aside>
+
+<!-- COPIA-INICIO: cópia dos editais para quem abre o link sem entrar no Claude. A rotina de atualização regrava este bloco. -->
+<script type="application/json" id="copia">{"coleta":{"base":"PNCP","coletadaEm":"2026-10-08T13:55:00-03:00"},"editais":[{"id":"06302492000156-2026-33","ebserh":false,"edital":"Edital nº 169/2026","especialidade":"urgencia","fonte":"PNCP","modalidade":"Pregão eletrônico","municipio":"São Paulo","objeto":"Registro de preços para plantão médico presencial e pronto-socorro móvel de urgência e emergência em eventos.","orgao":"Tribunal Regional Eleitoral de São Paulo","prazo":"2026-10-23T13:00:00","processo":null,"publicacao":"2026-10-08","srp":true,"uasg":"070018","uf":"SP","unidade":null,"url":"https://pncp.gov.br/app/editais/06302492000156/2026/33","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"10593919000190-2026-43","ebserh":false,"edital":"Edital de Chamamento Público nº (8571) | 2-0/2026","especialidade":"outros","fonte":"PNCP","modalidade":"Credenciamento","municipio":"Padre Bernardo","objeto":"Credenciamento de pessoas jurídicas para prestação de serviços médicos especializados e serviços farmacêuticos… Objeto completo no PNCP.","orgao":"Fundo Municipal de Saúde","prazo":"2027-09-22T07:00:00","processo":null,"publicacao":"2026-09-14","srp":false,"uasg":null,"uf":"GO","unidade":"Fundo Municipal de Saúde","url":"https://pncp.gov.br/app/editais/10593919000190/2026/43","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"07510376000195-2026-13","ebserh":false,"edital":"Edital nº 09/2026","especialidade":"outros","fonte":"PNCP","modalidade":"Pregão eletrônico","municipio":"Itajaí","objeto":"Registro de preços para serviços médicos especializados aos municípios consorciados.","orgao":"Consórcio Intermunicipal de Saúde da Região da Foz do Rio Itajaí (CIS-AMFRI)","prazo":"2026-10-20T09:00:00","processo":null,"publicacao":"2026-10-05","srp":true,"uasg":null,"uf":"SC","unidade":null,"url":"https://pncp.gov.br/app/editais/07510376000195/2026/13","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"95594800000194-2026-90","ebserh":false,"edital":"Edital nº PCE 32/2026","especialidade":"outros","fonte":"PNCP","modalidade":"Pregão eletrônico","municipio":"Anahy","objeto":"Serviços continuados de clínica geral por hora trabalhada para a Unidade Básica de Saúde.","orgao":"Município de Anahy","prazo":"2026-10-20T08:00:00","processo":null,"publicacao":"2026-09-28","srp":false,"uasg":null,"uf":"PR","unidade":"Fundo Municipal de Saúde","url":"https://pncp.gov.br/app/editais/95594800000194/2026/90","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"13912506000119-2026-78","ebserh":false,"edital":"Edital de Chamamento Público nº 007/2026","especialidade":"plantoes","fonte":"Licitanet","modalidade":"Credenciamento","municipio":"Santa Maria da Vitória","objeto":"Credenciamento para plantões presenciais e de sobreaviso, consultas especializadas, exames, procedimentos e cirurgias eletivas, complementar ao SUS.","orgao":"Município de Santa Maria da Vitória","prazo":"2027-08-17T00:00:00","processo":"PROC. ADM 065/2026","publicacao":"2026-09-15","srp":false,"uasg":null,"uf":"BA","unidade":"Município de Santa Maria da Vitória/BA","url":"https://pncp.gov.br/app/editais/13912506000119/2026/78","valor":21616563},{"id":"13910690000168-2026-131","ebserh":false,"edital":"Edital de Chamamento Público nº 014/2026","especialidade":"plantoes","fonte":"PNCP","modalidade":"Credenciamento","municipio":"Ubaíra","objeto":"Serviços médicos de clínica médica e plantões. Objeto completo no PNCP.","orgao":"Município de Ubaíra","prazo":"2027-09-30T08:00:00","processo":null,"publicacao":"2026-09-28","srp":false,"uasg":null,"uf":"BA","unidade":"Prefeitura Municipal","url":"https://pncp.gov.br/app/editais/13910690000168/2026/131","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"10319517000100-2025-18","ebserh":false,"edital":"Edital de Chamamento Público nº 01/2025","especialidade":"outros","fonte":"Licitanet","modalidade":"Credenciamento","municipio":"Porto da Folha","objeto":"Credenciamento de pessoas jurídicas para serviços médicos especializados, conforme as necessidades da Secretaria Municipal de Saúde.","orgao":"Fundo Municipal de Saúde de Porto da Folha","prazo":"2027-08-27T00:00:00","processo":"01","publicacao":"2025-08-29","srp":false,"uasg":null,"uf":"SE","unidade":"Fundo Municipal de Saúde de Porto da Folha/SE","url":"https://pncp.gov.br/app/editais/10319517000100/2025/18","valor":3212.21},{"id":"13780770000146-2026-70","ebserh":false,"edital":"Edital de Chamamento Público nº 013/2026","especialidade":"outros","fonte":"Licitanet","modalidade":"Credenciamento","municipio":"Boquira","objeto":"Credenciamento de pessoas físicas e jurídicas para serviços médicos nas unidades de saúde do município.","orgao":"Município de Boquira","prazo":"2027-07-06T00:00:00","processo":"063/2026","publicacao":"2026-10-06","srp":false,"uasg":null,"uf":"BA","unidade":null,"url":"https://pncp.gov.br/app/editais/13780770000146/2026/70","valor":141600},{"id":"88814181000130-2026-489","ebserh":false,"edital":"Edital nº PCE 73/2026","especialidade":"plantoes","fonte":"PNCP","modalidade":"Pregão eletrônico","municipio":"Osório","objeto":"Serviços de saúde com equipe multiprofissional em regime de plantões durante o Carnaval, na unidade de saúde de Atlântida Sul.","orgao":"Município de Osório","prazo":"2026-10-27T08:59:00","processo":"467/2026","publicacao":"2026-10-08","srp":false,"uasg":null,"uf":"RS","unidade":"Secretaria Municipal de Saúde","url":"https://pncp.gov.br/app/editais/88814181000130/2026/489","valor":462071.3},{"id":"01613072000177-2026-65","ebserh":false,"edital":"Edital de Chamamento Público nº 000010/2026","especialidade":"outros","fonte":"PNCP","modalidade":"Credenciamento","municipio":"José Raydan","objeto":"Credenciamento de prestadores de serviços especializados de internação psiquiátrica integral para pacientes do município.","orgao":"Município de José Raydan","prazo":"2027-10-05T23:59:59","processo":null,"publicacao":"2026-10-06","srp":false,"uasg":null,"uf":"MG","unidade":null,"url":"https://pncp.gov.br/app/editais/01613072000177/2026/65","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"06916689000185-2027-1","ebserh":false,"edital":"Edital de Chamamento Público nº 1/2027","especialidade":"outros","fonte":"PNCP","modalidade":"Credenciamento","municipio":"Campinas","objeto":"Credenciamento de pessoas jurídicas para atendimento hospitalar aos beneficiários do FAS e do FASC.","orgao":"Instituto de Previdência Social do Município de Campinas (CAMPREV)","prazo":"2027-01-18T17:00:00","processo":null,"publicacao":"2026-10-07","srp":false,"uasg":"931045","uf":"SP","unidade":null,"url":"https://pncp.gov.br/app/editais/06916689000185/2027/1","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"05853163000130-2027-16","ebserh":false,"edital":"Edital de Chamamento Público nº 120/2027","especialidade":"outros","fonte":"PNCP","modalidade":"Credenciamento","municipio":"Marabá","objeto":"Contratação de prestadores de serviços médicos especializados em oftalmologia, na modalidade ambulatorial e de urgência… Objeto completo no PNCP.","orgao":"Município de Marabá","prazo":"2027-09-10T18:00:00","processo":null,"publicacao":"2026-09-03","srp":false,"uasg":"927495","uf":"PA","unidade":"Fundo Municipal de Saúde de Marabá - PA","url":"https://pncp.gov.br/app/editais/05853163000130/2027/16","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"47018676000176-2026-402","ebserh":false,"edital":"Edital nº 75/2026","especialidade":"plantoes","fonte":"Compras.gov.br","modalidade":"Pregão eletrônico","municipio":"Campinas","objeto":"Serviços continuados por meio de plantões presenciais para a Unidade de Alta Complexidade em Oncologia (UNACON) da Rede Mário Gatti.","orgao":"Rede Municipal Dr. Mário Gatti de Urgência, Emergência e Hospitalar","prazo":"2026-10-15T09:00:00","processo":"HMMG.2025.00004010-16","publicacao":"2026-09-29","srp":false,"uasg":"930324","uf":"SP","unidade":null,"url":"https://pncp.gov.br/app/editais/47018676000176/2026/402","valor":null,"valorNota":"Não divulgado no PNCP"},{"id":"18307835000154-2026-168","ebserh":false,"edital":"Edital de Chamamento Público nº 1023/2026","especialidade":"outros","fonte":"PNCP","modalidade":"Credenciamento","municipio":"Itabirito","objeto":"Credenciamento de pessoas jurídicas para realização de exames de imagem… Objeto completo no PNCP.","orgao":"Município de Itabirito","prazo":"2027-09-22T18:00:00","processo":null,"publicacao":"2026-09-21","srp":false,"uasg":"984637","uf":"MG","unidade":"Prefeitura Municipal de Itabirito - MG","url":"https://pncp.gov.br/app/editais/18307835000154/2026/168","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"22681423000157-2026-98","ebserh":false,"edital":"Edital de Chamamento Público nº 007/2026","especialidade":"outros","fonte":"PNCP","modalidade":"Credenciamento","municipio":"Francisco Sá","objeto":"Contratação de pessoa jurídica ou física para prestação de diversos serviços médicos, em atendimento à demanda da Secretaria… Objeto completo no PNCP.","orgao":"Município de Francisco Sá","prazo":"2027-09-17T09:00:00","processo":null,"publicacao":"2026-09-11","srp":false,"uasg":null,"uf":"MG","unidade":"Município de Francisco Sá","url":"https://pncp.gov.br/app/editais/22681423000157/2026/98","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"11022597001325-2026-299","ebserh":false,"edital":"Edital nº 2/2026","especialidade":"hemodialise","fonte":"PNCP","modalidade":"Pregão eletrônico","municipio":"Recife","objeto":"Registro de preços para serviços de nefrologia (hemodiálise e DPI) a pacientes adultos e pediátricos no Hospital Universitário Oswaldo Cruz.","orgao":"Fundação Universidade de Pernambuco","prazo":"2026-10-14T08:59:00","processo":"0240.2026.CPL.HUOC.PE.0054.HUO","publicacao":"2026-07-22","srp":true,"uasg":"926940","uf":"PE","unidade":"Hospital Universitário Oswaldo Cruz","url":"https://pncp.gov.br/app/editais/11022597001325/2026/299","valor":2068564.21},{"id":"11186410000195-2026-12","ebserh":false,"edital":"Edital de Chamamento Público nº 020/2026","especialidade":"outros","fonte":"Portal de Compras Públicas","modalidade":"Credenciamento","municipio":"Belterra","objeto":"Credenciamento de empresas especializadas em serviços médicos para a realização de cirurgias… Objeto completo no PNCP.","orgao":"Fundo Municipal de Saúde de Belterra","prazo":"2027-09-21T08:59:00","processo":null,"publicacao":"2026-09-18","srp":false,"uasg":null,"uf":"PA","unidade":"Secretaria Municipal de Saúde de Belterra","url":"https://pncp.gov.br/app/editais/11186410000195/2026/12","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"08088254000115-2026-124","ebserh":false,"edital":"Edital nº 44/2026","especialidade":"outros","fonte":"PNCP","modalidade":"Pregão eletrônico","municipio":"Carnaúba dos Dantas","objeto":"Contratação de empresa especializada para prestação de serviços de saúde por meio de profissionais. Objeto completo no PNCP.","orgao":"Município de Carnaúba dos Dantas","prazo":"2026-10-16T08:30:00","processo":null,"publicacao":"2026-09-18","srp":false,"uasg":null,"uf":"RN","unidade":null,"url":"https://pncp.gov.br/app/editais/08088254000115/2026/124","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"00236968000111-2026-141","ebserh":false,"edital":"Edital de Chamamento Público nº 6/2026","especialidade":"outros","fonte":"PNCP","modalidade":"Credenciamento","municipio":"Nova Crixás","objeto":"Credenciamento de pessoas físicas e jurídicas da área da saúde, sem vínculo empregatício, para serviços profissionais ao Sistema Municipal de Saúde.","orgao":"Município de Nova Crixás","prazo":"2026-12-31T17:00:00","processo":"6","publicacao":"2026-10-08","srp":false,"uasg":null,"uf":"GO","unidade":"Fundo Municipal de Saúde","url":"https://pncp.gov.br/app/editais/00236968000111/2026/141","valor":225730.24},{"id":"06138911000166-2026-57","ebserh":false,"edital":"Edital de Chamamento Público nº 03/2026","especialidade":"outros","fonte":"Licitanet","modalidade":"Credenciamento","municipio":"Tuntum","objeto":"Credenciamento de pessoas físicas ou jurídicas para prestação de serviços médicos ao município de Tuntum/MA.","orgao":"Município de Tuntum","prazo":"2027-01-18T00:00:00","processo":"03","publicacao":"2026-07-16","srp":false,"uasg":null,"uf":"MA","unidade":"Município de Tuntum/MA","url":"https://pncp.gov.br/app/editais/06138911000166/2026/57","valor":9356352},{"id":"08927915000159-2026-32","ebserh":false,"edital":"Edital de Chamamento Público nº 5/2026","especialidade":"plantoes","fonte":"Portal de Compras Públicas","modalidade":"Credenciamento","municipio":"Bananeiras","objeto":"Credenciamento de empresas para serviços médicos, incluindo plantões e especialidades, na rede municipal e no Hospital Municipal Dr. Clovis Bezerra.","orgao":"Município de Bananeiras","prazo":"2027-10-05T12:00:00","processo":"260706CD00005","publicacao":"2026-10-02","srp":false,"uasg":null,"uf":"PB","unidade":"Prefeitura Municipal","url":"https://pncp.gov.br/app/editais/08927915000159/2026/32","valor":4025853.16},{"id":"15126437000305-2026-4098","ebserh":true,"edital":"Aviso de Contratação Direta nº 2/2026","especialidade":"outros","fonte":"Compras.gov.br","modalidade":"Dispensa","municipio":"Belo Horizonte","objeto":"Exames de ressonância magnética para pacientes internados e do pronto-socorro do HC-UFMG durante a indisponibilidade temporária da unidade de imagem.","orgao":"Empresa Brasileira de Serviços Hospitalares (EBSERH)","prazo":"2026-10-13T08:00:00","processo":"23537.009971/2026-18","publicacao":"2026-10-07","srp":false,"uasg":"155021","uf":"MG","unidade":"Hospital das Clínicas de Minas Gerais","url":"https://pncp.gov.br/app/editais/15126437000305/2026/4098","valor":null,"valorNota":"Não divulgado no PNCP"},{"id":"01612499000150-2026-105","ebserh":false,"edital":"Edital de Chamamento Público nº 7/2026","especialidade":"outros","fonte":"PNCP","modalidade":"Credenciamento","municipio":"Nova Porteirinha","objeto":"Credenciamento de clínicas para a prestação de serviços médicos, compostos de exames de imagens, consultas e procedimentos… Objeto completo no PNCP.","orgao":"Município de Nova Porteirinha","prazo":"2027-09-16T12:00:00","processo":null,"publicacao":"2026-09-16","srp":false,"uasg":null,"uf":"MG","unidade":"Unidade Única","url":"https://pncp.gov.br/app/editais/01612499000150/2026/105","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"01987787000190-2026-7","ebserh":false,"edital":"Edital de Chamamento Público nº 2/2026","especialidade":"outros","fonte":"PNCP","modalidade":"Credenciamento","municipio":"Nonoai","objeto":"Credenciamento de pessoas jurídicas para prestação de serviços de telessaúde, usando algoritmos clínicos e inteligência… Objeto completo no PNCP.","orgao":"Consórcio Intermunicipal de Saúde","prazo":"2030-09-28T00:00:00","processo":null,"publicacao":"2026-09-18","srp":false,"uasg":null,"uf":"RS","unidade":"CONISA","url":"https://pncp.gov.br/app/editais/01987787000190/2026/7","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"24772287000136-2026-83","ebserh":false,"edital":"Edital de Chamamento Público nº 007/2026","especialidade":"outros","fonte":"PNCP","modalidade":"Credenciamento","municipio":"Campo Novo do Parecis","objeto":"Credenciamento de pessoas jurídicas especializadas na prestação de serviços médico-hospitalares… Objeto completo no PNCP.","orgao":"Município de Campo Novo do Parecis","prazo":"2028-05-12T08:00:00","processo":null,"publicacao":"2026-05-12","srp":false,"uasg":null,"uf":"MT","unidade":"Prefeitura Municipal de Campo Novo do Parecis - MT","url":"https://pncp.gov.br/app/editais/24772287000136/2026/83","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"10417698000107-2026-15","ebserh":false,"edital":"Edital de Chamamento Público nº 003/2026","especialidade":"urgencia","fonte":"PNCP","modalidade":"Credenciamento","municipio":"Itambé","objeto":"Credenciamento de médicos plantonistas (12 e 24 horas) para urgência e emergência na Unidade Mista de Saúde Dr. Hercílio Moraes Borba.","orgao":"Fundo Municipal de Saúde de Itambé","prazo":"2027-10-01T16:00:00","processo":"027/2026","publicacao":"2026-10-01","srp":false,"uasg":null,"uf":"PE","unidade":null,"url":"https://pncp.gov.br/app/editais/10417698000107/2026/15","valor":2429309},{"id":"17888082000155-2026-211","ebserh":false,"edital":"Edital nº 70/2026","especialidade":"urgencia","fonte":"PNCP","modalidade":"Pregão eletrônico","municipio":"Cristais","objeto":"Serviços médico-hospitalares complementares no pronto atendimento e na clínica médica do município.","orgao":"Município de Cristais","prazo":"2026-10-23T09:01:00","processo":null,"publicacao":"2026-10-07","srp":false,"uasg":null,"uf":"MG","unidade":"Secretaria de Administração e Planejamento","url":"https://pncp.gov.br/app/editais/17888082000155/2026/211","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"08087561000181-2026-219","ebserh":false,"edital":"Edital de Chamamento Público nº 10/2026","especialidade":"plantoes","fonte":"PNCP","modalidade":"Credenciamento","municipio":"Parelhas","objeto":"Serviços médicos especializados em regime de plantões de 24 horas para a Prefeitura de Parelhas.","orgao":"Município de Parelhas","prazo":"2027-10-08T08:00:00","processo":"6244","publicacao":"2026-10-07","srp":false,"uasg":null,"uf":"RN","unidade":"Prefeitura","url":"https://pncp.gov.br/app/editais/08087561000181/2026/219","valor":10426210.4},{"id":"15072663000199-2026-135","ebserh":false,"edital":"Edital nº 050/2026","especialidade":"outros","fonte":"Portal de Compras Públicas","modalidade":"Pregão eletrônico","municipio":"Juara","objeto":"Registro de preços para serviços médicos em clínica geral nas UBS ESF Paranorte, ESF Alvorada, ESF Porto Seguro, ESF Centro de Saúde e UCT.","orgao":"Município de Juara","prazo":"2026-10-21T09:00:00","processo":"050/2026","publicacao":"2026-10-07","srp":true,"uasg":null,"uf":"MT","unidade":"Divisão de Licitações","url":"https://pncp.gov.br/app/editais/15072663000199/2026/135","valor":1574511},{"id":"14814139000183-2026-12","ebserh":false,"edital":"Edital de Chamamento Público nº 6/2026","especialidade":"outros","fonte":"PNCP","modalidade":"Credenciamento","municipio":"Curitiba","objeto":"Credenciamento de empresas para prestação de serviços médicos especializados para as unidades de negócio da Fundação Estatal… Objeto completo no PNCP.","orgao":"Fundação Estatal de Atenção à Saúde (FEAS)","prazo":"2036-01-18T09:25:00","processo":null,"publicacao":"2026-01-19","srp":false,"uasg":"928285","uf":"PR","unidade":"Fundação Estatal de Atenção à Saúde - PR","url":"https://pncp.gov.br/app/editais/14814139000183/2026/12","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"47018676000176-2026-418","ebserh":false,"edital":"Edital nº 82/2026","especialidade":"urgencia","fonte":"PNCP","modalidade":"Pregão eletrônico","municipio":"Campinas","objeto":"Serviços médicos e multiprofissionais presenciais e ininterruptos, suplementares, para as UPAs e o SAMU 192 de Campinas.","orgao":"Rede Municipal Dr. Mário Gatti de Urgência, Emergência e Hospitalar","prazo":"2026-11-03T09:00:00","processo":null,"publicacao":"2026-10-08","srp":false,"uasg":"930324","uf":"SP","unidade":null,"url":"https://pncp.gov.br/app/editais/47018676000176/2026/418","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"13912506000119-2026-11","ebserh":false,"edital":"Edital de Chamamento Público nº 002/2026","especialidade":"outros","fonte":"Licitanet","modalidade":"Credenciamento","municipio":"Santa Maria da Vitória","objeto":"Credenciamento de pessoas jurídicas para consultas médicas especializadas e exames diagnósticos, em caráter complementar ao SUS.","orgao":"Município de Santa Maria da Vitória","prazo":"2027-02-02T00:00:00","processo":"PROC. ADM. 013/2026","publicacao":"2026-02-02","srp":false,"uasg":null,"uf":"BA","unidade":"Município de Santa Maria da Vitória/BA","url":"https://pncp.gov.br/app/editais/13912506000119/2026/11","valor":6036063}]}</script>
+<!-- COPIA-FIM -->
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const norm = s => String(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const brl = new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL",maximumFractionDigits:0});
+  const brlC = new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL",notation:"compact",maximumFractionDigits:1});
+  const fData = new Intl.DateTimeFormat("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",timeZone:"America/Sao_Paulo"});
+  const fDia = new Intl.DateTimeFormat("pt-BR",{day:"2-digit",month:"short",timeZone:"America/Sao_Paulo"});
+  const fCurta = new Intl.DateTimeFormat("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",timeZone:"America/Sao_Paulo"});
+  const fHora = new Intl.DateTimeFormat("pt-BR",{hour:"2-digit",minute:"2-digit",timeZone:"America/Sao_Paulo"});
+  const DIA = 86400000;
+
+  // Portais. Só o PNCP aceita o termo direto na URL; os demais abrem a página de busca pública.
+  const PORTAIS = [
+    {id:"PNCP", nome:"PNCP", url:q => "https://pncp.gov.br/app/editais?" + (q ? "q=" + encodeURIComponent(q) + "&" : "") + "status=recebendo_proposta&pagina=1", desc:"Portal Nacional de Contratações Públicas. Reúne os editais da Lei 14.133.", termo:true},
+    {id:"Compras.gov.br", nome:"Compras.gov.br", url:() => "https://www.gov.br/compras/pt-br", desc:"Compras do governo federal."},
+    {id:"BLL", nome:"BLL Compras", url:() => "https://bllcompras.com/Process/ProcessSearchPublic", desc:"Pregões de municípios e consórcios."},
+    {id:"Licitações-e", nome:"Licitações-e (BB)", url:() => "https://www.licitacoes-e.com.br/aop/index.jsp", desc:"Plataforma do Banco do Brasil."},
+    {id:"Portal de Compras Públicas", nome:"Portal de Compras Públicas", url:() => "https://www.portaldecompraspublicas.com.br/processos", desc:"Processos de estados e municípios."},
+    {id:"BNC", nome:"BNC Compras", url:() => "https://bnccompras.com/Process/ProcessSearchPublic", desc:"Bolsa Nacional de Compras."},
+    {id:"Licitanet", nome:"Licitanet", url:() => "https://licitanet.com.br/sessao-publica", desc:"Sessões públicas de pregões municipais."},
+    {id:"Licitar Digital", nome:"Licitar Digital", url:() => "https://app2.licitardigital.com.br/pesquisa", desc:"Pesquisa de processos municipais."},
+    {id:"Compras AM", nome:"Compras AM (e-Compras)", url:() => "https://www.e-compras.am.gov.br/publico/", desc:"Compras do Governo do Amazonas."}
+  ];
+  const portal = id => PORTAIS.find(p => p.id === id) || {id, nome:id || "Outro portal", url:() => "", desc:""};
+
+  const store = { get(k){ try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }, set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+  const S = {view:"buscar", fonte:"", star:new Set(store.get("rl_star_real") || []), sel:null, checks:store.get("rl_checks_real") || {}, lastFocus:null, items:[], coleta:null, phase:"loading", db:null, mcp:null, triggerId:"", firing:false, nota:"", notaErr:false, copia:false};
+  const h = (location.hash || "").slice(1); if (["buscar","salvos","portais"].includes(h)) S.view = h;
+
+  // Datas do PNCP vêm no horário de Brasília, sem fuso
+  const toDate = s => { if (!s) return null; const d = new Date(/[zZ]|[+-]\d\d:\d\d$/.test(s) ? s : s + "-03:00"); return isNaN(d) ? null : d; };
+  const abertos = () => S.items.filter(it => it.prazo && it.prazo > Date.now());
+  const dias = it => Math.max(0, Math.ceil((it.prazo - Date.now()) / DIA));
+  const nivel = it => { const n = dias(it); return n <= 7 ? "crit" : n <= 15 ? "warn" : ""; };
+  const casa = (it, q) => !q || norm(q).split(/\s+/).filter(Boolean).every(w => it.busca.includes(w.length > 4 ? w.replace(/(oes|aes|s)$/,"") : w));
+  const urlEdital = it => it.url || portal(it.fonte).url(it.edital);
+  const valorTxt = it => it.valor > 0 ? brl.format(it.valor) : (it.valorNota || "Não divulgado");
+  const ICON_STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg>';
+
+  function row(it){
+    const n = dias(it), salvo = S.star.has(it.id);
+    return '<div class="row' + (S.sel === it.id ? " sel" : "") + '" data-row="' + esc(it.id) + '" tabindex="0" aria-label="Abrir resumo: ' + esc(it.objeto) + '">' +
+      '<div class="due ' + nivel(it) + '" title="Prazo para propostas"><b>' + n + "</b><span>" + (n === 1 ? "dia" : "dias") + "</span></div>" +
+      '<div class="r-main"><div class="r-top"><span class="portal-tag">' + esc(portal(it.fonte).nome) + "</span><span>" + esc(it.modalidade) + "</span>" + (it.edital ? '<span class="mono">' + esc(it.edital) + "</span>" : "") + (it.novo ? '<span class="new">Novo</span>' : "") + "</div>" +
+        '<div class="r-obj">' + esc(it.objeto) + '</div><div class="r-org">' + esc(it.orgao) + " · " + esc(it.municipio) + "/" + esc(it.uf) + "</div></div>" +
+      '<div class="r-val"><b' + (it.valor > 0 ? "" : ' class="muted" style="font-weight:500"') + ">" + esc(valorTxt(it)) + "</b><small>até " + fDia.format(it.prazo) + "</small></div>" +
+      '<div class="r-act"><a class="btn btn-primary" href="' + esc(urlEdital(it)) + '" target="_blank" rel="noopener" data-stop>Ver edital ↗</a>' +
+        '<button type="button" class="icon-btn" data-star="' + esc(it.id) + '" aria-pressed="' + salvo + '" aria-label="' + (salvo ? "Remover dos salvos" : "Salvar edital") + '" title="' + (salvo ? "Salvo" : "Salvar") + '">' + ICON_STAR + "</button></div>" +
+    "</div>";
+  }
+  const vazio = (t, s) => '<div class="empty"><b>' + t + "</b>" + s + "</div>";
+  function vazioBase(){
+    return S.phase === "loading" ? vazio("Carregando editais do PNCP", "A lista mostra órgão, objeto, prazo e valor de cada edital da última coleta.")
+      : S.phase === "offline" ? vazio("A base do radar não abriu", "Entre na sua conta do Claude e recarregue a página.")
+      : vazio("Nenhum edital com prazo aberto", "A última coleta não tem editais com prazo futuro. Peça uma nova coleta ao Claude.");
+  }
+
+  function renderBuscar(){
+    const q = $("q").value.trim(), base = abertos();
+    const porTermo = base.filter(it => casa(it, q));
+    $("pfilter").innerHTML = '<button type="button" class="pf" data-fonte="" aria-pressed="' + !S.fonte + '">Todos os portais <span class="n">' + porTermo.length + "</span></button>" +
+      PORTAIS.map(p => '<button type="button" class="pf" data-fonte="' + esc(p.id) + '" aria-pressed="' + (S.fonte === p.id) + '">' + esc(p.nome) + ' <span class="n">' + porTermo.filter(it => it.fonte === p.id).length + "</span></button>").join("");
+    const o = $("ord").value;
+    const lista = porTermo.filter(it => !S.fonte || it.fonte === S.fonte)
+      .sort((a,b) => o === "valor" ? (b.valor || 0) - (a.valor || 0) : o === "novo" ? (b.pub || 0) - (a.pub || 0) || (a.prazo - b.prazo) : a.prazo - b.prazo);
+    const sete = lista.filter(it => dias(it) <= 7).length, comValor = lista.filter(it => it.valor > 0), total = comValor.reduce((s,it) => s + it.valor, 0);
+    $("summary").innerHTML = S.phase !== "ready" ? "" : "<span><b class=\"num\">" + lista.length + "</b> " + (lista.length === 1 ? "edital com prazo aberto" : "editais com prazo aberto") + (q ? " para “" + esc(q) + "”" : "") + "</span>" +
+      (sete ? '<span class="alert"><b class="num">' + sete + "</b> " + (sete === 1 ? "vence" : "vencem") + " em até 7 dias</span>" : "") +
+      (comValor.length ? '<span><b class="num">' + brlC.format(total) + "</b> estimados em " + comValor.length + " com valor divulgado</span>" : "");
+    $("list").innerHTML = !base.length ? vazioBase() : lista.length ? lista.map(row).join("")
+      : vazio("Nenhum edital nesta coleta", "A coleta guarda só parte do PNCP. Busque direto em " + (S.fonte ? '<a href="' + esc(portal(S.fonte).url(q)) + '" target="_blank" rel="noopener">' + esc(portal(S.fonte).nome) + " ↗</a>" : '<a href="' + esc(PORTAIS[0].url(q)) + '" target="_blank" rel="noopener">PNCP ↗</a>') + ".");
+  }
+  function renderSalvos(){
+    const lista = abertos().filter(it => S.star.has(it.id)).sort((a,b) => a.prazo - b.prazo);
+    $("listSalvos").innerHTML = lista.length ? lista.map(row).join("") : S.phase !== "ready" ? vazioBase() : vazio("Nenhum edital salvo", "Na busca, toque no ícone ao lado de Ver edital para guardar o edital aqui.");
+  }
+  function renderPortais(){
+    const q = $("q").value.trim(), base = abertos();
+    $("portals").innerHTML = PORTAIS.map(p => {
+      const n = base.filter(it => it.fonte === p.id).length;
+      return '<div class="pcard"><h3>' + esc(p.nome) + "</h3><p>" + esc(p.desc) + "</p>" + (p.termo ? '<span class="term">Abre já com o termo buscado</span>' : "") +
+        '<div class="foot"><span class="num">' + n + (n === 1 ? " edital" : " editais") + ' no radar</span><a class="btn" href="' + esc(p.url(q)) + '" target="_blank" rel="noopener">Abrir portal ↗</a></div></div>';
+    }).join("");
+  }
+
+  function renderDrawer(){
+    const it = S.items.find(x => x.id === S.sel), d = $("drawer");
+    $("shade").hidden = d.hidden = !it;
+    if (!it) return;
+    const n = dias(it), salvo = S.star.has(it.id), ck = S.checks[it.id] || [];
+    const itens = ["Li o termo de referência e o objeto","Confirmei os documentos de habilitação","Verifiquei retificações e esclarecimentos","Anotei a data da sessão e o prazo de impugnação"];
+    const campos = [["Órgão", esc(it.orgao) + (it.unidade ? '<br><span class="muted">' + esc(it.unidade) + "</span>" : ""), "wide"],["Local", esc(it.municipio) + "/" + esc(it.uf)],
+      ["Valor estimado", it.valor > 0 ? '<b class="num">' + brl.format(it.valor) + "</b>" : '<span class="muted">' + esc(valorTxt(it)) + "</span>"],
+      ["Modalidade", esc(it.modalidade) + (it.srp ? " · registro de preços" : "")],["Processo", it.processo ? '<span class="mono">' + esc(it.processo) + "</span>" : "—"],
+      ["Publicado em", it.pub ? fCurta.format(it.pub) : "—"],["Portal de origem", esc(portal(it.fonte).nome)]];
+    if (it.uasg) campos.push(["UASG", '<span class="mono">' + esc(it.uasg) + "</span>"]);
+    d.innerHTML = '<div class="d-head"><div style="min-width:0"><div class="r-top"><span class="portal-tag">' + esc(portal(it.fonte).nome) + "</span>" + (it.edital ? '<span class="mono">' + esc(it.edital) + "</span>" : "") + "</div>" +
+        '<h2 id="dTitle">' + esc(it.objeto) + "</h2></div>" +
+        '<button type="button" class="icon-btn" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>' +
+      '<div class="d-body">' +
+        '<div class="d-due ' + nivel(it) + '"><div class="due ' + nivel(it) + '"><b>' + n + "</b><span>" + (n === 1 ? "dia" : "dias") + "</span></div><p><b>Propostas até " + esc(fData.format(it.prazo)) + "</b>Horário de Brasília, como informado no PNCP. Confirme situação e retificações no edital.</p></div>" +
+        '<dl class="dl">' + campos.map(([k,v,c]) => '<div class="' + (c || "") + '"><dt>' + k + "</dt><dd>" + v + "</dd></div>").join("") + "</dl>" +
+        '<div class="checks"><h3>Conferência do edital</h3>' + itens.map((t,i) => '<label><input type="checkbox" id="ck-' + esc(it.id) + "-" + i + '" data-ck="' + i + '"' + (ck.includes(i) ? " checked" : "") + "><span>" + t + "</span></label>").join("") + "</div>" +
+      "</div>" +
+      '<div class="d-foot"><a class="btn btn-primary" href="' + esc(urlEdital(it)) + '" target="_blank" rel="noopener">Ver edital no PNCP ↗</a><button type="button" class="btn" data-star="' + esc(it.id) + '" aria-pressed="' + salvo + '">' + (salvo ? "Salvo" : "Salvar") + "</button></div>";
+  }
+
+  function renderStatus(){
+    const el = $("updated"), c = toDate(S.coleta && S.coleta.coletadaEm), foot = $("sideFoot");
+    const run = rodando();
+    el.classList.toggle("ok", S.phase === "ready" && !!S.items.length && !run);
+    el.classList.toggle("run", run);
+    if (S.phase === "loading") el.textContent = "Carregando a coleta";
+    else if (S.phase === "offline") el.textContent = "Base indisponível";
+    else if (S.copia) el.textContent = "Cópia salva em " + (c ? fCurta.format(c) + ", " + fHora.format(c) : "data não informada");
+    else if (run) el.textContent = "Buscando editais no PNCP";
+    else if (!S.items.length) el.textContent = "Nenhuma coleta registrada";
+    else el.textContent = "Atualizado " + (c ? ha(c) + " · " + fCurta.format(c) + ", " + fHora.format(c) : "em data não informada");
+    const b = $("btnAtualizar"), msg = $("refreshMsg"), st = S.coleta && S.coleta.status;
+    b.hidden = S.copia;
+    b.disabled = !S.db || S.firing || run;
+    b.setAttribute("aria-busy", String(S.firing || run));
+    b.querySelector("span").textContent = run ? "Atualizando…" : S.firing ? "Iniciando…" : "Atualizar agora";
+    const ini = toDate(S.coleta && S.coleta.iniciadaEm);
+    const texto = S.copia ? "Você está vendo uma cópia salva da última coleta. Entre na sua conta do Claude para ver a versão ao vivo e atualizar." : S.nota ? S.nota
+      : run ? "Busca começou às " + (ini ? fHora.format(ini) : "agora") + ". Leva de 5 a 10 minutos e a lista se atualiza sozinha."
+      : st === "falhou" ? "A última atualização não terminou. " + (S.coleta.mensagem || "")
+      : st === "concluida" && S.coleta.mensagem ? S.coleta.mensagem : "";
+    msg.hidden = !texto; msg.textContent = texto;
+    msg.classList.toggle("err", !S.copia && (S.notaErr || (!S.nota && st === "falhou")));
+    const vencidos = S.items.length - abertos().length;
+    foot.innerHTML = "<b>Fonte: PNCP.</b> " + (S.phase === "ready" && S.items.length ? S.items.length + " editais na coleta" + (vencidos > 0 ? ", " + vencidos + " com prazo encerrado ocultos" : "") + ". " : "") + "Confira prazos e anexos no portal antes de participar.";
+  }
+
+  // Atualização: o botão dispara a rotina que consulta o PNCP e grava na base da página
+  function rodando(){
+    const c = S.coleta; if (!c || c.status !== "processando") return false;
+    const t = toDate(c.iniciadaEm); return !!t && Date.now() - t < 20 * 60000;
+  }
+  function ha(d){
+    const m = Math.round((Date.now() - d) / 60000);
+    return m < 1 ? "agora há pouco" : m < 60 ? "há " + m + " min" : m < 1440 ? "há " + Math.floor(m / 60) + " h" : "há " + Math.floor(m / 1440) + (m < 2880 ? " dia" : " dias");
+  }
+  function erroMsg(c){
+    return c === "not_in_manifest" || c === "not_granted" || c === "approval_required" || c === "consent_required" ? "Para atualizar, permita o conector Claude Code Remote nesta página e toque em Atualizar agora de novo."
+      : c === "server_not_connected" || c === "selection_required" || c === "server_not_found" ? "O conector Claude Code Remote não está disponível na sua conta. Peça a quem administra o radar para atualizar."
+      : c === "needs_reauth" ? "Reconecte o Claude Code Remote em Configurações, Conectores, e tente de novo."
+      : c === "blocked_by_policy" ? "A política da sua organização bloqueia a atualização por esta página."
+      : c === "capability_disabled" ? "Esta visualização não consegue atualizar. Abra o radar no app do Claude."
+      : c === "tool_error" ? "A rotina de atualização não foi encontrada na sua conta. Só quem criou o radar consegue atualizar."
+      : c === "server_unavailable" ? "O serviço não respondeu agora. Tente de novo em alguns minutos."
+      : "Não consegui iniciar a atualização agora. Tente de novo em alguns minutos.";
+  }
+  async function atualizar(){
+    if (S.firing || rodando()) return;
+    if (!S.triggerId) { S.nota = "A atualização automática ainda não foi configurada."; S.notaErr = true; return render(); }
+    S.firing = true; S.nota = ""; S.notaErr = false; render();
+    try {
+      if (!S.mcp) S.mcp = await window.claude.use("mcp");
+      if (!S.mcp) throw {code:"capability_disabled"};
+      await S.mcp.callTool("Claude Code Remote", "fire_trigger", {trigger_id: S.triggerId, text: "Atualização pedida pelo botão do site em " + new Date().toISOString() + "."});
+      S.nota = "Atualização iniciada. Em alguns minutos os editais novos aparecem aqui.";
+    } catch (e) { S.nota = erroMsg(e && e.code); S.notaErr = true; }
+    S.firing = false; render();
+  }
+
+  const TITULOS = {buscar:["Buscar editais","Editais com prazo aberto coletados do PNCP, com o portal onde a disputa acontece."], salvos:["Salvos","Editais que você guardou para analisar. Ficam salvos neste navegador."], portais:["Portais","Os portais de disputa. Abra qualquer um direto daqui."]};
+  function render(){
+    document.querySelectorAll("[data-view]").forEach(b => b.dataset.view === S.view ? b.setAttribute("aria-current","page") : b.removeAttribute("aria-current"));
+    $("pageTitle").textContent = TITULOS[S.view][0]; $("pageText").textContent = TITULOS[S.view][1];
+    $("vBuscar").hidden = S.view !== "buscar"; $("vSalvos").hidden = S.view !== "salvos"; $("vPortais").hidden = S.view !== "portais";
+    $("cSalvos").textContent = abertos().filter(it => S.star.has(it.id)).length; $("cPortais").textContent = PORTAIS.length;
+    renderStatus();
+    if (S.view === "buscar") renderBuscar(); else if (S.view === "salvos") renderSalvos(); else renderPortais();
+    renderDrawer();
+  }
+  function abrir(id){ S.lastFocus = document.activeElement; S.sel = id; render(); const c = $("drawer").querySelector("[data-close]"); if (c) c.focus(); }
+  function fechar(){ S.sel = null; render(); if (S.lastFocus && document.contains(S.lastFocus)) S.lastFocus.focus(); }
+
+  function carregar(docs){
+    const ref = toDate(S.coleta && S.coleta.coletadaEm) || new Date();
+    S.items = docs.map(d => {
+      const it = Object.assign({}, d);
+      it.prazo = toDate(d.prazo);
+      it.pub = d.publicacao ? toDate(d.publicacao.length === 10 ? d.publicacao + "T12:00:00" : d.publicacao) : null;
+      it.novo = !!it.pub && ref - it.pub <= 2 * DIA;
+      it.busca = norm([d.orgao, d.unidade, d.objeto, d.edital, d.processo, d.municipio, d.uf, d.modalidade, d.fonte, d.uasg].join(" "));
+      return it;
+    });
+    S.phase = "ready";
+    render();
+  }
+
+  $("sugest").insertAdjacentHTML("beforeend", ["hemodiálise","plantão","credenciamento","urgência","UTI"].map(t => '<button type="button" data-sug="' + esc(t) + '">' + esc(t) + "</button>").join(""));
+
+  document.addEventListener("click", ev => {
+    const v = ev.target.closest("[data-view]"); if (v) { S.view = v.dataset.view; try { history.replaceState(null, "", "#" + S.view); } catch {} return render(); }
+    const st = ev.target.closest("[data-star]");
+    if (st) { const id = st.dataset.star; S.star.has(id) ? S.star.delete(id) : S.star.add(id); store.set("rl_star_real", [...S.star]); return render(); }
+    if (ev.target.closest("[data-stop]")) return;
+    const f = ev.target.closest("[data-fonte]"); if (f) { S.fonte = f.dataset.fonte; return render(); }
+    const sg = ev.target.closest("[data-sug]"); if (sg) { $("q").value = sg.dataset.sug; return render(); }
+    if (ev.target.closest("[data-close]") || ev.target.id === "shade") return fechar();
+    const r = ev.target.closest("[data-row]"); if (r) return abrir(r.dataset.row);
+  });
+  document.addEventListener("change", ev => {
+    const c = ev.target.closest("[data-ck]"); if (!c || !S.sel) return;
+    const arr = new Set(S.checks[S.sel] || []); c.checked ? arr.add(+c.dataset.ck) : arr.delete(+c.dataset.ck);
+    S.checks[S.sel] = [...arr]; store.set("rl_checks_real", S.checks);
+  });
+  document.addEventListener("keydown", ev => {
+    if (ev.key === "Escape" && S.sel) return fechar();
+    if ((ev.key === "Enter" || ev.key === " ") && ev.target.matches && ev.target.matches("[data-row]")) { ev.preventDefault(); abrir(ev.target.dataset.row); }
+  });
+  $("form").addEventListener("submit", e => { e.preventDefault(); render(); });
+  $("q").addEventListener("input", render);
+  $("ord").addEventListener("change", render);
+  $("btnAtualizar").addEventListener("click", atualizar);
+  setInterval(() => { if (S.coleta && S.coleta.status !== "processando" && S.nota && !S.notaErr) S.nota = ""; renderStatus(); }, 60000);
+  render();
+
+  // Base da página: os editais ficam fora do HTML e chegam pela coleta do PNCP
+  (async () => {
+    let db = null;
+    try { db = window.claude && window.claude.use ? await window.claude.use("db") : null; } catch { db = null; }
+    if (!db) {
+      // Sem login no Claude a base não abre: mostra a cópia salva na página
+      let c = null;
+      try { c = JSON.parse($("copia").textContent); } catch { c = null; }
+      if (!c || !Array.isArray(c.editais)) { S.phase = "offline"; return render(); }
+      S.copia = true; S.coleta = c.coleta || null;
+      return carregar(c.editais);
+    }
+    S.db = db;
+    db.doc("config/atualizacao").onSnapshot(snap => { S.triggerId = snap.exists ? String(snap.data().triggerId || "") : ""; renderStatus(); }, () => {});
+    let docs = null;
+    db.doc("coleta/atual").onSnapshot(snap => {
+      const antes = S.coleta && S.coleta.status;
+      S.coleta = snap.exists ? snap.data() : null;
+      if (S.coleta && S.coleta.status !== antes) { S.nota = ""; S.notaErr = false; }
+      if (docs) carregar(docs); else render();
+    }, () => {});
+    db.collection("editais").onSnapshot(
+      snap => { docs = snap.docs.map(d => Object.assign({id:d.id}, d.data())); carregar(docs); },
+      () => { if (S.phase !== "ready") { S.phase = "offline"; render(); } }
+    );
+  })();
+})();
+</script>

@@ -1,0 +1,407 @@
+<title>Radar de Licitações Protótipos</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: barra com seletor de protótipo (A, B, C); cada protótipo é uma versão enxuta do Radar
+   com a mesma base de exemplo. A = busca única, B = quadro por prazo, C = termos monitorados. */
+:root{
+  --bg:#F3F5F8; --surface:#FFFFFF; --surface-2:#EAEEF3; --line:#D5DCE5;
+  --ink:#152235; --ink-2:#4A5A70; --ink-3:#6E7C90;
+  --accent:#1D4E89; --accent-ink:#FFFFFF; --accent-soft:#E3ECF7;
+  --head:#13294B; --head-ink:#FFFFFF; --head-2:#B8C7DC;
+  --ok:#1E7A4C; --ok-soft:#E1F2E8;
+  --crit:#B42318; --crit-soft:#FDE7E4; --warn:#8A5300; --warn-soft:#FCEFD6;
+  --f-display:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1622; --surface:#16212F; --surface-2:#1E2B3C; --line:#2B3A4E;
+    --ink:#E7EDF5; --ink-2:#AEBBCC; --ink-3:#8796AA;
+    --accent:#7FB0F0; --accent-ink:#0B1A2E; --accent-soft:#1C3150;
+    --head:#0A1220; --head-ink:#E7EDF5; --head-2:#8796AA;
+    --ok:#6FD39C; --ok-soft:#143425;
+    --crit:#FF8A80; --crit-soft:#4A1D1A; --warn:#F2B658; --warn-soft:#43300F;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1622; --surface:#16212F; --surface-2:#1E2B3C; --line:#2B3A4E;
+  --ink:#E7EDF5; --ink-2:#AEBBCC; --ink-3:#8796AA;
+  --accent:#7FB0F0; --accent-ink:#0B1A2E; --accent-soft:#1C3150;
+  --head:#0A1220; --head-ink:#E7EDF5; --head-2:#8796AA;
+  --ok:#6FD39C; --ok-soft:#143425;
+  --crit:#FF8A80; --crit-soft:#4A1D1A; --warn:#F2B658; --warn-soft:#43300F;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+h1,h2,h3,p{margin:0}
+h1,h2,h3{font-family:var(--f-display);font-weight:600;text-wrap:balance;letter-spacing:-.005em}
+a{color:var(--accent)}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-size:.9em}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--ink-3)}
+.wrap{max-width:1120px;margin-inline:auto;padding-inline:clamp(16px,3vw,32px)}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+
+/* Barra de protótipos */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--head);color:var(--head-ink)}
+.top-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 20px;padding-block:12px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:17px;white-space:nowrap}
+.brand small{font-weight:400;color:var(--head-2);font-size:13px;border-left:1px solid var(--head-2);padding-left:10px}
+.proto{display:flex;gap:2px;overflow-x:auto;max-width:100%}
+.proto button{appearance:none;border:0;background:none;padding:8px 12px;border-radius:6px;cursor:pointer;color:var(--head-2);white-space:nowrap;font-size:14px}
+.proto button:hover{color:var(--head-ink)}
+.proto button b{font-family:var(--f-mono);font-weight:500;margin-right:6px}
+.proto button[aria-pressed="true"]{background:rgb(255 255 255 / .12);color:var(--head-ink)}
+
+main{display:flex;flex-direction:column;gap:22px;padding-block:24px 56px}
+.intro{display:flex;flex-direction:column;gap:6px}
+.intro h1{font-size:clamp(22px,3vw,28px);line-height:1.2}
+.intro p{color:var(--ink-2);max-width:68ch}
+.exemplo{display:flex;gap:10px;align-items:flex-start;padding:10px 14px;border-radius:8px;background:var(--warn-soft);font-size:13.5px}
+.exemplo::before{content:"";flex:none;width:9px;height:9px;margin-top:6px;border-radius:50%;background:var(--warn)}
+
+/* Controles comuns */
+.search{display:flex;gap:8px;flex-wrap:wrap}
+.search input{flex:1 1 260px;min-width:0;height:46px;padding:0 16px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font-size:16px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 14px;border-radius:6px;border:1px solid var(--line);background:var(--surface);font-weight:500;text-decoration:none;color:var(--ink);cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.search .btn{height:46px}
+.btn-sm{height:30px;padding:0 10px;font-size:13px}
+.fontes{display:flex;flex-wrap:wrap;gap:6px}
+.fonte{appearance:none;display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border:1px solid var(--line);border-radius:99px;background:var(--surface);cursor:pointer;font-size:13.5px;color:var(--ink-2)}
+.fonte .n{font-size:12px;color:var(--ink-3)}
+.fonte[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--ink)}
+.pill{display:inline-block;white-space:nowrap;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:500;background:var(--surface-2);color:var(--ink-2)}
+.pill.crit{background:var(--crit-soft);color:var(--crit)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.tag{display:inline-block;padding:0 7px;border:1px solid var(--line);border-radius:4px;font-size:12px;color:var(--ink-2);white-space:nowrap}
+.star{appearance:none;border:1px solid var(--line);background:var(--surface);border-radius:8px;height:32px;padding:0 10px;cursor:pointer;font-size:13px;white-space:nowrap}
+.star[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.empty{padding:32px 20px;text-align:center;color:var(--ink-2)}
+.empty b{display:block;font-size:16px;color:var(--ink);margin-bottom:4px}
+
+/* A: busca única */
+.res-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:6px 16px}
+.res-head h2{font-size:19px}
+.item{display:grid;grid-template-columns:92px minmax(0,1fr) auto;gap:4px 18px;padding:16px 18px;border-bottom:1px solid var(--line);align-items:start}
+.item:last-child{border-bottom:0}
+.when{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 6px;border-radius:8px;background:var(--surface-2);text-align:center}
+.when.crit{background:var(--crit-soft);color:var(--crit)} .when.warn{background:var(--warn-soft);color:var(--warn)}
+.when b{font-size:24px;line-height:1;font-weight:700;font-variant-numeric:tabular-nums}
+.when span{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.when small{font-size:11.5px;color:var(--ink-2);font-family:var(--f-mono)}
+.item .org{font-weight:600}
+.item .obj{color:var(--ink);margin-top:2px}
+.item .meta{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;font-size:13px;color:var(--ink-3);align-items:center}
+.item .meta b{color:var(--ink);font-weight:600}
+.acts{display:flex;flex-direction:column;align-items:stretch;gap:6px;min-width:150px}
+.acts .btn{height:36px;font-size:14px}
+.status-ok{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--ok)}
+.status-ok::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.resumo{grid-column:2/-1;margin-top:10px;padding:14px 16px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.resumo dl{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px 18px;margin:0}
+.resumo dt{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
+.resumo dd{margin:2px 0 0;font-size:14px}
+.resumo .check{margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:13.5px;color:var(--ink-2)}
+.resumo .check ul{margin:6px 0 0;padding-left:18px;display:grid;gap:2px}
+.portais{display:flex;flex-direction:column;gap:10px}
+.portais h3{font-size:15px}
+.links{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.links a{display:flex;justify-content:space-between;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);text-decoration:none;color:var(--ink);font-size:14px}
+.links a small{color:var(--ink-3);font-size:12px}
+.links a:hover{border-color:var(--accent)}
+
+/* B: quadro por prazo */
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.field{display:flex;flex-direction:column;gap:4px;flex:1 1 160px;min-width:0}
+.field label{font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
+.field select,.field input{height:38px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);width:100%;min-width:0}
+.board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}
+.col{display:flex;flex-direction:column;gap:8px;min-width:0}
+.col-h{display:flex;justify-content:space-between;align-items:baseline;padding:0 2px}
+.col-h h3{font-size:16px;display:flex;align-items:center;gap:8px}
+.col-h h3::before{content:"";width:10px;height:10px;border-radius:3px;background:var(--dot,var(--ink-3))}
+.col.c7{--dot:var(--crit)} .col.c15{--dot:var(--warn)} .col.c30{--dot:var(--accent)}
+.card{padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);display:flex;flex-direction:column;gap:6px;min-width:0}
+.card .top2{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;color:var(--ink-3)}
+.card .org{font-weight:600;font-size:14px}
+.card .obj{font-size:13.5px;color:var(--ink-2)}
+.card .foot{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.card .foot b{font-weight:600;font-size:14px}
+.card .foot .btn{height:32px;font-size:13px}
+
+/* C: termos monitorados */
+.mon{display:grid;grid-template-columns:280px minmax(0,1fr);gap:18px;align-items:start}
+.terms{display:flex;flex-direction:column}
+.terms h3{font-size:15px;padding:14px 16px 8px}
+.term{appearance:none;display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;padding:11px 16px;border:0;border-top:1px solid var(--line);background:none;text-align:left;cursor:pointer}
+.term[aria-pressed="true"]{background:var(--accent-soft)}
+.term .new{font-size:12px;padding:1px 8px;border-radius:99px;background:var(--accent);color:var(--accent-ink)}
+.term .zero{font-size:12px;color:var(--ink-3)}
+.add{display:flex;gap:6px;padding:12px 16px;border-top:1px solid var(--line)}
+.add input{flex:1 1 auto;min-width:0;height:34px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.feed-h{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px 12px;margin-bottom:10px}
+.feed-h h2{font-size:19px}
+.badge-new{display:inline-block;margin-bottom:4px;padding:1px 7px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;background:var(--accent-soft);color:var(--accent)}
+
+@media (max-width:860px){
+  .board{grid-template-columns:1fr}
+  .mon{grid-template-columns:1fr}
+}
+@media (max-width:640px){
+  .item{grid-template-columns:72px minmax(0,1fr)}
+  .acts{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;min-width:0;margin-top:8px}
+  .acts .btn,.acts .star{flex:1 1 auto}
+  .resumo{grid-column:1/-1}
+  .when b{font-size:20px}
+}
+@media (prefers-reduced-motion:no-preference){
+  .btn,.fonte,.star,.term,.proto button{transition:background-color .15s,border-color .15s}
+}
+</style>
+
+<header class="top">
+  <div class="wrap top-row">
+    <div class="brand">
+      <svg width="28" height="28" viewBox="0 0 30 30" aria-hidden="true">
+        <circle cx="15" cy="15" r="14" fill="var(--head-ink)" fill-opacity=".14"/>
+        <circle cx="15" cy="15" r="9" fill="none" stroke="var(--head-ink)" stroke-opacity=".5"/>
+        <circle cx="15" cy="15" r="4" fill="none" stroke="var(--head-ink)" stroke-opacity=".5"/>
+        <path d="M15 15 L24 8" stroke="var(--head-ink)" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="20" cy="18" r="1.6" fill="var(--head-ink)"/>
+      </svg>
+      <span>Radar de Licitações</span><small>Protótipos</small>
+    </div>
+    <nav class="proto" aria-label="Protótipos">
+      <button type="button" data-p="a" aria-pressed="true"><b>A</b>Busca única</button>
+      <button type="button" data-p="b" aria-pressed="false"><b>B</b>Quadro de prazos</button>
+      <button type="button" data-p="c" aria-pressed="false"><b>C</b>Termos monitorados</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="intro">
+    <span class="eyebrow" id="pEyebrow">Protótipo A</span>
+    <h1 id="pTitle">Uma busca, todos os portais</h1>
+    <p id="pText"></p>
+  </section>
+  <p class="exemplo"><span><b>Dados de exemplo.</b> Os editais abaixo são fictícios e servem só para mostrar o layout. Na versão final, a lista vem do PNCP e dos outros portais. Os links “Buscar no portal” já abrem os sites reais.</span></p>
+
+  <!-- A -->
+  <section id="vA" class="intro" style="gap:18px">
+    <form class="search" id="formA" role="search">
+      <input id="qA" type="search" autocomplete="off" placeholder="Ex.: hemodiálise, plantão médico, UTI, ambulância" aria-label="O que você procura">
+      <button class="btn btn-primary" type="submit">Buscar</button>
+    </form>
+    <div class="fontes" id="fontesA" aria-label="Portais"></div>
+    <div>
+      <div class="res-head" style="margin-bottom:10px">
+        <h2 id="resA">Resultados</h2>
+        <select id="ordA" class="btn btn-sm" aria-label="Ordenar"><option value="prazo">Prazo mais próximo</option><option value="valor">Maior valor</option></select>
+      </div>
+      <div class="panel" id="listA"></div>
+    </div>
+    <div class="portais">
+      <h3>Buscar no portal</h3>
+      <div class="links" id="linksA"></div>
+    </div>
+  </section>
+
+  <!-- B -->
+  <section id="vB" hidden style="display:flex;flex-direction:column;gap:18px">
+    <div class="bar">
+      <div class="field" style="flex:2 1 240px"><label for="qB">Buscar</label><input id="qB" type="search" autocomplete="off" placeholder="Órgão, objeto ou cidade"></div>
+      <div class="field"><label for="fB">Portal</label><select id="fB"><option value="">Todos</option></select></div>
+      <div class="field"><label for="uB">Estado</label><select id="uB"><option value="">Todos</option></select></div>
+    </div>
+    <div class="board" id="board"></div>
+  </section>
+
+  <!-- C -->
+  <section id="vC" hidden>
+    <div class="mon">
+      <div class="panel terms">
+        <h3>Meus termos</h3>
+        <div id="termList"></div>
+        <form class="add" id="addForm">
+          <input id="newTerm" autocomplete="off" placeholder="Novo termo" aria-label="Novo termo">
+          <button class="btn btn-sm btn-primary" type="submit">Adicionar</button>
+        </form>
+      </div>
+      <div>
+        <div class="feed-h"><h2 id="feedTitle">Resultados</h2><span class="muted num" id="feedCount"></span></div>
+        <div class="panel" id="feed"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const norm = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const brl = new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL",maximumFractionDigits:0});
+  const fData = new Intl.DateTimeFormat("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",timeZone:"America/Sao_Paulo"});
+  const fDia = new Intl.DateTimeFormat("pt-BR",{day:"2-digit",month:"2-digit",timeZone:"America/Sao_Paulo"});
+  const DIA = 86400000;
+
+  // Portais. Só o PNCP aceita o termo direto na URL; os demais abrem a página de busca pública.
+  const PORTAIS = [
+    {id:"PNCP", nome:"PNCP", url:q => "https://pncp.gov.br/app/editais?" + (q ? "q=" + encodeURIComponent(q) + "&" : "") + "status=recebendo_proposta&pagina=1", obs:"Busca com o termo"},
+    {id:"Compras.gov.br", nome:"Compras.gov.br", url:() => "https://www.gov.br/compras/pt-br", obs:"Portal federal"},
+    {id:"BLL", nome:"BLL Compras", url:() => "https://bllcompras.com/Process/ProcessSearchPublic", obs:"Busca pública"},
+    {id:"Licitações-e", nome:"Licitações-e (BB)", url:() => "https://www.licitacoes-e.com.br/aop/index.jsp", obs:"Banco do Brasil"},
+    {id:"Portal de Compras Públicas", nome:"Portal de Compras Públicas", url:() => "https://www.portaldecompraspublicas.com.br/processos", obs:"Processos abertos"},
+    {id:"BNC", nome:"BNC Compras", url:() => "https://bnccompras.com/Process/ProcessSearchPublic", obs:"Busca pública"},
+    {id:"Licitanet", nome:"Licitanet", url:() => "https://licitanet.com.br/sessao-publica", obs:"Sessões públicas"},
+    {id:"Licitar Digital", nome:"Licitar Digital", url:() => "https://app2.licitardigital.com.br/pesquisa", obs:"Pesquisa de processos"},
+    {id:"Compras AM", nome:"Compras AM (e-Compras)", url:() => "https://www.e-compras.am.gov.br/publico/", obs:"Governo do Amazonas"}
+  ];
+
+  // Base de exemplo (fictícia). O prazo é relativo a hoje para a demonstração não envelhecer.
+  const EX = [
+    ["Prefeitura Municipal de Exemplo do Norte","PA","Exemplo do Norte","Serviços de hemodiálise e terapia renal substitutiva para pacientes do SUS","Pregão eletrônico","PNCP",2,1840000,"PE 041/2026",["hemodialise"]],
+    ["Fundo Municipal de Saúde de Vila Modelo","RJ","Vila Modelo","Plantões médicos em clínica geral para a UPA 24h","Pregão eletrônico","Compras.gov.br",4,960000,"PE 112/2026",["plantao"]],
+    ["Hospital Regional Fictício","MS","Campo Exemplo","Médicos plantonistas para UTI adulto e neonatal","Credenciamento","PNCP",6,2450000,"CR 007/2026",["plantao","uti"]],
+    ["Consórcio Intermunicipal de Saúde Demo","MG","Serra Demo","Serviço móvel de urgência com ambulâncias de suporte avançado","Pregão eletrônico","BLL",9,3120000,"PE 019/2026",["urgencia","ambulancia"]],
+    ["Secretaria Estadual de Saúde (exemplo)","BA","Salvador","Gestão de pronto-socorro com equipe médica de urgência e emergência","Concorrência","PNCP",12,12800000,"CC 003/2026",["urgencia"]],
+    ["Prefeitura de Rio Claro Fictício","SP","Rio Claro Fictício","Plantões de pediatria e obstetrícia no hospital municipal","Pregão eletrônico","Portal de Compras Públicas",13,1320000,"PE 087/2026",["plantao"]],
+    ["Universidade Federal Exemplo — Hospital Escola","PE","Recife","Nefrologia: sessões de hemodiálise em regime ambulatorial","Pregão eletrônico","Compras.gov.br",17,2210000,"PE 054/2026",["hemodialise"]],
+    ["Prefeitura de Lagoa Exemplo","SC","Lagoa Exemplo","Remoção de pacientes com ambulância de suporte básico","Dispensa eletrônica","Licitações-e",19,186000,"DE 033/2026",["ambulancia"]],
+    ["Fundação Municipal de Saúde Demo","RS","Porto Demo","Equipe médica para unidade de terapia intensiva — 10 leitos","Pregão eletrônico","PNCP",22,3780000,"PE 066/2026",["uti","plantao"]],
+    ["Prefeitura de São Modelo","GO","São Modelo","Consultas e plantões em ortopedia e traumatologia","Credenciamento","BNC",26,540000,"CR 012/2026",["plantao"]],
+    ["Hospital Municipal Exemplar","CE","Fortaleza","Serviço de diálise peritoneal domiciliar","Pregão eletrônico","PNCP",28,890000,"PE 101/2026",["hemodialise"]],
+    ["Prefeitura de Monte Fictício","PR","Monte Fictício","Médicos para atenção primária e plantões noturnos","Pregão eletrônico","BLL",35,720000,"PE 029/2026",["plantao"]],
+    ["Secretaria de Saúde do Amazonas (exemplo)","AM","Manaus","Hemodiálise em unidades do interior do estado","Pregão eletrônico","Compras AM",5,4350000,"PE 214/2026",["hemodialise"]],
+    ["Fundação Hospitalar Exemplo do Amazonas","AM","Manaus","Plantões médicos em pronto-socorro adulto e infantil","Pregão eletrônico","Compras AM",15,2680000,"PE 230/2026",["plantao","urgencia"]],
+    ["Prefeitura de Vale Exemplo","MG","Vale Exemplo","Plantões médicos 24h no pronto atendimento municipal","Pregão eletrônico","Licitanet",8,1150000,"PE 045/2026",["plantao","urgencia"]],
+    ["Prefeitura de Santa Demo","MT","Santa Demo","Locação de ambulância UTI móvel com equipe médica","Pregão eletrônico","Licitar Digital",11,830000,"PE 038/2026",["ambulancia","uti"]],
+    ["Consórcio de Saúde Fictício do Oeste","SP","Oeste Fictício","Credenciamento de médicos para UTI e centro cirúrgico","Credenciamento","Licitar Digital",24,1960000,"CR 004/2026",["uti","plantao"]]
+  ];
+  const base = Date.now();
+  const ITENS = EX.map((r,i) => {
+    const prazo = new Date(Math.floor((base + r[6] * DIA) / 3600000) * 3600000);
+    prazo.setUTCHours(13,0,0,0);
+    return {id:"ex"+i, orgao:r[0], uf:r[1], municipio:r[2], objeto:r[3], modalidade:r[4], fonte:r[5], prazo, valor:r[7], edital:r[8], temas:r[9], novo:i % 3 === 0,
+      busca:norm(r.slice(0,6).join(" ") + " " + r[8] + " " + r[9].join(" "))};
+  });
+
+  const store = { get(k){ try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }, set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+  const S = {p:"a", fontes:new Set(), star:new Set(store.get("rl_star") || []), termos:store.get("rl_termos") || ["hemodiálise","plantão médico","ambulância"], termo:null, open:new Set()};
+  const h = (location.hash || "").slice(1); if (["a","b","c"].includes(h)) S.p = h;
+
+  const dias = it => Math.max(0, Math.ceil((it.prazo - Date.now()) / DIA));
+  const pill = it => { const n = dias(it); return '<span class="pill ' + (n <= 7 ? "crit" : n <= 15 ? "warn" : "") + '">' + (n === 0 ? "vence hoje" : n === 1 ? "vence amanhã" : "em " + n + " dias") + "</span>"; };
+  const starBtn = it => '<button type="button" class="star" data-star="' + it.id + '" aria-pressed="' + S.star.has(it.id) + '">' + (S.star.has(it.id) ? "★ Salvo" : "☆ Salvar") + "</button>";
+  const casa = (it, q) => { if (!q) return true; return norm(q).split(/\s+/).filter(Boolean).every(w => it.busca.includes(w.replace(/s$/,""))); };
+  const linkPortal = it => { const p = PORTAIS.find(x => x.id === it.fonte); return '<a href="' + esc(p.url(it.edital)) + '" target="_blank" rel="noopener">Abrir no ' + esc(p.nome) + " ↗</a>"; };
+  const vazio = (t, s) => '<div class="empty"><b>' + t + "</b>" + s + "</div>";
+
+  const TEXT = {
+    a:["Protótipo A","Uma busca, todos os portais","Busque uma vez e veja os editais abertos de todos os portais. Os dias que faltam aparecem à esquerda, o botão Ver edital leva direto à publicação e o resumo abre na própria linha."],
+    b:["Protótipo B","O que vence primeiro","Os editais abertos em três colunas por prazo. Bom para quem decide a semana olhando o que fecha antes."],
+    c:["Protótipo C","Seus termos, vigiados","Você cadastra os termos que importam e o radar mostra o que apareceu em cada um, com os novos marcados."]
+  };
+
+  // A
+  const CRIT = {"Pregão eletrônico":"Menor preço por item","Concorrência":"Técnica e preço","Credenciamento":"Preço fixo da tabela","Dispensa eletrônica":"Menor preço global"};
+  const urlEdital = it => PORTAIS.find(x => x.id === it.fonte).url(it.edital);
+  const nomePortal = it => PORTAIS.find(x => x.id === it.fonte).nome;
+  function itemA(it){
+    const n = dias(it), cls = n <= 7 ? "crit" : n <= 15 ? "warn" : "", aberto = S.open.has(it.id);
+    return '<div class="item"><div class="when ' + cls + '"><b>' + n + "</b><span>" + (n === 1 ? "dia" : "dias") + "</span><small>" + fDia.format(it.prazo) + "</small></div>" +
+      '<div style="min-width:0"><span class="status-ok">Recebendo propostas</span><div class="org">' + esc(it.orgao) + '</div><div class="obj">' + esc(it.objeto) + "</div>" +
+      '<div class="meta"><span>Valor estimado <b class="num">' + brl.format(it.valor) + "</b></span><span>" + esc(it.modalidade) + '</span><span class="mono">' + esc(it.edital) + "</span><span>" + esc(it.municipio) + "/" + esc(it.uf) + '</span><span class="tag">' + esc(it.fonte) + "</span></div></div>" +
+      '<div class="acts"><a class="btn btn-primary" href="' + esc(urlEdital(it)) + '" target="_blank" rel="noopener">Ver edital ↗</a>' +
+      '<button type="button" class="btn" data-open="' + it.id + '" aria-expanded="' + aberto + '">' + (aberto ? "Fechar resumo" : "Resumo do edital") + "</button>" + starBtn(it) + "</div>" +
+      (aberto ? '<div class="resumo"><dl>' +
+        [["Nº do edital", '<span class="mono">' + esc(it.edital) + "</span>"],["Modalidade", esc(it.modalidade)],["Critério de julgamento", esc(CRIT[it.modalidade] || "Ver edital")],
+         ["Limite para propostas", fData.format(it.prazo) + " (Brasília)"],["Valor estimado", brl.format(it.valor)],["Portal da disputa", esc(nomePortal(it))],
+         ["Órgão", esc(it.orgao)],["Local", esc(it.municipio) + "/" + esc(it.uf)]].map(([k,v]) => "<div><dt>" + k + "</dt><dd>" + v + "</dd></div>").join("") +
+        '</dl><div class="check"><b>Antes de participar, confira no edital:</b><ul><li>Habilitação técnica e documentos exigidos</li><li>Retificações e esclarecimentos publicados</li><li>Prazo de impugnação e data da sessão</li></ul></div></div>' : "") +
+      "</div>";
+  }
+  function renderA(){
+    const q = $("qA").value.trim();
+    const porTermo = ITENS.filter(it => casa(it, q));
+    $("fontesA").innerHTML = '<button type="button" class="fonte" data-fonte="" aria-pressed="' + (S.fontes.size === 0) + '">Todos <span class="n num">' + porTermo.length + "</span></button>" +
+      PORTAIS.map(p => '<button type="button" class="fonte" data-fonte="' + esc(p.id) + '" aria-pressed="' + S.fontes.has(p.id) + '">' + esc(p.nome) + ' <span class="n num">' + porTermo.filter(it => it.fonte === p.id).length + "</span></button>").join("");
+    const lista = porTermo.filter(it => !S.fontes.size || S.fontes.has(it.fonte))
+      .sort((a,b) => $("ordA").value === "valor" ? b.valor - a.valor : a.prazo - b.prazo);
+    $("resA").textContent = lista.length + (lista.length === 1 ? " edital aberto" : " editais abertos") + (q ? " para “" + q + "”" : "");
+    $("listA").innerHTML = lista.length ? lista.map(itemA).join("") : vazio("Nada encontrado", "Tente outro termo ou busque direto nos portais abaixo.");
+    $("linksA").innerHTML = PORTAIS.map(p => '<a href="' + esc(p.url(q)) + '" target="_blank" rel="noopener"><span>' + esc(p.nome) + "<br><small>" + esc(p.obs) + "</small></span><span>↗</span></a>").join("");
+  }
+
+  // B
+  function renderB(){
+    const q = $("qB").value.trim(), f = $("fB").value, u = $("uB").value;
+    const lista = ITENS.filter(it => casa(it, q) && (!f || it.fonte === f) && (!u || it.uf === u)).sort((a,b) => a.prazo - b.prazo);
+    const cols = [["c7","Até 7 dias",0,7],["c15","8 a 15 dias",8,15],["c30","Mais de 15 dias",16,Infinity]];
+    $("board").innerHTML = cols.map(([cls,nome,a,b]) => {
+      const g = lista.filter(it => dias(it) >= a && dias(it) <= b);
+      return '<div class="col ' + cls + '"><div class="col-h"><h3>' + nome + '</h3><span class="muted num">' + g.length + "</span></div>" +
+        (g.length ? g.map(it => '<div class="card"><div class="top2"><span>' + esc(it.fonte) + " · " + esc(it.uf) + '</span><span class="mono">' + fData.format(it.prazo) + '</span></div><div>' + pill(it) + '</div><div class="org">' + esc(it.orgao) + '</div><div class="obj">' + esc(it.objeto) + '</div><div class="foot"><b class="num">' + brl.format(it.valor) + '</b><a class="btn btn-primary" href="' + esc(urlEdital(it)) + '" target="_blank" rel="noopener">Ver edital ↗</a></div></div>').join("")
+          : '<div class="card muted" style="font-size:13.5px">Nenhum edital nesta faixa.</div>') + "</div>";
+    }).join("");
+  }
+
+  // C
+  function renderC(){
+    if (S.termo && !S.termos.includes(S.termo)) S.termo = null;
+    const ativo = S.termo || S.termos[0] || null;
+    $("termList").innerHTML = S.termos.length ? S.termos.map(t => {
+      const r = ITENS.filter(it => casa(it, t)), nv = r.filter(it => it.novo).length;
+      return '<button type="button" class="term" data-term="' + esc(t) + '" aria-pressed="' + (t === ativo) + '"><span>' + esc(t) + ' <span class="muted num" style="font-size:12.5px">· ' + r.length + "</span></span>" +
+        (nv ? '<span class="new num">' + nv + (nv === 1 ? " novo" : " novos") + "</span>" : '<span class="zero">sem novos</span>') + "</button>";
+    }).join("") : '<p class="muted" style="padding:12px 16px;font-size:13.5px">Adicione um termo para começar.</p>';
+    const lista = ativo ? ITENS.filter(it => casa(it, ativo)).sort((a,b) => (b.novo - a.novo) || (a.prazo - b.prazo)) : [];
+    $("feedTitle").textContent = ativo ? "Resultados para “" + ativo + "”" : "Resultados";
+    $("feedCount").textContent = ativo ? lista.length + (lista.length === 1 ? " edital" : " editais") : "";
+    $("feed").innerHTML = lista.length ? lista.map(it => itemA(it).replace('<span class="status-ok">', (it.novo ? '<span class="badge-new">Novo desde ontem</span> ' : "") + '<span class="status-ok">')).join("")
+      : vazio(ativo ? "Nenhum edital aberto com esse termo" : "Sem termos", ativo ? "O radar avisa quando aparecer algo novo." : "Cadastre um termo à esquerda.");
+  }
+
+  function render(){
+    document.querySelectorAll("[data-p]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.p === S.p)));
+    const [e,t,x] = TEXT[S.p]; $("pEyebrow").textContent = e; $("pTitle").textContent = t; $("pText").textContent = x;
+    $("vA").hidden = S.p !== "a"; $("vB").hidden = S.p !== "b"; $("vC").hidden = S.p !== "c";
+    if (S.p === "a") renderA(); else if (S.p === "b") renderB(); else renderC();
+  }
+
+  PORTAIS.forEach(p => $("fB").insertAdjacentHTML("beforeend", '<option value="' + esc(p.id) + '">' + esc(p.nome) + "</option>"));
+  [...new Set(ITENS.map(it => it.uf))].sort().forEach(u => $("uB").insertAdjacentHTML("beforeend", '<option value="' + u + '">' + u + "</option>"));
+
+  document.addEventListener("click", ev => {
+    const p = ev.target.closest("[data-p]"); if (p) { S.p = p.dataset.p; try { history.replaceState(null, "", "#" + S.p); } catch {} return render(); }
+    const f = ev.target.closest("[data-fonte]");
+    if (f) { const id = f.dataset.fonte; if (!id) S.fontes.clear(); else S.fontes.has(id) ? S.fontes.delete(id) : S.fontes.add(id); return render(); }
+    const s = ev.target.closest("[data-star]");
+    if (s) { const id = s.dataset.star; S.star.has(id) ? S.star.delete(id) : S.star.add(id); store.set("rl_star", [...S.star]); return render(); }
+    const o = ev.target.closest("[data-open]");
+    if (o) { const id = o.dataset.open; S.open.has(id) ? S.open.delete(id) : S.open.add(id); return render(); }
+    const t = ev.target.closest("[data-term]"); if (t) { S.termo = t.dataset.term; return render(); }
+  });
+  $("formA").addEventListener("submit", e => { e.preventDefault(); render(); });
+  $("qA").addEventListener("input", render);
+  $("ordA").addEventListener("change", render);
+  ["qB","fB","uB"].forEach(id => $(id).addEventListener(id === "qB" ? "input" : "change", render));
+  $("addForm").addEventListener("submit", e => {
+    e.preventDefault();
+    const v = $("newTerm").value.trim().replace(/\s+/g, " ").slice(0, 60);
+    if (v.length < 3) return;
+    if (!S.termos.some(t => norm(t) === norm(v))) S.termos.push(v);
+    store.set("rl_termos", S.termos); S.termo = v; $("newTerm").value = ""; render();
+  });
+  render();
+})();
+</script>
