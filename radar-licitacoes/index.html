@@ -58,8 +58,8 @@ button,input,select{font:inherit;color:inherit}
 .nav button .c{margin-left:auto;font-size:12.5px;padding:0 7px;border-radius:99px;background:var(--surface-2);color:var(--ink-2)}
 .nav button:hover{background:var(--surface-2);color:var(--ink)}
 .nav button[aria-current="page"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
-.side-foot{margin-top:auto;padding:12px;border-radius:8px;background:var(--warn-soft);font-size:13px;color:var(--ink-2)}
-.side-foot b{color:var(--warn)}
+.side-foot{margin-top:auto;padding:12px;border-radius:8px;background:var(--surface-2);font-size:13px;color:var(--ink-2)}
+.side-foot b{color:var(--ink)}
 
 .main{min-width:0;display:flex;flex-direction:column}
 .content{width:100%;max-width:1080px;margin-inline:auto;padding:28px clamp(16px,3vw,36px) 64px;display:flex;flex-direction:column;gap:20px}
@@ -68,6 +68,7 @@ button,input,select{font:inherit;color:inherit}
 .page-h p{color:var(--ink-2);margin-top:4px}
 .updated{font-size:13px;color:var(--ink-3);display:flex;align-items:center;gap:6px}
 .updated::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--warn)}
+.updated.ok::before{background:var(--ok)}
 
 /* Busca */
 .searchbox{display:flex;flex-direction:column;gap:12px;padding:18px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
@@ -208,14 +209,14 @@ button,input,select{font:inherit;color:inherit}
       <button type="button" data-view="portais">
         <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 20V9"/></svg>Portais<span class="c num" id="cPortais">0</span></button>
     </nav>
-    <p class="side-foot"><b>Dados de exemplo.</b> Os editais são fictícios. Os links dos portais abrem os sites reais.</p>
+    <p class="side-foot" id="sideFoot"><b>Fonte: PNCP.</b> Confira prazos e anexos no portal antes de participar.</p>
   </aside>
 
   <div class="main">
     <div class="content">
       <header class="page-h">
-        <div><h1 id="pageTitle">Buscar editais</h1><p id="pageText">Editais recebendo propostas no PNCP e em mais 8 portais.</p></div>
-        <span class="updated" id="updated">Base de exemplo, sem dados reais</span>
+        <div><h1 id="pageTitle">Buscar editais</h1><p id="pageText">Editais com prazo aberto coletados do PNCP, com o portal onde a disputa acontece.</p></div>
+        <span class="updated" id="updated">Carregando a coleta</span>
       </header>
 
       <section id="vBuscar" class="content" style="padding:0;max-width:none;gap:16px">
@@ -257,11 +258,13 @@ button,input,select{font:inherit;color:inherit}
 (() => {
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-  const norm = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const norm = s => String(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const brl = new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL",maximumFractionDigits:0});
   const brlC = new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL",notation:"compact",maximumFractionDigits:1});
   const fData = new Intl.DateTimeFormat("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",timeZone:"America/Sao_Paulo"});
   const fDia = new Intl.DateTimeFormat("pt-BR",{day:"2-digit",month:"short",timeZone:"America/Sao_Paulo"});
+  const fCurta = new Intl.DateTimeFormat("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",timeZone:"America/Sao_Paulo"});
+  const fHora = new Intl.DateTimeFormat("pt-BR",{hour:"2-digit",minute:"2-digit",timeZone:"America/Sao_Paulo"});
   const DIA = 86400000;
 
   // Portais. Só o PNCP aceita o termo direto na URL; os demais abrem a página de busca pública.
@@ -276,125 +279,134 @@ button,input,select{font:inherit;color:inherit}
     {id:"Licitar Digital", nome:"Licitar Digital", url:() => "https://app2.licitardigital.com.br/pesquisa", desc:"Pesquisa de processos municipais."},
     {id:"Compras AM", nome:"Compras AM (e-Compras)", url:() => "https://www.e-compras.am.gov.br/publico/", desc:"Compras do Governo do Amazonas."}
   ];
-  const portal = id => PORTAIS.find(p => p.id === id);
-  const CRIT = {"Pregão eletrônico":"Menor preço por item","Concorrência":"Técnica e preço","Credenciamento":"Preço fixo da tabela","Dispensa eletrônica":"Menor preço global"};
-
-  // Base de exemplo (fictícia). O prazo é relativo a hoje para a demonstração não envelhecer.
-  const EX = [
-    ["Prefeitura Municipal de Exemplo do Norte","PA","Exemplo do Norte","Serviços de hemodiálise e terapia renal substitutiva para pacientes do SUS","Pregão eletrônico","PNCP",2,1840000,"PE 041/2026",["hemodialise"]],
-    ["Fundo Municipal de Saúde de Vila Modelo","RJ","Vila Modelo","Plantões médicos em clínica geral para a UPA 24h","Pregão eletrônico","Compras.gov.br",4,960000,"PE 112/2026",["plantao"]],
-    ["Hospital Regional Fictício","MS","Campo Exemplo","Médicos plantonistas para UTI adulto e neonatal","Credenciamento","PNCP",6,2450000,"CR 007/2026",["plantao","uti"]],
-    ["Consórcio Intermunicipal de Saúde Demo","MG","Serra Demo","Serviço móvel de urgência com ambulâncias de suporte avançado","Pregão eletrônico","BLL",9,3120000,"PE 019/2026",["urgencia","ambulancia"]],
-    ["Secretaria Estadual de Saúde (exemplo)","BA","Salvador","Gestão de pronto-socorro com equipe médica de urgência e emergência","Concorrência","PNCP",12,12800000,"CC 003/2026",["urgencia"]],
-    ["Prefeitura de Rio Claro Fictício","SP","Rio Claro Fictício","Plantões de pediatria e obstetrícia no hospital municipal","Pregão eletrônico","Portal de Compras Públicas",13,1320000,"PE 087/2026",["plantao"]],
-    ["Universidade Federal Exemplo — Hospital Escola","PE","Recife","Nefrologia: sessões de hemodiálise em regime ambulatorial","Pregão eletrônico","Compras.gov.br",17,2210000,"PE 054/2026",["hemodialise"]],
-    ["Prefeitura de Lagoa Exemplo","SC","Lagoa Exemplo","Remoção de pacientes com ambulância de suporte básico","Dispensa eletrônica","Licitações-e",19,186000,"DE 033/2026",["ambulancia"]],
-    ["Fundação Municipal de Saúde Demo","RS","Porto Demo","Equipe médica para unidade de terapia intensiva — 10 leitos","Pregão eletrônico","PNCP",22,3780000,"PE 066/2026",["uti","plantao"]],
-    ["Prefeitura de São Modelo","GO","São Modelo","Consultas e plantões em ortopedia e traumatologia","Credenciamento","BNC",26,540000,"CR 012/2026",["plantao"]],
-    ["Hospital Municipal Exemplar","CE","Fortaleza","Serviço de diálise peritoneal domiciliar","Pregão eletrônico","PNCP",28,890000,"PE 101/2026",["hemodialise"]],
-    ["Prefeitura de Monte Fictício","PR","Monte Fictício","Médicos para atenção primária e plantões noturnos","Pregão eletrônico","BLL",35,720000,"PE 029/2026",["plantao"]],
-    ["Secretaria de Saúde do Amazonas (exemplo)","AM","Manaus","Hemodiálise em unidades do interior do estado","Pregão eletrônico","Compras AM",5,4350000,"PE 214/2026",["hemodialise"]],
-    ["Fundação Hospitalar Exemplo do Amazonas","AM","Manaus","Plantões médicos em pronto-socorro adulto e infantil","Pregão eletrônico","Compras AM",15,2680000,"PE 230/2026",["plantao","urgencia"]],
-    ["Prefeitura de Vale Exemplo","MG","Vale Exemplo","Plantões médicos 24h no pronto atendimento municipal","Pregão eletrônico","Licitanet",8,1150000,"PE 045/2026",["plantao","urgencia"]],
-    ["Prefeitura de Santa Demo","MT","Santa Demo","Locação de ambulância UTI móvel com equipe médica","Pregão eletrônico","Licitar Digital",11,830000,"PE 038/2026",["ambulancia","uti"]],
-    ["Consórcio de Saúde Fictício do Oeste","SP","Oeste Fictício","Credenciamento de médicos para UTI e centro cirúrgico","Credenciamento","Licitar Digital",24,1960000,"CR 004/2026",["uti","plantao"]]
-  ];
-  const ITENS = EX.map((r,i) => {
-    const prazo = new Date(Date.now() + r[6] * DIA); prazo.setUTCHours(13,0,0,0);
-    return {id:"ex"+i, orgao:r[0], uf:r[1], municipio:r[2], objeto:r[3], modalidade:r[4], fonte:r[5], prazo, valor:r[7], edital:r[8], novo:i % 3 === 0,
-      busca:norm(r.slice(0,6).join(" ") + " " + r[8] + " " + r[9].join(" "))};
-  });
+  const portal = id => PORTAIS.find(p => p.id === id) || {id, nome:id || "Outro portal", url:() => "", desc:""};
 
   const store = { get(k){ try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }, set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
-  const S = {view:"buscar", fonte:"", star:new Set(store.get("rl_star") || []), sel:null, checks:store.get("rl_checks") || {}, lastFocus:null};
+  const S = {view:"buscar", fonte:"", star:new Set(store.get("rl_star_real") || []), sel:null, checks:store.get("rl_checks_real") || {}, lastFocus:null, items:[], coleta:null, phase:"loading"};
   const h = (location.hash || "").slice(1); if (["buscar","salvos","portais"].includes(h)) S.view = h;
 
+  // Datas do PNCP vêm no horário de Brasília, sem fuso
+  const toDate = s => { if (!s) return null; const d = new Date(/[zZ]|[+-]\d\d:\d\d$/.test(s) ? s : s + "-03:00"); return isNaN(d) ? null : d; };
+  const abertos = () => S.items.filter(it => it.prazo && it.prazo > Date.now());
   const dias = it => Math.max(0, Math.ceil((it.prazo - Date.now()) / DIA));
   const nivel = it => { const n = dias(it); return n <= 7 ? "crit" : n <= 15 ? "warn" : ""; };
-  const casa = (it, q) => !q || norm(q).split(/\s+/).filter(Boolean).every(w => it.busca.includes(w.replace(/s$/,"")));
-  const urlEdital = it => portal(it.fonte).url(it.edital);
+  const casa = (it, q) => !q || norm(q).split(/\s+/).filter(Boolean).every(w => it.busca.includes(w.length > 4 ? w.replace(/(oes|aes|s)$/,"") : w));
+  const urlEdital = it => it.url || portal(it.fonte).url(it.edital);
+  const valorTxt = it => it.valor > 0 ? brl.format(it.valor) : (it.valorNota || "Não divulgado");
   const ICON_STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg>';
 
   function row(it){
     const n = dias(it), salvo = S.star.has(it.id);
-    return '<div class="row' + (S.sel === it.id ? " sel" : "") + '" data-row="' + it.id + '" tabindex="0" aria-label="Abrir resumo: ' + esc(it.objeto) + '">' +
+    return '<div class="row' + (S.sel === it.id ? " sel" : "") + '" data-row="' + esc(it.id) + '" tabindex="0" aria-label="Abrir resumo: ' + esc(it.objeto) + '">' +
       '<div class="due ' + nivel(it) + '" title="Prazo para propostas"><b>' + n + "</b><span>" + (n === 1 ? "dia" : "dias") + "</span></div>" +
-      '<div class="r-main"><div class="r-top"><span class="portal-tag">' + esc(portal(it.fonte).nome) + "</span><span>" + esc(it.modalidade) + '</span><span class="mono">' + esc(it.edital) + "</span>" + (it.novo ? '<span class="new">Novo</span>' : "") + "</div>" +
+      '<div class="r-main"><div class="r-top"><span class="portal-tag">' + esc(portal(it.fonte).nome) + "</span><span>" + esc(it.modalidade) + "</span>" + (it.edital ? '<span class="mono">' + esc(it.edital) + "</span>" : "") + (it.novo ? '<span class="new">Novo</span>' : "") + "</div>" +
         '<div class="r-obj">' + esc(it.objeto) + '</div><div class="r-org">' + esc(it.orgao) + " · " + esc(it.municipio) + "/" + esc(it.uf) + "</div></div>" +
-      '<div class="r-val"><b>' + brl.format(it.valor) + "</b><small>até " + fDia.format(it.prazo) + "</small></div>" +
+      '<div class="r-val"><b' + (it.valor > 0 ? "" : ' class="muted" style="font-weight:500"') + ">" + esc(valorTxt(it)) + "</b><small>até " + fDia.format(it.prazo) + "</small></div>" +
       '<div class="r-act"><a class="btn btn-primary" href="' + esc(urlEdital(it)) + '" target="_blank" rel="noopener" data-stop>Ver edital ↗</a>' +
-        '<button type="button" class="icon-btn" data-star="' + it.id + '" aria-pressed="' + salvo + '" aria-label="' + (salvo ? "Remover dos salvos" : "Salvar edital") + '" title="' + (salvo ? "Salvo" : "Salvar") + '">' + ICON_STAR + "</button></div>" +
+        '<button type="button" class="icon-btn" data-star="' + esc(it.id) + '" aria-pressed="' + salvo + '" aria-label="' + (salvo ? "Remover dos salvos" : "Salvar edital") + '" title="' + (salvo ? "Salvo" : "Salvar") + '">' + ICON_STAR + "</button></div>" +
     "</div>";
   }
   const vazio = (t, s) => '<div class="empty"><b>' + t + "</b>" + s + "</div>";
+  function vazioBase(){
+    return S.phase === "loading" ? vazio("Carregando editais do PNCP", "A lista mostra órgão, objeto, prazo e valor de cada edital da última coleta.")
+      : S.phase === "offline" ? vazio("A base do radar não abriu", "Entre na sua conta do Claude e recarregue a página.")
+      : vazio("Nenhum edital com prazo aberto", "A última coleta não tem editais com prazo futuro. Peça uma nova coleta ao Claude.");
+  }
 
   function renderBuscar(){
-    const q = $("q").value.trim();
-    const porTermo = ITENS.filter(it => casa(it, q));
+    const q = $("q").value.trim(), base = abertos();
+    const porTermo = base.filter(it => casa(it, q));
     $("pfilter").innerHTML = '<button type="button" class="pf" data-fonte="" aria-pressed="' + !S.fonte + '">Todos os portais <span class="n">' + porTermo.length + "</span></button>" +
       PORTAIS.map(p => '<button type="button" class="pf" data-fonte="' + esc(p.id) + '" aria-pressed="' + (S.fonte === p.id) + '">' + esc(p.nome) + ' <span class="n">' + porTermo.filter(it => it.fonte === p.id).length + "</span></button>").join("");
     const o = $("ord").value;
     const lista = porTermo.filter(it => !S.fonte || it.fonte === S.fonte)
-      .sort((a,b) => o === "valor" ? b.valor - a.valor : o === "novo" ? (b.novo - a.novo) || (a.prazo - b.prazo) : a.prazo - b.prazo);
-    const sete = lista.filter(it => dias(it) <= 7).length, total = lista.reduce((s,it) => s + it.valor, 0);
-    $("summary").innerHTML = "<span><b class=\"num\">" + lista.length + "</b> " + (lista.length === 1 ? "edital aberto" : "editais abertos") + (q ? " para “" + esc(q) + "”" : "") + "</span>" +
+      .sort((a,b) => o === "valor" ? (b.valor || 0) - (a.valor || 0) : o === "novo" ? (b.pub || 0) - (a.pub || 0) || (a.prazo - b.prazo) : a.prazo - b.prazo);
+    const sete = lista.filter(it => dias(it) <= 7).length, comValor = lista.filter(it => it.valor > 0), total = comValor.reduce((s,it) => s + it.valor, 0);
+    $("summary").innerHTML = S.phase !== "ready" ? "" : "<span><b class=\"num\">" + lista.length + "</b> " + (lista.length === 1 ? "edital com prazo aberto" : "editais com prazo aberto") + (q ? " para “" + esc(q) + "”" : "") + "</span>" +
       (sete ? '<span class="alert"><b class="num">' + sete + "</b> " + (sete === 1 ? "vence" : "vencem") + " em até 7 dias</span>" : "") +
-      (lista.length ? '<span><b class="num">' + brlC.format(total) + "</b> estimados</span>" : "");
-    $("list").innerHTML = lista.length ? lista.map(row).join("")
-      : vazio("Nenhum edital encontrado", "Tente outro termo ou abra a busca direto em " + (S.fonte ? '<a href="' + esc(portal(S.fonte).url(q)) + '" target="_blank" rel="noopener">' + esc(portal(S.fonte).nome) + " ↗</a>" : '<a href="' + esc(PORTAIS[0].url(q)) + '" target="_blank" rel="noopener">PNCP ↗</a>') + ".");
+      (comValor.length ? '<span><b class="num">' + brlC.format(total) + "</b> estimados em " + comValor.length + " com valor divulgado</span>" : "");
+    $("list").innerHTML = !base.length ? vazioBase() : lista.length ? lista.map(row).join("")
+      : vazio("Nenhum edital nesta coleta", "A coleta guarda só parte do PNCP. Busque direto em " + (S.fonte ? '<a href="' + esc(portal(S.fonte).url(q)) + '" target="_blank" rel="noopener">' + esc(portal(S.fonte).nome) + " ↗</a>" : '<a href="' + esc(PORTAIS[0].url(q)) + '" target="_blank" rel="noopener">PNCP ↗</a>') + ".");
   }
   function renderSalvos(){
-    const lista = ITENS.filter(it => S.star.has(it.id)).sort((a,b) => a.prazo - b.prazo);
-    $("listSalvos").innerHTML = lista.length ? lista.map(row).join("") : vazio("Nenhum edital salvo", "Na busca, toque no ícone ao lado de Ver edital para guardar o edital aqui.");
+    const lista = abertos().filter(it => S.star.has(it.id)).sort((a,b) => a.prazo - b.prazo);
+    $("listSalvos").innerHTML = lista.length ? lista.map(row).join("") : S.phase !== "ready" ? vazioBase() : vazio("Nenhum edital salvo", "Na busca, toque no ícone ao lado de Ver edital para guardar o edital aqui.");
   }
   function renderPortais(){
-    const q = $("q").value.trim();
+    const q = $("q").value.trim(), base = abertos();
     $("portals").innerHTML = PORTAIS.map(p => {
-      const n = ITENS.filter(it => it.fonte === p.id).length;
+      const n = base.filter(it => it.fonte === p.id).length;
       return '<div class="pcard"><h3>' + esc(p.nome) + "</h3><p>" + esc(p.desc) + "</p>" + (p.termo ? '<span class="term">Abre já com o termo buscado</span>' : "") +
         '<div class="foot"><span class="num">' + n + (n === 1 ? " edital" : " editais") + ' no radar</span><a class="btn" href="' + esc(p.url(q)) + '" target="_blank" rel="noopener">Abrir portal ↗</a></div></div>';
     }).join("");
   }
 
   function renderDrawer(){
-    const it = ITENS.find(x => x.id === S.sel), d = $("drawer");
+    const it = S.items.find(x => x.id === S.sel), d = $("drawer");
     $("shade").hidden = d.hidden = !it;
     if (!it) return;
     const n = dias(it), salvo = S.star.has(it.id), ck = S.checks[it.id] || [];
     const itens = ["Li o termo de referência e o objeto","Confirmei os documentos de habilitação","Verifiquei retificações e esclarecimentos","Anotei a data da sessão e o prazo de impugnação"];
-    d.innerHTML = '<div class="d-head"><div style="min-width:0"><div class="r-top"><span class="portal-tag">' + esc(portal(it.fonte).nome) + '</span><span class="mono">' + esc(it.edital) + "</span></div>" +
+    const campos = [["Órgão", esc(it.orgao) + (it.unidade ? '<br><span class="muted">' + esc(it.unidade) + "</span>" : ""), "wide"],["Local", esc(it.municipio) + "/" + esc(it.uf)],
+      ["Valor estimado", it.valor > 0 ? '<b class="num">' + brl.format(it.valor) + "</b>" : '<span class="muted">' + esc(valorTxt(it)) + "</span>"],
+      ["Modalidade", esc(it.modalidade) + (it.srp ? " · registro de preços" : "")],["Processo", it.processo ? '<span class="mono">' + esc(it.processo) + "</span>" : "—"],
+      ["Publicado em", it.pub ? fCurta.format(it.pub) : "—"],["Portal de origem", esc(portal(it.fonte).nome)]];
+    if (it.uasg) campos.push(["UASG", '<span class="mono">' + esc(it.uasg) + "</span>"]);
+    d.innerHTML = '<div class="d-head"><div style="min-width:0"><div class="r-top"><span class="portal-tag">' + esc(portal(it.fonte).nome) + "</span>" + (it.edital ? '<span class="mono">' + esc(it.edital) + "</span>" : "") + "</div>" +
         '<h2 id="dTitle">' + esc(it.objeto) + "</h2></div>" +
         '<button type="button" class="icon-btn" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>' +
       '<div class="d-body">' +
-        '<div class="d-due ' + nivel(it) + '"><div class="due ' + nivel(it) + '"><b>' + n + "</b><span>" + (n === 1 ? "dia" : "dias") + "</span></div><p><b>Propostas até " + esc(fData.format(it.prazo)) + "</b>Horário de Brasília. Confirme a data no edital.</p></div>" +
-        '<dl class="dl">' +
-          [["Órgão", esc(it.orgao), "wide"],["Local", esc(it.municipio) + "/" + esc(it.uf)],["Valor estimado", '<b class="num">' + brl.format(it.valor) + "</b>"],
-           ["Modalidade", esc(it.modalidade)],["Critério de julgamento", esc(CRIT[it.modalidade] || "Ver edital")],["Situação", '<span style="color:var(--ok);font-weight:600">Recebendo propostas</span>'],["Portal da disputa", esc(portal(it.fonte).nome)]]
-          .map(([k,v,c]) => '<div class="' + (c || "") + '"><dt>' + k + "</dt><dd>" + v + "</dd></div>").join("") +
-        "</dl>" +
-        '<div class="checks"><h3>Conferência do edital</h3>' + itens.map((t,i) => '<label><input type="checkbox" id="ck-' + it.id + "-" + i + '" data-ck="' + i + '"' + (ck.includes(i) ? " checked" : "") + "><span>" + t + "</span></label>").join("") + "</div>" +
+        '<div class="d-due ' + nivel(it) + '"><div class="due ' + nivel(it) + '"><b>' + n + "</b><span>" + (n === 1 ? "dia" : "dias") + "</span></div><p><b>Propostas até " + esc(fData.format(it.prazo)) + "</b>Horário de Brasília, como informado no PNCP. Confirme situação e retificações no edital.</p></div>" +
+        '<dl class="dl">' + campos.map(([k,v,c]) => '<div class="' + (c || "") + '"><dt>' + k + "</dt><dd>" + v + "</dd></div>").join("") + "</dl>" +
+        '<div class="checks"><h3>Conferência do edital</h3>' + itens.map((t,i) => '<label><input type="checkbox" id="ck-' + esc(it.id) + "-" + i + '" data-ck="' + i + '"' + (ck.includes(i) ? " checked" : "") + "><span>" + t + "</span></label>").join("") + "</div>" +
       "</div>" +
-      '<div class="d-foot"><a class="btn btn-primary" href="' + esc(urlEdital(it)) + '" target="_blank" rel="noopener">Ver edital no ' + esc(portal(it.fonte).nome) + ' ↗</a><button type="button" class="btn" data-star="' + it.id + '" aria-pressed="' + salvo + '">' + (salvo ? "Salvo" : "Salvar") + "</button></div>";
+      '<div class="d-foot"><a class="btn btn-primary" href="' + esc(urlEdital(it)) + '" target="_blank" rel="noopener">Ver edital no PNCP ↗</a><button type="button" class="btn" data-star="' + esc(it.id) + '" aria-pressed="' + salvo + '">' + (salvo ? "Salvo" : "Salvar") + "</button></div>";
   }
 
-  const TITULOS = {buscar:["Buscar editais","Editais recebendo propostas no PNCP e em mais " + (PORTAIS.length - 1) + " portais."], salvos:["Salvos","Editais que você guardou para analisar. Ficam salvos neste navegador."], portais:["Portais","Os portais que o radar consulta. Abra qualquer um direto daqui."]};
+  function renderStatus(){
+    const el = $("updated"), c = toDate(S.coleta && S.coleta.coletadaEm), foot = $("sideFoot");
+    el.classList.toggle("ok", S.phase === "ready" && !!S.items.length);
+    if (S.phase === "loading") el.textContent = "Carregando a coleta";
+    else if (S.phase === "offline") el.textContent = "Base indisponível";
+    else if (!S.items.length) el.textContent = "Nenhuma coleta registrada";
+    else el.textContent = "Coleta do PNCP em " + (c ? fCurta.format(c) + ", " + fHora.format(c) : "data não informada");
+    const vencidos = S.items.length - abertos().length;
+    foot.innerHTML = "<b>Fonte: PNCP.</b> " + (S.phase === "ready" && S.items.length ? S.items.length + " editais na coleta" + (vencidos > 0 ? ", " + vencidos + " com prazo encerrado ocultos" : "") + ". " : "") + "Confira prazos e anexos no portal antes de participar.";
+  }
+
+  const TITULOS = {buscar:["Buscar editais","Editais com prazo aberto coletados do PNCP, com o portal onde a disputa acontece."], salvos:["Salvos","Editais que você guardou para analisar. Ficam salvos neste navegador."], portais:["Portais","Os portais de disputa. Abra qualquer um direto daqui."]};
   function render(){
     document.querySelectorAll("[data-view]").forEach(b => b.dataset.view === S.view ? b.setAttribute("aria-current","page") : b.removeAttribute("aria-current"));
     $("pageTitle").textContent = TITULOS[S.view][0]; $("pageText").textContent = TITULOS[S.view][1];
     $("vBuscar").hidden = S.view !== "buscar"; $("vSalvos").hidden = S.view !== "salvos"; $("vPortais").hidden = S.view !== "portais";
-    $("cSalvos").textContent = ITENS.filter(it => S.star.has(it.id)).length; $("cPortais").textContent = PORTAIS.length;
+    $("cSalvos").textContent = abertos().filter(it => S.star.has(it.id)).length; $("cPortais").textContent = PORTAIS.length;
+    renderStatus();
     if (S.view === "buscar") renderBuscar(); else if (S.view === "salvos") renderSalvos(); else renderPortais();
     renderDrawer();
   }
   function abrir(id){ S.lastFocus = document.activeElement; S.sel = id; render(); const c = $("drawer").querySelector("[data-close]"); if (c) c.focus(); }
   function fechar(){ S.sel = null; render(); if (S.lastFocus && document.contains(S.lastFocus)) S.lastFocus.focus(); }
 
-  $("sugest").insertAdjacentHTML("beforeend", ["hemodiálise","plantão médico","UTI","ambulância","Manaus"].map(t => '<button type="button" data-sug="' + esc(t) + '">' + esc(t) + "</button>").join(""));
+  function carregar(docs){
+    const ref = toDate(S.coleta && S.coleta.coletadaEm) || new Date();
+    S.items = docs.map(d => {
+      const it = Object.assign({}, d);
+      it.prazo = toDate(d.prazo);
+      it.pub = d.publicacao ? toDate(d.publicacao.length === 10 ? d.publicacao + "T12:00:00" : d.publicacao) : null;
+      it.novo = !!it.pub && ref - it.pub <= 2 * DIA;
+      it.busca = norm([d.orgao, d.unidade, d.objeto, d.edital, d.processo, d.municipio, d.uf, d.modalidade, d.fonte, d.uasg].join(" "));
+      return it;
+    });
+    S.phase = "ready";
+    render();
+  }
+
+  $("sugest").insertAdjacentHTML("beforeend", ["hemodiálise","plantão","credenciamento","urgência","UTI"].map(t => '<button type="button" data-sug="' + esc(t) + '">' + esc(t) + "</button>").join(""));
 
   document.addEventListener("click", ev => {
     const v = ev.target.closest("[data-view]"); if (v) { S.view = v.dataset.view; try { history.replaceState(null, "", "#" + S.view); } catch {} return render(); }
     const st = ev.target.closest("[data-star]");
-    if (st) { const id = st.dataset.star; S.star.has(id) ? S.star.delete(id) : S.star.add(id); store.set("rl_star", [...S.star]); return render(); }
+    if (st) { const id = st.dataset.star; S.star.has(id) ? S.star.delete(id) : S.star.add(id); store.set("rl_star_real", [...S.star]); return render(); }
     if (ev.target.closest("[data-stop]")) return;
     const f = ev.target.closest("[data-fonte]"); if (f) { S.fonte = f.dataset.fonte; return render(); }
     const sg = ev.target.closest("[data-sug]"); if (sg) { $("q").value = sg.dataset.sug; return render(); }
@@ -404,7 +416,7 @@ button,input,select{font:inherit;color:inherit}
   document.addEventListener("change", ev => {
     const c = ev.target.closest("[data-ck]"); if (!c || !S.sel) return;
     const arr = new Set(S.checks[S.sel] || []); c.checked ? arr.add(+c.dataset.ck) : arr.delete(+c.dataset.ck);
-    S.checks[S.sel] = [...arr]; store.set("rl_checks", S.checks);
+    S.checks[S.sel] = [...arr]; store.set("rl_checks_real", S.checks);
   });
   document.addEventListener("keydown", ev => {
     if (ev.key === "Escape" && S.sel) return fechar();
@@ -414,5 +426,18 @@ button,input,select{font:inherit;color:inherit}
   $("q").addEventListener("input", render);
   $("ord").addEventListener("change", render);
   render();
+
+  // Base da página: os editais ficam fora do HTML e chegam pela coleta do PNCP
+  (async () => {
+    let db = null;
+    try { db = window.claude && window.claude.use ? await window.claude.use("db") : null; } catch { db = null; }
+    if (!db) { S.phase = "offline"; return render(); }
+    let docs = null;
+    db.doc("coleta/atual").onSnapshot(snap => { S.coleta = snap.exists ? snap.data() : null; if (docs) carregar(docs); else render(); }, () => {});
+    db.collection("editais").onSnapshot(
+      snap => { docs = snap.docs.map(d => Object.assign({id:d.id}, d.data())); carregar(docs); },
+      () => { if (S.phase !== "ready") { S.phase = "offline"; render(); } }
+    );
+  })();
 })();
 </script>
