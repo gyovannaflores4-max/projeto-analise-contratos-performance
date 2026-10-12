@@ -5,16 +5,16 @@ Site para buscar editais de serviços médicos com prazo aberto no PNCP. Qualque
 - `index.html`: o site.
 - `api/editais.js`: servidor que consulta o PNCP (busca pública + detalhe de cada compra) e devolve os editais.
 - `editais-base.json`: última lista salva, mostrada na hora em que o site abre e quando o PNCP não responde.
+- `versao-claude.html`: versão publicada como artifact no Claude (não é usada pela Vercel).
+- `prototipos.html`: protótipos A, B e C.
 
 ## Como publicar na Vercel (gratuito)
 
 1. Entre em https://vercel.com e clique em **Sign Up → Continue with GitHub**.
 2. Clique em **Add New… → Project** e escolha o repositório `projeto-analise-contratos-performance`.
-3. Em **Root Directory**, clique em **Edit** e escolha `radar-licitacoes/site`.
+3. Em **Root Directory**, clique em **Edit** e escolha a pasta `radar-licitacoes`.
 4. Em **Framework Preset**, deixe **Other**. Não precisa preencher comando de build.
 5. Clique em **Deploy**. Em cerca de 1 minuto a Vercel mostra o endereço do site, algo como `radar-licitacoes.vercel.app`.
-
-Se o código ainda estiver só no branch `claude/licitacoes-search-site-xgryrp`, escolha esse branch em **Settings → Git → Production Branch**, ou junte o branch na `main` antes.
 
 ## Como a atualização funciona
 

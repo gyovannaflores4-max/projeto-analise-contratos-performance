@@ -1,3 +1,8 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Radar de Licitações</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Source+Sans+3:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
@@ -67,6 +72,7 @@ button,input,select{font:inherit;color:inherit}
 .page-h h1{font-size:clamp(22px,2.6vw,28px)}
 .page-h p{color:var(--ink-2);margin-top:4px}
 .updated{font-size:13px;color:var(--ink-3);display:flex;align-items:center;gap:6px}
+body{margin:0}
 .updated::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--warn)}
 .updated.ok::before{background:var(--ok)}
 .updated.run::before{background:var(--accent);animation:pulse 1.2s ease-in-out infinite}
@@ -199,6 +205,8 @@ button,input,select{font:inherit;color:inherit}
   .btn,.pf,.nav button,.icon-btn,.row{transition:background-color .15s,border-color .15s,color .15s}
 }
 </style>
+</head>
+<body>
 
 <div class="app">
   <aside class="side">
@@ -230,7 +238,7 @@ button,input,select{font:inherit;color:inherit}
         <div class="refresh">
           <div class="refresh-row">
             <span class="updated" id="updated">Carregando a coleta</span>
-            <button type="button" class="btn" id="btnAtualizar" disabled>
+            <button type="button" class="btn" id="btnAtualizar" >
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg><span>Atualizar agora</span></button>
           </div>
           <p class="refresh-msg" id="refreshMsg" role="status" hidden></p>
@@ -272,9 +280,6 @@ button,input,select{font:inherit;color:inherit}
 <div class="shade" id="shade" hidden></div>
 <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dTitle" hidden></aside>
 
-<!-- COPIA-INICIO: cópia dos editais para quem abre o link sem entrar no Claude. A rotina de atualização regrava este bloco. -->
-<script type="application/json" id="copia">{"coleta":{"base":"PNCP","coletadaEm":"2026-10-08T13:55:00-03:00"},"editais":[{"id":"06302492000156-2026-33","ebserh":false,"edital":"Edital nº 169/2026","especialidade":"urgencia","fonte":"PNCP","modalidade":"Pregão eletrônico","municipio":"São Paulo","objeto":"Registro de preços para plantão médico presencial e pronto-socorro móvel de urgência e emergência em eventos.","orgao":"Tribunal Regional Eleitoral de São Paulo","prazo":"2026-10-23T13:00:00","processo":null,"publicacao":"2026-10-08","srp":true,"uasg":"070018","uf":"SP","unidade":null,"url":"https://pncp.gov.br/app/editais/06302492000156/2026/33","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"10593919000190-2026-43","ebserh":false,"edital":"Edital de Chamamento Público nº (8571) | 2-0/2026","especialidade":"outros","fonte":"PNCP","modalidade":"Credenciamento","municipio":"Padre Bernardo","objeto":"Credenciamento de pessoas jurídicas para prestação de serviços médicos especializados e serviços farmacêuticos… Objeto completo no PNCP.","orgao":"Fundo Municipal de Saúde","prazo":"2027-09-22T07:00:00","processo":null,"publicacao":"2026-09-14","srp":false,"uasg":null,"uf":"GO","unidade":"Fundo Municipal de Saúde","url":"https://pncp.gov.br/app/editais/10593919000190/2026/43","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"07510376000195-2026-13","ebserh":false,"edital":"Edital nº 09/2026","especialidade":"outros","fonte":"PNCP","modalidade":"Pregão eletrônico","municipio":"Itajaí","objeto":"Registro de preços para serviços médicos especializados aos municípios consorciados.","orgao":"Consórcio Intermunicipal de Saúde da Região da Foz do Rio Itajaí (CIS-AMFRI)","prazo":"2026-10-20T09:00:00","processo":null,"publicacao":"2026-10-05","srp":true,"uasg":null,"uf":"SC","unidade":null,"url":"https://pncp.gov.br/app/editais/07510376000195/2026/13","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"95594800000194-2026-90","ebserh":false,"edital":"Edital nº PCE 32/2026","especialidade":"outros","fonte":"PNCP","modalidade":"Pregão eletrônico","municipio":"Anahy","objeto":"Serviços continuados de clínica geral por hora trabalhada para a Unidade Básica de Saúde.","orgao":"Município de Anahy","prazo":"2026-10-20T08:00:00","processo":null,"publicacao":"2026-09-28","srp":false,"uasg":null,"uf":"PR","unidade":"Fundo Municipal de Saúde","url":"https://pncp.gov.br/app/editais/95594800000194/2026/90","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"13912506000119-2026-78","ebserh":false,"edital":"Edital de Chamamento Público nº 007/2026","especialidade":"plantoes","fonte":"Licitanet","modalidade":"Credenciamento","municipio":"Santa Maria da Vitória","objeto":"Credenciamento para plantões presenciais e de sobreaviso, consultas especializadas, exames, procedimentos e cirurgias eletivas, complementar ao SUS.","orgao":"Município de Santa Maria da Vitória","prazo":"2027-08-17T00:00:00","processo":"PROC. ADM 065/2026","publicacao":"2026-09-15","srp":false,"uasg":null,"uf":"BA","unidade":"Município de Santa Maria da Vitória/BA","url":"https://pncp.gov.br/app/editais/13912506000119/2026/78","valor":21616563},{"id":"13910690000168-2026-131","ebserh":false,"edital":"Edital de Chamamento Público nº 014/2026","especialidade":"plantoes","fonte":"PNCP","modalidade":"Credenciamento","municipio":"Ubaíra","objeto":"Serviços médicos de clínica médica e plantões. Objeto completo no PNCP.","orgao":"Município de Ubaíra","prazo":"2027-09-30T08:00:00","processo":null,"publicacao":"2026-09-28","srp":false,"uasg":null,"uf":"BA","unidade":"Prefeitura Municipal","url":"https://pncp.gov.br/app/editais/13910690000168/2026/131","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"10319517000100-2025-18","ebserh":false,"edital":"Edital de Chamamento Público nº 01/2025","especialidade":"outros","fonte":"Licitanet","modalidade":"Credenciamento","municipio":"Porto da Folha","objeto":"Credenciamento de pessoas jurídicas para serviços médicos especializados, conforme as necessidades da Secretaria Municipal de Saúde.","orgao":"Fundo Municipal de Saúde de Porto da Folha","prazo":"2027-08-27T00:00:00","processo":"01","publicacao":"2025-08-29","srp":false,"uasg":null,"uf":"SE","unidade":"Fundo Municipal de Saúde de Porto da Folha/SE","url":"https://pncp.gov.br/app/editais/10319517000100/2025/18","valor":3212.21},{"id":"13780770000146-2026-70","ebserh":false,"edital":"Edital de Chamamento Público nº 013/2026","especialidade":"outros","fonte":"Licitanet","modalidade":"Credenciamento","municipio":"Boquira","objeto":"Credenciamento de pessoas físicas e jurídicas para serviços médicos nas unidades de saúde do município.","orgao":"Município de Boquira","prazo":"2027-07-06T00:00:00","processo":"063/2026","publicacao":"2026-10-06","srp":false,"uasg":null,"uf":"BA","unidade":null,"url":"https://pncp.gov.br/app/editais/13780770000146/2026/70","valor":141600},{"id":"88814181000130-2026-489","ebserh":false,"edital":"Edital nº PCE 73/2026","especialidade":"plantoes","fonte":"PNCP","modalidade":"Pregão eletrônico","municipio":"Osório","objeto":"Serviços de saúde com equipe multiprofissional em regime de plantões durante o Carnaval, na unidade de saúde de Atlântida Sul.","orgao":"Município de Osório","prazo":"2026-10-27T08:59:00","processo":"467/2026","publicacao":"2026-10-08","srp":false,"uasg":null,"uf":"RS","unidade":"Secretaria Municipal de Saúde","url":"https://pncp.gov.br/app/editais/88814181000130/2026/489","valor":462071.3},{"id":"01613072000177-2026-65","ebserh":false,"edital":"Edital de Chamamento Público nº 000010/2026","especialidade":"outros","fonte":"PNCP","modalidade":"Credenciamento","municipio":"José Raydan","objeto":"Credenciamento de prestadores de serviços especializados de internação psiquiátrica integral para pacientes do município.","orgao":"Município de José Raydan","prazo":"2027-10-05T23:59:59","processo":null,"publicacao":"2026-10-06","srp":false,"uasg":null,"uf":"MG","unidade":null,"url":"https://pncp.gov.br/app/editais/01613072000177/2026/65","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"06916689000185-2027-1","ebserh":false,"edital":"Edital de Chamamento Público nº 1/2027","especialidade":"outros","fonte":"PNCP","modalidade":"Credenciamento","municipio":"Campinas","objeto":"Credenciamento de pessoas jurídicas para atendimento hospitalar aos beneficiários do FAS e do FASC.","orgao":"Instituto de Previdência Social do Município de Campinas (CAMPREV)","prazo":"2027-01-18T17:00:00","processo":null,"publicacao":"2026-10-07","srp":false,"uasg":"931045","uf":"SP","unidade":null,"url":"https://pncp.gov.br/app/editais/06916689000185/2027/1","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"05853163000130-2027-16","ebserh":false,"edital":"Edital de Chamamento Público nº 120/2027","especialidade":"outros","fonte":"PNCP","modalidade":"Credenciamento","municipio":"Marabá","objeto":"Contratação de prestadores de serviços médicos especializados em oftalmologia, na modalidade ambulatorial e de urgência… Objeto completo no PNCP.","orgao":"Município de Marabá","prazo":"2027-09-10T18:00:00","processo":null,"publicacao":"2026-09-03","srp":false,"uasg":"927495","uf":"PA","unidade":"Fundo Municipal de Saúde de Marabá - PA","url":"https://pncp.gov.br/app/editais/05853163000130/2027/16","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"47018676000176-2026-402","ebserh":false,"edital":"Edital nº 75/2026","especialidade":"plantoes","fonte":"Compras.gov.br","modalidade":"Pregão eletrônico","municipio":"Campinas","objeto":"Serviços continuados por meio de plantões presenciais para a Unidade de Alta Complexidade em Oncologia (UNACON) da Rede Mário Gatti.","orgao":"Rede Municipal Dr. Mário Gatti de Urgência, Emergência e Hospitalar","prazo":"2026-10-15T09:00:00","processo":"HMMG.2025.00004010-16","publicacao":"2026-09-29","srp":false,"uasg":"930324","uf":"SP","unidade":null,"url":"https://pncp.gov.br/app/editais/47018676000176/2026/402","valor":null,"valorNota":"Não divulgado no PNCP"},{"id":"18307835000154-2026-168","ebserh":false,"edital":"Edital de Chamamento Público nº 1023/2026","especialidade":"outros","fonte":"PNCP","modalidade":"Credenciamento","municipio":"Itabirito","objeto":"Credenciamento de pessoas jurídicas para realização de exames de imagem… Objeto completo no PNCP.","orgao":"Município de Itabirito","prazo":"2027-09-22T18:00:00","processo":null,"publicacao":"2026-09-21","srp":false,"uasg":"984637","uf":"MG","unidade":"Prefeitura Municipal de Itabirito - MG","url":"https://pncp.gov.br/app/editais/18307835000154/2026/168","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"22681423000157-2026-98","ebserh":false,"edital":"Edital de Chamamento Público nº 007/2026","especialidade":"outros","fonte":"PNCP","modalidade":"Credenciamento","municipio":"Francisco Sá","objeto":"Contratação de pessoa jurídica ou física para prestação de diversos serviços médicos, em atendimento à demanda da Secretaria… Objeto completo no PNCP.","orgao":"Município de Francisco Sá","prazo":"2027-09-17T09:00:00","processo":null,"publicacao":"2026-09-11","srp":false,"uasg":null,"uf":"MG","unidade":"Município de Francisco Sá","url":"https://pncp.gov.br/app/editais/22681423000157/2026/98","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"11022597001325-2026-299","ebserh":false,"edital":"Edital nº 2/2026","especialidade":"hemodialise","fonte":"PNCP","modalidade":"Pregão eletrônico","municipio":"Recife","objeto":"Registro de preços para serviços de nefrologia (hemodiálise e DPI) a pacientes adultos e pediátricos no Hospital Universitário Oswaldo Cruz.","orgao":"Fundação Universidade de Pernambuco","prazo":"2026-10-14T08:59:00","processo":"0240.2026.CPL.HUOC.PE.0054.HUO","publicacao":"2026-07-22","srp":true,"uasg":"926940","uf":"PE","unidade":"Hospital Universitário Oswaldo Cruz","url":"https://pncp.gov.br/app/editais/11022597001325/2026/299","valor":2068564.21},{"id":"11186410000195-2026-12","ebserh":false,"edital":"Edital de Chamamento Público nº 020/2026","especialidade":"outros","fonte":"Portal de Compras Públicas","modalidade":"Credenciamento","municipio":"Belterra","objeto":"Credenciamento de empresas especializadas em serviços médicos para a realização de cirurgias… Objeto completo no PNCP.","orgao":"Fundo Municipal de Saúde de Belterra","prazo":"2027-09-21T08:59:00","processo":null,"publicacao":"2026-09-18","srp":false,"uasg":null,"uf":"PA","unidade":"Secretaria Municipal de Saúde de Belterra","url":"https://pncp.gov.br/app/editais/11186410000195/2026/12","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"08088254000115-2026-124","ebserh":false,"edital":"Edital nº 44/2026","especialidade":"outros","fonte":"PNCP","modalidade":"Pregão eletrônico","municipio":"Carnaúba dos Dantas","objeto":"Contratação de empresa especializada para prestação de serviços de saúde por meio de profissionais. Objeto completo no PNCP.","orgao":"Município de Carnaúba dos Dantas","prazo":"2026-10-16T08:30:00","processo":null,"publicacao":"2026-09-18","srp":false,"uasg":null,"uf":"RN","unidade":null,"url":"https://pncp.gov.br/app/editais/08088254000115/2026/124","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"00236968000111-2026-141","ebserh":false,"edital":"Edital de Chamamento Público nº 6/2026","especialidade":"outros","fonte":"PNCP","modalidade":"Credenciamento","municipio":"Nova Crixás","objeto":"Credenciamento de pessoas físicas e jurídicas da área da saúde, sem vínculo empregatício, para serviços profissionais ao Sistema Municipal de Saúde.","orgao":"Município de Nova Crixás","prazo":"2026-12-31T17:00:00","processo":"6","publicacao":"2026-10-08","srp":false,"uasg":null,"uf":"GO","unidade":"Fundo Municipal de Saúde","url":"https://pncp.gov.br/app/editais/00236968000111/2026/141","valor":225730.24},{"id":"06138911000166-2026-57","ebserh":false,"edital":"Edital de Chamamento Público nº 03/2026","especialidade":"outros","fonte":"Licitanet","modalidade":"Credenciamento","municipio":"Tuntum","objeto":"Credenciamento de pessoas físicas ou jurídicas para prestação de serviços médicos ao município de Tuntum/MA.","orgao":"Município de Tuntum","prazo":"2027-01-18T00:00:00","processo":"03","publicacao":"2026-07-16","srp":false,"uasg":null,"uf":"MA","unidade":"Município de Tuntum/MA","url":"https://pncp.gov.br/app/editais/06138911000166/2026/57","valor":9356352},{"id":"08927915000159-2026-32","ebserh":false,"edital":"Edital de Chamamento Público nº 5/2026","especialidade":"plantoes","fonte":"Portal de Compras Públicas","modalidade":"Credenciamento","municipio":"Bananeiras","objeto":"Credenciamento de empresas para serviços médicos, incluindo plantões e especialidades, na rede municipal e no Hospital Municipal Dr. Clovis Bezerra.","orgao":"Município de Bananeiras","prazo":"2027-10-05T12:00:00","processo":"260706CD00005","publicacao":"2026-10-02","srp":false,"uasg":null,"uf":"PB","unidade":"Prefeitura Municipal","url":"https://pncp.gov.br/app/editais/08927915000159/2026/32","valor":4025853.16},{"id":"15126437000305-2026-4098","ebserh":true,"edital":"Aviso de Contratação Direta nº 2/2026","especialidade":"outros","fonte":"Compras.gov.br","modalidade":"Dispensa","municipio":"Belo Horizonte","objeto":"Exames de ressonância magnética para pacientes internados e do pronto-socorro do HC-UFMG durante a indisponibilidade temporária da unidade de imagem.","orgao":"Empresa Brasileira de Serviços Hospitalares (EBSERH)","prazo":"2026-10-13T08:00:00","processo":"23537.009971/2026-18","publicacao":"2026-10-07","srp":false,"uasg":"155021","uf":"MG","unidade":"Hospital das Clínicas de Minas Gerais","url":"https://pncp.gov.br/app/editais/15126437000305/2026/4098","valor":null,"valorNota":"Não divulgado no PNCP"},{"id":"01612499000150-2026-105","ebserh":false,"edital":"Edital de Chamamento Público nº 7/2026","especialidade":"outros","fonte":"PNCP","modalidade":"Credenciamento","municipio":"Nova Porteirinha","objeto":"Credenciamento de clínicas para a prestação de serviços médicos, compostos de exames de imagens, consultas e procedimentos… Objeto completo no PNCP.","orgao":"Município de Nova Porteirinha","prazo":"2027-09-16T12:00:00","processo":null,"publicacao":"2026-09-16","srp":false,"uasg":null,"uf":"MG","unidade":"Unidade Única","url":"https://pncp.gov.br/app/editais/01612499000150/2026/105","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"01987787000190-2026-7","ebserh":false,"edital":"Edital de Chamamento Público nº 2/2026","especialidade":"outros","fonte":"PNCP","modalidade":"Credenciamento","municipio":"Nonoai","objeto":"Credenciamento de pessoas jurídicas para prestação de serviços de telessaúde, usando algoritmos clínicos e inteligência… Objeto completo no PNCP.","orgao":"Consórcio Intermunicipal de Saúde","prazo":"2030-09-28T00:00:00","processo":null,"publicacao":"2026-09-18","srp":false,"uasg":null,"uf":"RS","unidade":"CONISA","url":"https://pncp.gov.br/app/editais/01987787000190/2026/7","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"24772287000136-2026-83","ebserh":false,"edital":"Edital de Chamamento Público nº 007/2026","especialidade":"outros","fonte":"PNCP","modalidade":"Credenciamento","municipio":"Campo Novo do Parecis","objeto":"Credenciamento de pessoas jurídicas especializadas na prestação de serviços médico-hospitalares… Objeto completo no PNCP.","orgao":"Município de Campo Novo do Parecis","prazo":"2028-05-12T08:00:00","processo":null,"publicacao":"2026-05-12","srp":false,"uasg":null,"uf":"MT","unidade":"Prefeitura Municipal de Campo Novo do Parecis - MT","url":"https://pncp.gov.br/app/editais/24772287000136/2026/83","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"10417698000107-2026-15","ebserh":false,"edital":"Edital de Chamamento Público nº 003/2026","especialidade":"urgencia","fonte":"PNCP","modalidade":"Credenciamento","municipio":"Itambé","objeto":"Credenciamento de médicos plantonistas (12 e 24 horas) para urgência e emergência na Unidade Mista de Saúde Dr. Hercílio Moraes Borba.","orgao":"Fundo Municipal de Saúde de Itambé","prazo":"2027-10-01T16:00:00","processo":"027/2026","publicacao":"2026-10-01","srp":false,"uasg":null,"uf":"PE","unidade":null,"url":"https://pncp.gov.br/app/editais/10417698000107/2026/15","valor":2429309},{"id":"17888082000155-2026-211","ebserh":false,"edital":"Edital nº 70/2026","especialidade":"urgencia","fonte":"PNCP","modalidade":"Pregão eletrônico","municipio":"Cristais","objeto":"Serviços médico-hospitalares complementares no pronto atendimento e na clínica médica do município.","orgao":"Município de Cristais","prazo":"2026-10-23T09:01:00","processo":null,"publicacao":"2026-10-07","srp":false,"uasg":null,"uf":"MG","unidade":"Secretaria de Administração e Planejamento","url":"https://pncp.gov.br/app/editais/17888082000155/2026/211","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"08087561000181-2026-219","ebserh":false,"edital":"Edital de Chamamento Público nº 10/2026","especialidade":"plantoes","fonte":"PNCP","modalidade":"Credenciamento","municipio":"Parelhas","objeto":"Serviços médicos especializados em regime de plantões de 24 horas para a Prefeitura de Parelhas.","orgao":"Município de Parelhas","prazo":"2027-10-08T08:00:00","processo":"6244","publicacao":"2026-10-07","srp":false,"uasg":null,"uf":"RN","unidade":"Prefeitura","url":"https://pncp.gov.br/app/editais/08087561000181/2026/219","valor":10426210.4},{"id":"15072663000199-2026-135","ebserh":false,"edital":"Edital nº 050/2026","especialidade":"outros","fonte":"Portal de Compras Públicas","modalidade":"Pregão eletrônico","municipio":"Juara","objeto":"Registro de preços para serviços médicos em clínica geral nas UBS ESF Paranorte, ESF Alvorada, ESF Porto Seguro, ESF Centro de Saúde e UCT.","orgao":"Município de Juara","prazo":"2026-10-21T09:00:00","processo":"050/2026","publicacao":"2026-10-07","srp":true,"uasg":null,"uf":"MT","unidade":"Divisão de Licitações","url":"https://pncp.gov.br/app/editais/15072663000199/2026/135","valor":1574511},{"id":"14814139000183-2026-12","ebserh":false,"edital":"Edital de Chamamento Público nº 6/2026","especialidade":"outros","fonte":"PNCP","modalidade":"Credenciamento","municipio":"Curitiba","objeto":"Credenciamento de empresas para prestação de serviços médicos especializados para as unidades de negócio da Fundação Estatal… Objeto completo no PNCP.","orgao":"Fundação Estatal de Atenção à Saúde (FEAS)","prazo":"2036-01-18T09:25:00","processo":null,"publicacao":"2026-01-19","srp":false,"uasg":"928285","uf":"PR","unidade":"Fundação Estatal de Atenção à Saúde - PR","url":"https://pncp.gov.br/app/editais/14814139000183/2026/12","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"47018676000176-2026-418","ebserh":false,"edital":"Edital nº 82/2026","especialidade":"urgencia","fonte":"PNCP","modalidade":"Pregão eletrônico","municipio":"Campinas","objeto":"Serviços médicos e multiprofissionais presenciais e ininterruptos, suplementares, para as UPAs e o SAMU 192 de Campinas.","orgao":"Rede Municipal Dr. Mário Gatti de Urgência, Emergência e Hospitalar","prazo":"2026-11-03T09:00:00","processo":null,"publicacao":"2026-10-08","srp":false,"uasg":"930324","uf":"SP","unidade":null,"url":"https://pncp.gov.br/app/editais/47018676000176/2026/418","valor":null,"valorNota":"Não consultado nesta coleta"},{"id":"13912506000119-2026-11","ebserh":false,"edital":"Edital de Chamamento Público nº 002/2026","especialidade":"outros","fonte":"Licitanet","modalidade":"Credenciamento","municipio":"Santa Maria da Vitória","objeto":"Credenciamento de pessoas jurídicas para consultas médicas especializadas e exames diagnósticos, em caráter complementar ao SUS.","orgao":"Município de Santa Maria da Vitória","prazo":"2027-02-02T00:00:00","processo":"PROC. ADM. 013/2026","publicacao":"2026-02-02","srp":false,"uasg":null,"uf":"BA","unidade":"Município de Santa Maria da Vitória/BA","url":"https://pncp.gov.br/app/editais/13912506000119/2026/11","valor":6036063}]}</script>
-<!-- COPIA-FIM -->
 <script>
 (() => {
   const $ = id => document.getElementById(id);
@@ -303,7 +308,7 @@ button,input,select{font:inherit;color:inherit}
   const portal = id => PORTAIS.find(p => p.id === id) || {id, nome:id || "Outro portal", url:() => "", desc:""};
 
   const store = { get(k){ try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }, set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
-  const S = {view:"buscar", fonte:"", star:new Set(store.get("rl_star_real") || []), sel:null, checks:store.get("rl_checks_real") || {}, lastFocus:null, items:[], coleta:null, phase:"loading", db:null, mcp:null, triggerId:"", firing:false, nota:"", notaErr:false, copia:false};
+  const S = {view:"buscar", fonte:"", star:new Set(store.get("rl_star_real") || []), sel:null, checks:store.get("rl_checks_real") || {}, lastFocus:null, items:[], coleta:null, phase:"loading", buscando:false, nota:"", notaErr:false, reserva:false};
   const h = (location.hash || "").slice(1); if (["buscar","salvos","portais"].includes(h)) S.view = h;
 
   // Datas do PNCP vêm no horário de Brasília, sem fuso
@@ -329,9 +334,9 @@ button,input,select{font:inherit;color:inherit}
   }
   const vazio = (t, s) => '<div class="empty"><b>' + t + "</b>" + s + "</div>";
   function vazioBase(){
-    return S.phase === "loading" ? vazio("Carregando editais do PNCP", "A lista mostra órgão, objeto, prazo e valor de cada edital da última coleta.")
-      : S.phase === "offline" ? vazio("A base do radar não abriu", "Entre na sua conta do Claude e recarregue a página.")
-      : vazio("Nenhum edital com prazo aberto", "A última coleta não tem editais com prazo futuro. Peça uma nova coleta ao Claude.");
+    return S.phase === "loading" ? vazio("Buscando editais no PNCP", "A lista mostra órgão, objeto, prazo e valor de cada edital com prazo aberto.")
+      : S.phase === "offline" ? vazio("Sem conexão com o PNCP", "Verifique sua internet e toque em Atualizar agora.")
+      : vazio("Nenhum edital com prazo aberto", "A busca não trouxe editais com prazo futuro. Toque em Atualizar agora para buscar de novo.");
   }
 
   function renderBuscar(){
@@ -386,61 +391,53 @@ button,input,select{font:inherit;color:inherit}
 
   function renderStatus(){
     const el = $("updated"), c = toDate(S.coleta && S.coleta.coletadaEm), foot = $("sideFoot");
-    const run = rodando();
-    el.classList.toggle("ok", S.phase === "ready" && !!S.items.length && !run);
-    el.classList.toggle("run", run);
-    if (S.phase === "loading") el.textContent = "Carregando a coleta";
-    else if (S.phase === "offline") el.textContent = "Base indisponível";
-    else if (S.copia) el.textContent = "Cópia salva em " + (c ? fCurta.format(c) + ", " + fHora.format(c) : "data não informada");
-    else if (run) el.textContent = "Buscando editais no PNCP";
-    else if (!S.items.length) el.textContent = "Nenhuma coleta registrada";
-    else el.textContent = "Atualizado " + (c ? ha(c) + " · " + fCurta.format(c) + ", " + fHora.format(c) : "em data não informada");
-    const b = $("btnAtualizar"), msg = $("refreshMsg"), st = S.coleta && S.coleta.status;
-    b.hidden = S.copia;
-    b.disabled = !S.db || S.firing || run;
-    b.setAttribute("aria-busy", String(S.firing || run));
-    b.querySelector("span").textContent = run ? "Atualizando…" : S.firing ? "Iniciando…" : "Atualizar agora";
-    const ini = toDate(S.coleta && S.coleta.iniciadaEm);
-    const texto = S.copia ? "Você está vendo uma cópia salva da última coleta. Entre na sua conta do Claude para ver a versão ao vivo e atualizar." : S.nota ? S.nota
-      : run ? "Busca começou às " + (ini ? fHora.format(ini) : "agora") + ". Leva de 5 a 10 minutos e a lista se atualiza sozinha."
-      : st === "falhou" ? "A última atualização não terminou. " + (S.coleta.mensagem || "")
-      : st === "concluida" && S.coleta.mensagem ? S.coleta.mensagem : "";
-    msg.hidden = !texto; msg.textContent = texto;
-    msg.classList.toggle("err", !S.copia && (S.notaErr || (!S.nota && st === "falhou")));
+    el.classList.toggle("ok", S.phase === "ready" && !S.reserva && !S.buscando);
+    el.classList.toggle("run", S.buscando);
+    if (S.buscando) el.textContent = "Buscando editais no PNCP";
+    else if (S.phase === "loading") el.textContent = "Carregando editais";
+    else if (S.phase === "offline") el.textContent = "Sem conexão com o PNCP";
+    else el.textContent = (S.reserva ? "Cópia salva em " : "Atualizado ") + (c ? (S.reserva ? "" : ha(c) + " · ") + fCurta.format(c) + ", " + fHora.format(c) : "em data não informada");
+    const btn = $("btnAtualizar"), msg = $("refreshMsg");
+    btn.disabled = S.buscando;
+    btn.setAttribute("aria-busy", String(S.buscando));
+    btn.querySelector("span").textContent = S.buscando ? "Atualizando…" : "Atualizar agora";
+    const texto = S.buscando ? "Consultando o PNCP. Pode levar até 1 minuto." : S.nota;
+    msg.hidden = !texto; msg.textContent = texto || "";
+    msg.classList.toggle("err", !S.buscando && S.notaErr);
     const vencidos = S.items.length - abertos().length;
-    foot.innerHTML = "<b>Fonte: PNCP.</b> " + (S.phase === "ready" && S.items.length ? S.items.length + " editais na coleta" + (vencidos > 0 ? ", " + vencidos + " com prazo encerrado ocultos" : "") + ". " : "") + "Confira prazos e anexos no portal antes de participar.";
+    foot.innerHTML = "<b>Fonte: PNCP.</b> " + (S.phase === "ready" && S.items.length ? S.items.length + (S.items.length === 1 ? " edital na busca" : " editais na busca") + (vencidos > 0 ? ", " + vencidos + " com prazo encerrado ocultos" : "") + ". " : "") + "Confira prazos e anexos no portal antes de participar.";
   }
 
-  // Atualização: o botão dispara a rotina que consulta o PNCP e grava na base da página
-  function rodando(){
-    const c = S.coleta; if (!c || c.status !== "processando") return false;
-    const t = toDate(c.iniciadaEm); return !!t && Date.now() - t < 20 * 60000;
-  }
   function ha(d){
     const m = Math.round((Date.now() - d) / 60000);
-    return m < 1 ? "agora há pouco" : m < 60 ? "há " + m + " min" : m < 1440 ? "há " + Math.floor(m / 60) + " h" : "há " + Math.floor(m / 1440) + (m < 2880 ? " dia" : " dias");
+    return m < 1 ? "agora" : m < 60 ? "há " + m + " min" : m < 1440 ? "há " + Math.floor(m / 60) + " h" : "há " + Math.floor(m / 1440) + (m < 2880 ? " dia" : " dias");
   }
-  function erroMsg(c){
-    return c === "not_in_manifest" || c === "not_granted" || c === "approval_required" || c === "consent_required" ? "Para atualizar, permita o conector Claude Code Remote nesta página e toque em Atualizar agora de novo."
-      : c === "server_not_connected" || c === "selection_required" || c === "server_not_found" ? "O conector Claude Code Remote não está disponível na sua conta. Peça a quem administra o radar para atualizar."
-      : c === "needs_reauth" ? "Reconecte o Claude Code Remote em Configurações, Conectores, e tente de novo."
-      : c === "blocked_by_policy" ? "A política da sua organização bloqueia a atualização por esta página."
-      : c === "capability_disabled" ? "Esta visualização não consegue atualizar. Abra o radar no app do Claude."
-      : c === "tool_error" ? "A rotina de atualização não foi encontrada na sua conta. Só quem criou o radar consegue atualizar."
-      : c === "server_unavailable" ? "O serviço não respondeu agora. Tente de novo em alguns minutos."
-      : "Não consegui iniciar a atualização agora. Tente de novo em alguns minutos.";
-  }
-  async function atualizar(){
-    if (S.firing || rodando()) return;
-    if (!S.triggerId) { S.nota = "A atualização automática ainda não foi configurada."; S.notaErr = true; return render(); }
-    S.firing = true; S.nota = ""; S.notaErr = false; render();
+
+  // Dados: o servidor do site (/api/editais) consulta o PNCP. A resposta fica em cache por 15 minutos;
+  // o botão Atualizar pede uma busca nova (no máximo uma a cada 5 minutos, compartilhada por todos).
+  async function buscar(nova){
+    if (S.buscando) return;
+    S.buscando = true; S.nota = ""; S.notaErr = false; render();
     try {
-      if (!S.mcp) S.mcp = await window.claude.use("mcp");
-      if (!S.mcp) throw {code:"capability_disabled"};
-      await S.mcp.callTool("Claude Code Remote", "fire_trigger", {trigger_id: S.triggerId, text: "Atualização pedida pelo botão do site em " + new Date().toISOString() + "."});
-      S.nota = "Atualização iniciada. Em alguns minutos os editais novos aparecem aqui.";
-    } catch (e) { S.nota = erroMsg(e && e.code); S.notaErr = true; }
-    S.firing = false; render();
+      const url = "/api/editais" + (nova ? "?t=" + Math.floor(Date.now() / 300000) : "");
+      const r = await fetch(url, {cache: nova ? "no-store" : "default"});
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || !Array.isArray(j.editais)) throw new Error(j.erro || "O servidor não respondeu.");
+      S.coleta = {base: j.base, coletadaEm: j.coletadaEm}; S.reserva = false;
+      carregar(j.editais);
+      if (nova) S.nota = j.editais.length + (j.editais.length === 1 ? " edital com prazo aberto." : " editais com prazo aberto.") + (j.avisos && j.avisos.length ? " " + j.avisos.join(" ") : "");
+    } catch (e) {
+      if (!S.items.length) await reserva();
+      S.nota = "Não consegui consultar o PNCP agora. " + (S.items.length ? "Mostrando a última lista salva. " : "") + "Tente de novo em alguns minutos.";
+      S.notaErr = true;
+    }
+    S.buscando = false; render();
+  }
+  async function reserva(){
+    try {
+      const j = await (await fetch("editais-base.json")).json();
+      S.coleta = {base: j.base, coletadaEm: j.coletadaEm}; S.reserva = true; carregar(j.editais);
+    } catch { S.phase = "offline"; }
   }
 
   const TITULOS = {buscar:["Buscar editais","Editais com prazo aberto coletados do PNCP, com o portal onde a disputa acontece."], salvos:["Salvos","Editais que você guardou para analisar. Ficam salvos neste navegador."], portais:["Portais","Os portais de disputa. Abra qualquer um direto daqui."]};
@@ -494,35 +491,13 @@ button,input,select{font:inherit;color:inherit}
   $("form").addEventListener("submit", e => { e.preventDefault(); render(); });
   $("q").addEventListener("input", render);
   $("ord").addEventListener("change", render);
-  $("btnAtualizar").addEventListener("click", atualizar);
-  setInterval(() => { if (S.coleta && S.coleta.status !== "processando" && S.nota && !S.notaErr) S.nota = ""; renderStatus(); }, 60000);
+  $("btnAtualizar").addEventListener("click", () => buscar(true));
+  setInterval(renderStatus, 60000);
   render();
 
-  // Base da página: os editais ficam fora do HTML e chegam pela coleta do PNCP
-  (async () => {
-    let db = null;
-    try { db = window.claude && window.claude.use ? await window.claude.use("db") : null; } catch { db = null; }
-    if (!db) {
-      // Sem login no Claude a base não abre: mostra a cópia salva na página
-      let c = null;
-      try { c = JSON.parse($("copia").textContent); } catch { c = null; }
-      if (!c || !Array.isArray(c.editais)) { S.phase = "offline"; return render(); }
-      S.copia = true; S.coleta = c.coleta || null;
-      return carregar(c.editais);
-    }
-    S.db = db;
-    db.doc("config/atualizacao").onSnapshot(snap => { S.triggerId = snap.exists ? String(snap.data().triggerId || "") : ""; renderStatus(); }, () => {});
-    let docs = null;
-    db.doc("coleta/atual").onSnapshot(snap => {
-      const antes = S.coleta && S.coleta.status;
-      S.coleta = snap.exists ? snap.data() : null;
-      if (S.coleta && S.coleta.status !== antes) { S.nota = ""; S.notaErr = false; }
-      if (docs) carregar(docs); else render();
-    }, () => {});
-    db.collection("editais").onSnapshot(
-      snap => { docs = snap.docs.map(d => Object.assign({id:d.id}, d.data())); carregar(docs); },
-      () => { if (S.phase !== "ready") { S.phase = "offline"; render(); } }
-    );
-  })();
+  // Mostra a última lista salva na hora e busca a versão nova em seguida
+  reserva().then(() => { render(); buscar(false); });
 })();
 </script>
+</body>
+</html>
