@@ -261,7 +261,10 @@ main{display:flex;flex-direction:column;gap:22px;padding-block:24px 56px}
     {id:"BLL", nome:"BLL Compras", url:() => "https://bllcompras.com/Process/ProcessSearchPublic", obs:"Busca pública"},
     {id:"Licitações-e", nome:"Licitações-e (BB)", url:() => "https://www.licitacoes-e.com.br/aop/index.jsp", obs:"Banco do Brasil"},
     {id:"Portal de Compras Públicas", nome:"Portal de Compras Públicas", url:() => "https://www.portaldecompraspublicas.com.br/processos", obs:"Processos abertos"},
-    {id:"BNC", nome:"BNC Compras", url:() => "https://bnccompras.com/Process/ProcessSearchPublic", obs:"Busca pública"}
+    {id:"BNC", nome:"BNC Compras", url:() => "https://bnccompras.com/Process/ProcessSearchPublic", obs:"Busca pública"},
+    {id:"Licitanet", nome:"Licitanet", url:() => "https://licitanet.com.br/", obs:"Pregões municipais"},
+    {id:"Licitar Digital", nome:"Licitar Digital", url:() => "https://www.licitardigital.com.br/", obs:"Pregões municipais"},
+    {id:"Compras AM", nome:"Compras AM (e-Compras)", url:() => "https://www.e-compras.am.gov.br/publico/", obs:"Governo do Amazonas"}
   ];
 
   // Base de exemplo (fictícia). O prazo é relativo a hoje para a demonstração não envelhecer.
@@ -277,7 +280,12 @@ main{display:flex;flex-direction:column;gap:22px;padding-block:24px 56px}
     ["Fundação Municipal de Saúde Demo","RS","Porto Demo","Equipe médica para unidade de terapia intensiva — 10 leitos","Pregão eletrônico","PNCP",22,3780000,"PE 066/2026",["uti","plantao"]],
     ["Prefeitura de São Modelo","GO","São Modelo","Consultas e plantões em ortopedia e traumatologia","Credenciamento","BNC",26,540000,"CR 012/2026",["plantao"]],
     ["Hospital Municipal Exemplar","CE","Fortaleza","Serviço de diálise peritoneal domiciliar","Pregão eletrônico","PNCP",28,890000,"PE 101/2026",["hemodialise"]],
-    ["Prefeitura de Monte Fictício","PR","Monte Fictício","Médicos para atenção primária e plantões noturnos","Pregão eletrônico","BLL",35,720000,"PE 029/2026",["plantao"]]
+    ["Prefeitura de Monte Fictício","PR","Monte Fictício","Médicos para atenção primária e plantões noturnos","Pregão eletrônico","BLL",35,720000,"PE 029/2026",["plantao"]],
+    ["Secretaria de Saúde do Amazonas (exemplo)","AM","Manaus","Hemodiálise em unidades do interior do estado","Pregão eletrônico","Compras AM",5,4350000,"PE 214/2026",["hemodialise"]],
+    ["Fundação Hospitalar Exemplo do Amazonas","AM","Manaus","Plantões médicos em pronto-socorro adulto e infantil","Pregão eletrônico","Compras AM",15,2680000,"PE 230/2026",["plantao","urgencia"]],
+    ["Prefeitura de Vale Exemplo","MG","Vale Exemplo","Plantões médicos 24h no pronto atendimento municipal","Pregão eletrônico","Licitanet",8,1150000,"PE 045/2026",["plantao","urgencia"]],
+    ["Prefeitura de Santa Demo","MT","Santa Demo","Locação de ambulância UTI móvel com equipe médica","Pregão eletrônico","Licitar Digital",11,830000,"PE 038/2026",["ambulancia","uti"]],
+    ["Consórcio de Saúde Fictício do Oeste","SP","Oeste Fictício","Credenciamento de médicos para UTI e centro cirúrgico","Credenciamento","Licitar Digital",24,1960000,"CR 004/2026",["uti","plantao"]]
   ];
   const base = Date.now();
   const ITENS = EX.map((r,i) => {
