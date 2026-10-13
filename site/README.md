@@ -4,7 +4,7 @@ Pasta pronta para publicar em qualquer hospedagem de site estático (GitHub Page
 
 | Arquivo | O que é |
 |---|---|
-| `index.html` | **Página principal: grupos de WhatsApp por estado**, separados em *Com RQE* e *Sem RQE* (54 grupos). O médico escolhe o estado, diz se tem RQE, deixa nome, CRM e WhatsApp, e é levado ao grupo certo. Grupo cheio é pulado automaticamente. Hospitais anunciam vagas grátis |
+| `index.html` | **Página principal: grupos de WhatsApp por estado**, separados em *Com RQE* e *Sem RQE* (54 grupos). O médico escolhe o estado, diz se tem RQE, deixa nome, CRM e WhatsApp, e é levado ao grupo certo. Grupo cheio é pulado automaticamente. Hospitais anunciam vagas grátis. As bandeiras dos 27 estados (Wikimedia Commons, domínio público) ficam embutidas no próprio arquivo, então elas aparecem mesmo se o `index.html` for aberto sozinho |
 | `dados.js` | Onde ficam os links dos grupos, ou o endereço da planilha do Google com eles |
 | `grupos.csv` | Planilha-modelo com os 54 grupos. Importe no Google Planilhas e preencha a coluna `link` |
 | `CRIAR-GRUPOS.md` | Passo a passo para criar os 54 grupos: nomes, descrições, configurações e o que fazer quando um grupo lotar |
@@ -14,7 +14,6 @@ Pasta pronta para publicar em qualquer hospedagem de site estático (GitHub Page
 | `demo/index.html` | Demonstração navegável (site, app do médico, painel do hospital). Gerada por `scripts/montar-site.sh` a partir de `prototipo-plantoes/index.html` |
 | `privacidade.html` | Política de privacidade (LGPD). **Preencha os trechos entre colchetes antes de publicar** |
 | `og.png` | Imagem que aparece quando o link é compartilhado no WhatsApp, LinkedIn e Instagram |
-| `bandeiras/` | Bandeiras dos 27 estados (PNG pequenos, gerados a partir dos SVG do Wikimedia Commons; símbolos oficiais, de domínio público) |
 | `favicon.svg`, `robots.txt` | Ícone da aba e permissão para o Google indexar |
 
 ## Como ligar os grupos ao site
