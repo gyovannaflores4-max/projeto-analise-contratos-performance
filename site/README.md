@@ -14,6 +14,7 @@ Pasta pronta para publicar em qualquer hospedagem de site estático (GitHub Page
 | `demo/index.html` | Demonstração navegável (site, app do médico, painel do hospital). Gerada por `scripts/montar-site.sh` a partir de `prototipo-plantoes/index.html` |
 | `privacidade.html` | Política de privacidade (LGPD). **Preencha os trechos entre colchetes antes de publicar** |
 | `og.png` | Imagem que aparece quando o link é compartilhado no WhatsApp, LinkedIn e Instagram |
+| `bandeiras/` | Bandeiras dos 27 estados (PNG pequenos, gerados a partir dos SVG do Wikimedia Commons; símbolos oficiais, de domínio público) |
 | `favicon.svg`, `robots.txt` | Ícone da aba e permissão para o Google indexar |
 
 ## Como ligar os grupos ao site
