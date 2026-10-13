@@ -4,8 +4,10 @@ Pasta pronta para publicar em qualquer hospedagem de site estático (GitHub Page
 
 | Arquivo | O que é |
 |---|---|
-| `index.html` | **Portal de grupos e comunidades** (página principal): busca por estado, cidade e especialidade; grupos de WhatsApp com regras, participantes e selo de verificado; vagas publicadas nos grupos; comunidades; serviços; formulários para receber alertas, cadastrar grupo e anunciar vaga; denúncia |
-| `dados.js` | **Onde você edita** os grupos, comunidades, vagas e serviços do portal (hoje são exemplos fictícios) |
+| `index.html` | **Página principal: grupos de WhatsApp por estado**, separados em *Com RQE* e *Sem RQE* (54 grupos). O médico escolhe o estado, diz se tem RQE, deixa nome, CRM e WhatsApp, e é levado ao grupo certo. Grupo cheio é pulado automaticamente. Hospitais anunciam vagas grátis |
+| `dados.js` | Onde ficam os links dos grupos, ou o endereço da planilha do Google com eles |
+| `grupos.csv` | Planilha-modelo com os 54 grupos. Importe no Google Planilhas e preencha a coluna `link` |
+| `CRIAR-GRUPOS.md` | Passo a passo para criar os 54 grupos: nomes, descrições, configurações e o que fazer quando um grupo lotar |
 | `lista-espera.html` | Página simples de lista de espera (era a antiga página inicial) |
 | `animado.html` | Versão animada da página inicial: rede de plantões ao vivo, ECG que se desenha na rolagem, celular que muda de tela conforme a rolagem, contadores e a mesma lista de espera. Para usá-la como página principal, renomeie para `index.html` |
 | `vidro.html` | Versão com o template gratuito **Clinic Liquid Glass**, do AnimatedWebs, adaptado ao Revezo: degradê suave em movimento, cartões de vidro que inclinam em direção ao cursor, recursos com ícones que se desenham, carrossel de perfis, simulador de plantão em 3 passos, perguntas frequentes, cidades da primeira fase e lista de espera. Para usá-la como página principal, renomeie para `index.html` |
@@ -14,8 +16,14 @@ Pasta pronta para publicar em qualquer hospedagem de site estático (GitHub Page
 | `og.png` | Imagem que aparece quando o link é compartilhado no WhatsApp, LinkedIn e Instagram |
 | `favicon.svg`, `robots.txt` | Ícone da aba e permissão para o Google indexar |
 
-## Como cadastrar um grupo real
-Abra `dados.js` e, na lista `grupos`, copie um bloco e troque os campos. Em `convite`, cole o link `https://chat.whatsapp.com/...`: o botão vira "Entrar no grupo". Deixe vazio para o botão "Pedir convite", que envia nome, CRM/COREN e WhatsApp da pessoa para você repassar ao administrador.
+## Como ligar os grupos ao site
+1. Crie os grupos seguindo `CRIAR-GRUPOS.md`.
+2. Importe `grupos.csv` no Google Planilhas e cole o link de convite de cada grupo na coluna `link`.
+3. Na planilha: Arquivo → Compartilhar → Publicar na web → escolha a aba → formato CSV → Publicar. Copie o endereço.
+4. Cole esse endereço em `planilhaCSV`, dentro de `dados.js`. A partir daí, qualquer mudança na planilha aparece no site sozinha (pode levar alguns minutos para o Google atualizar).
+5. Quando um grupo lotar: marque `cheio` na coluna `status` e adicione uma linha com `ordem` 2 e o link do grupo novo.
+
+Enquanto um grupo não tiver link, o site mostra "em breve" e guarda os dados do médico para você mandar o convite depois.
 
 ## Antes de publicar
 1. **Formulário:** crie uma conta gratuita em [formspree.io](https://formspree.io), crie um formulário e cole o endereço (`https://formspree.io/f/...`) em `FORM_ENDPOINT`, no `<script>` do `index.html`, do `lista-espera.html`, do `animado.html` e do `vidro.html`. No portal, os pedidos chegam com o campo `tipo` (`alerta`, `grupo`, `vaga`, `pedido_convite`, `denuncia_...`). Sem isso a página fica em modo demonstração e não salva inscrições.

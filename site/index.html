@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Revezo Grupos</title>
-<meta name="description" content="Encontre grupos de WhatsApp e comunidades médicas de plantões, trocas, vagas fixas e serviços por estado, cidade e especialidade.">
+<title>Revezo Plantões</title>
+<meta name="description" content="Grupos de WhatsApp de plantões médicos por estado, separados para médicos com RQE e sem RQE. Grátis para médicos. Hospitais anunciam vagas sem custo.">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="pt_BR">
-<meta property="og:title" content="Revezo · Grupos de plantão por cidade e especialidade">
-<meta property="og:description" content="Grupos de WhatsApp verificados, vagas publicadas nos grupos e serviços para médicos, enfermeiros e técnicos.">
+<meta property="og:title" content="Revezo · O grupo de plantões do seu estado">
+<meta property="og:description" content="Escolha seu estado, diga se tem RQE e entre no grupo certo. Grátis para médicos.">
 <meta property="og:image" content="og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#F2F7F5">
@@ -17,13 +17,13 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap">
 <style>
-/* Portal de grupos e comunidades. Mesmo estilo de vidro claro do vidro.html.
-   Layout: herói com busca → abas (Grupos · Vagas · Comunidades · Serviços) → como funciona → segurança →
-   cadastrar grupo / anunciar vaga / receber alertas → rodapé. */
+/* Portal de grupos por estado (Com RQE / Sem RQE). Estilo de vidro claro do vidro.html.
+   Layout: herói com o assistente de 3 passos (estado → RQE → dados) → grupos por estado →
+   por que separar → para hospitais → regras → rodapé. */
 :root{
   --bg:#F2F7F5; --ink:#12302A; --muted:#4B655D; --line:rgba(18,48,42,.12);
-  --accent:#1C6B58; --accent-ink:#FFFFFF; --mint:#7FE0C3; --wa:#1FA855; --amber:#9A5C00; --crit:#A3312A;
-  --glass:rgba(255,255,255,.62); --glass-strong:rgba(255,255,255,.85);
+  --accent:#1C6B58; --mint:#7FE0C3; --wa:#1FA855; --amber:#9A5C00; --crit:#A3312A;
+  --glass:rgba(255,255,255,.64);
   --f:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
   --ease:cubic-bezier(.22,1,.36,1);
@@ -40,148 +40,136 @@ a{color:var(--accent)}
 .wrap{max-width:1180px;margin-inline:auto;padding-inline:20px}
 .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
 .eyebrow{font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
-.h2{font-size:clamp(28px,3.8vw,44px);font-weight:700;letter-spacing:-.03em;margin-top:8px;max-width:22ch}
+.h2{font-size:clamp(28px,3.8vw,44px);font-weight:700;letter-spacing:-.03em;margin-top:8px;max-width:24ch}
 .sub{color:var(--muted);max-width:60ch;margin-top:10px}
 section{padding-block:80px}
-.glass{background:var(--glass);backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%);border:1px solid rgba(255,255,255,.75);box-shadow:inset 0 1px 0 #ffffffb3,0 18px 36px -24px rgba(18,48,42,.28);border-radius:22px}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:12px;padding:12px 18px;font:700 15px var(--f);text-decoration:none;cursor:pointer;transition:transform .2s var(--ease),box-shadow .2s var(--ease)}
-.btn.primary{background:var(--accent);color:var(--accent-ink)}
-.btn.primary:hover{transform:translateY(-1px);box-shadow:0 10px 22px -12px rgba(28,107,88,.8)}
+.glass{background:var(--glass);backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%);border:1px solid rgba(255,255,255,.8);box-shadow:inset 0 1px 0 #ffffffb3,0 18px 36px -24px rgba(18,48,42,.28);border-radius:22px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:12px;padding:13px 20px;font:700 16px var(--f);text-decoration:none;cursor:pointer;transition:transform .2s var(--ease),box-shadow .2s var(--ease)}
+.btn.primary{background:var(--accent);color:#fff}
 .btn.wa{background:var(--wa);color:#fff}
-.btn.wa:hover{transform:translateY(-1px);box-shadow:0 10px 22px -12px rgba(31,168,85,.8)}
+.btn.wa:hover,.btn.primary:hover{transform:translateY(-1px);box-shadow:0 10px 22px -12px rgba(18,48,42,.6)}
 .btn.soft{background:rgba(18,48,42,.06);color:var(--ink)}
-.btn.sm{padding:8px 12px;font-size:14px;border-radius:10px}
-.btn svg{width:18px;height:18px}
-.pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:rgba(18,48,42,.06);color:var(--muted);white-space:nowrap}
-.pill.ok{background:rgba(127,224,195,.35);color:#0F4D3F}
-.pill.amber{background:rgba(240,178,84,.22);color:var(--amber)}
-.pill.wa{background:rgba(31,168,85,.14);color:#147A3D}
+.btn.sm{padding:8px 13px;font-size:14px;border-radius:10px}
+.btn:disabled{opacity:.55;cursor:wait}
+.btn svg{width:20px;height:20px}
+input,select{font:inherit;font-size:16px;color:inherit;border:1px solid var(--line);background:rgba(255,255,255,.92);border-radius:12px;padding:11px 13px;width:100%}
+input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(28,107,88,.18)}
+label{display:grid;gap:5px;font-size:14px;font-weight:600}
+.err{color:var(--crit);font-size:14px}
+.note{font-size:13px;color:var(--muted)}
 
-/* header */
 header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:40;padding-top:10px}
-header.top .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 10px 10px 18px;border-radius:18px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 10px 10px 18px;border-radius:18px}
 .logo{display:flex;align-items:center;gap:9px;font-weight:800;font-size:20px;color:var(--ink);text-decoration:none;letter-spacing:-.02em}
 .logo svg{width:28px;height:28px}
 .nav{display:flex;align-items:center;gap:20px;font-size:15px;font-weight:600}
 .nav a{color:var(--muted);text-decoration:none}
 .nav a:hover{color:var(--ink)}
 .nav .btn{color:#fff}
-.nav .short{display:none}
 
 /* herói */
-.hero{position:relative;padding-block:56px 40px;overflow:hidden}
+.hero{position:relative;padding-block:48px 56px;overflow:hidden}
 .field{position:absolute;inset:-20% -10% 0;z-index:0;pointer-events:none}
 .blob{position:absolute;border-radius:50%;filter:blur(80px)}
 .b1{width:50vw;height:50vw;background:#CFE9DF;left:-10vw;top:-10vw;animation:d1 22s ease-in-out infinite alternate}
 .b2{width:40vw;height:40vw;background:#C8F2D6;right:-6vw;top:0;animation:d2 26s ease-in-out infinite alternate}
-.b3{width:36vw;height:36vw;background:#E3E6FA;left:35vw;top:20vh;animation:d3 28s ease-in-out infinite alternate}
+.b3{width:36vw;height:36vw;background:#E3E6FA;left:35vw;top:30vh;animation:d3 28s ease-in-out infinite alternate}
 @keyframes d1{to{transform:translate(8vw,6vh) scale(1.1)}}
 @keyframes d2{to{transform:translate(-10vw,8vh) scale(.92)}}
 @keyframes d3{to{transform:translate(-6vw,-8vh) scale(1.12)}}
-.hero .wrap{position:relative;z-index:1}
-.hero h1{font-size:clamp(36px,5.6vw,64px);font-weight:800;letter-spacing:-.035em;max-width:17ch;line-height:1.03}
+.hero .wrap{position:relative;z-index:1;display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:44px;align-items:start}
+.hero h1{font-size:clamp(36px,5vw,60px);font-weight:800;letter-spacing:-.035em;line-height:1.03;margin-top:12px}
 .hero h1 em{font-style:normal;color:var(--accent)}
-.hero .lead{color:var(--muted);font-size:clamp(16px,1.5vw,19px);margin-top:16px;max-width:56ch}
-.search{margin-top:28px;padding:14px;display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,.7fr) minmax(0,1fr) auto;gap:10px;align-items:end}
-.search label{display:grid;gap:4px;font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
-input,select,textarea{font:inherit;font-size:16px;color:inherit;border:1px solid var(--line);background:rgba(255,255,255,.9);border-radius:12px;padding:11px 13px;width:100%;text-transform:none;letter-spacing:0;font-weight:400}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(28,107,88,.18)}
-.stats{display:flex;gap:28px;flex-wrap:wrap;margin-top:22px}
-.stats div b{display:block;font-size:26px;font-weight:800;letter-spacing:-.02em}
-.stats div span{font-size:13px;color:var(--muted)}
+.hero .lead{color:var(--muted);font-size:clamp(16px,1.5vw,19px);margin-top:16px;max-width:46ch}
+.checks{list-style:none;padding:0;margin:24px 0 0;display:grid;gap:10px}
+.checks li{display:flex;gap:10px;align-items:flex-start}
+.checks li::before{content:"✓";flex:none;width:24px;height:24px;border-radius:50%;background:rgba(127,224,195,.45);color:#0F4D3F;display:grid;place-items:center;font-weight:800;font-size:13px}
+.stats{display:flex;gap:28px;flex-wrap:wrap;margin-top:28px}
+.stats b{display:block;font-size:26px;font-weight:800;letter-spacing:-.02em}
+.stats span{font-size:13px;color:var(--muted)}
 
-/* abas */
-.tabs{display:flex;gap:6px;margin-top:6px;overflow-x:auto;padding:4px;border-radius:16px;scrollbar-width:none}
-.tabs::-webkit-scrollbar{display:none}
-.tabs button{border:0;background:transparent;padding:10px 16px;border-radius:12px;font:700 15px var(--f);color:var(--muted);cursor:pointer;white-space:nowrap}
-.tabs button[aria-selected="true"]{background:#fff;color:var(--ink);box-shadow:0 2px 8px -2px rgba(18,48,42,.18)}
-.tabs .n{font:600 12px var(--mono);margin-left:6px;opacity:.7}
-.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
-.chip{border:1px solid var(--line);background:rgba(255,255,255,.7);padding:7px 13px;border-radius:999px;font:600 14px var(--f);color:var(--muted);cursor:pointer}
-.chip[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
-.result-line{margin-top:14px;font-size:14px;color:var(--muted)}
-
-.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:16px}
-.card{padding:18px;display:grid;gap:10px;align-content:start;transition:transform .3s var(--ease)}
-.card:hover{transform:translateY(-3px)}
-.card h3{font-size:18px;font-weight:700;line-height:1.25}
-.card .meta{display:flex;gap:6px;flex-wrap:wrap}
-.card .facts{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--muted)}
-.bar{height:6px;border-radius:99px;background:rgba(18,48,42,.08);overflow:hidden}
-.bar i{display:block;height:100%;background:var(--accent);border-radius:99px}
-.card .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
-.gicon{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;font-weight:800;color:#fff;font-size:15px;flex:none}
-.ghead{display:flex;gap:12px;align-items:center}
-.empty{padding:36px;text-align:center;color:var(--muted);grid-column:1/-1}
-.vaga .valor{font-size:24px;font-weight:800;letter-spacing:-.02em}
-.vaga .via{font-size:13px;color:var(--muted)}
-.vaga .via a{font-weight:700;text-decoration:none}
-.comm .sub-groups{display:flex;gap:4px}
-.comm .sub-groups i{width:22px;height:22px;border-radius:7px;background:rgba(28,107,88,.16)}
-.serv .cat{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
-
-/* como funciona */
-.how{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:32px;counter-reset:s}
-.how .glass{padding:20px;display:grid;gap:8px;counter-increment:s}
-.how .glass::before{content:counter(s);width:32px;height:32px;border-radius:10px;background:var(--accent);color:#fff;display:grid;place-items:center;font:700 14px var(--mono)}
-.how h3{font-size:17px}
-.how p{font-size:14px;color:var(--muted)}
-
-/* segurança */
-.safe{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:32px}
-.safe .glass{padding:24px}
-.safe ul{margin:12px 0 0;padding-left:20px;display:grid;gap:8px;color:var(--muted)}
-.safe li b{color:var(--ink)}
-
-/* formulários */
-.forms{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:32px;align-items:start}
-form.glass,.done{padding:22px;display:grid;gap:12px}
-form h3{font-size:20px}
-form label{display:grid;gap:4px;font-size:14px;font-weight:600}
+/* assistente */
+.wiz{padding:22px;display:grid;gap:16px}
+.progress{display:flex;gap:6px}
+.progress i{flex:1;height:5px;border-radius:99px;background:rgba(18,48,42,.1);transition:background .3s}
+.progress i.on{background:var(--accent)}
+.wiz h2{font-size:22px;letter-spacing:-.02em}
+.states{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px}
+.st{border:1px solid var(--line);background:rgba(255,255,255,.85);border-radius:12px;padding:10px 4px;font:800 16px var(--f);color:var(--ink);cursor:pointer;display:grid;gap:1px;justify-items:center;transition:transform .15s var(--ease),border-color .15s}
+.st small{font:500 10px var(--f);color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-inline:4px}
+.st:hover{transform:translateY(-2px);border-color:var(--accent)}
+.st[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+.st[aria-pressed="true"] small{color:#DDF3EC}
+.choice{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt{border:1.5px solid var(--line);background:rgba(255,255,255,.88);border-radius:16px;padding:16px;text-align:left;cursor:pointer;font:inherit;color:var(--ink);display:grid;gap:4px}
+.opt b{font-size:17px}
+.opt span{font-size:13px;color:var(--muted)}
+.opt[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset;background:#fff}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.consent{display:flex;gap:10px;align-items:flex-start;font-weight:400!important;color:var(--muted);font-size:13px!important}
+.row-crm{display:grid;grid-template-columns:minmax(0,1fr) 96px;gap:10px}
+.consent{display:flex;gap:10px;align-items:flex-start;font-weight:400;color:var(--muted);font-size:13px}
 .consent input{width:18px;height:18px;flex:none;margin-top:2px;accent-color:var(--accent)}
-.err{color:var(--crit);font-size:14px}
-.note{font-size:13px;color:var(--muted)}
+.wiz .back{background:none;border:0;color:var(--muted);font:600 14px var(--f);cursor:pointer;justify-self:start;padding:0}
+.dest{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:rgba(31,168,85,.08);font-size:14px}
+.dest .ic{width:40px;height:40px;border-radius:12px;background:var(--wa);display:grid;place-items:center;flex:none}
+.dest .ic svg{width:22px;height:22px;fill:#fff}
+.done{display:grid;gap:12px;text-align:center;justify-items:center;padding-block:10px}
+.done .big{width:64px;height:64px;border-radius:50%;background:var(--accent);display:grid;place-items:center}
+.done .big svg{width:34px;height:34px;stroke:#fff;stroke-width:3;fill:none;stroke-dasharray:30;stroke-dashoffset:30;animation:draw .5s .1s var(--ease) forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.step{animation:stepin .35s var(--ease)}
+@keyframes stepin{from{opacity:0;transform:translateX(16px)}}
 
-/* modal */
-.scrim{position:fixed;inset:0;background:rgba(10,24,20,.45);display:grid;place-items:center;z-index:60;padding:16px;animation:fade .2s}
-@keyframes fade{from{opacity:0}}
-.modal{background:#fff;border-radius:22px;max-width:480px;width:100%;max-height:calc(100svh - 32px);overflow:auto;padding:24px;display:grid;gap:14px;box-shadow:0 30px 60px -20px rgba(0,0,0,.4);animation:pop .3s var(--ease)}
-@keyframes pop{from{opacity:0;transform:translateY(16px) scale(.98)}}
-.modal h3{font-size:22px}
-.modal ul{margin:0;padding-left:20px;color:var(--muted);display:grid;gap:4px}
-.modal .acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+/* grupos por estado */
+.regions{display:grid;gap:26px;margin-top:32px}
+.region h3{font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.ufgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.ufcard{padding:14px 16px;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:center;cursor:pointer;text-align:left;font:inherit;color:inherit;border-radius:18px;transition:transform .2s var(--ease)}
+.ufcard:hover{transform:translateY(-2px)}
+.ufcard .sig{grid-row:span 2;width:46px;height:46px;border-radius:14px;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:800}
+.ufcard .nm{font-weight:700}
+.ufcard .gs{display:flex;gap:6px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:rgba(18,48,42,.06);color:var(--muted);white-space:nowrap}
+.pill.on{background:rgba(31,168,85,.14);color:#147A3D}
+.pill.on::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--wa)}
+.pill.soon::before{content:"";width:7px;height:7px;border-radius:50%;background:#B9C7C2}
+
+/* porquê / hospitais / regras */
+.why{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:30px}
+.why .glass{padding:24px;display:grid;gap:10px}
+.why ul{margin:0;padding-left:20px;color:var(--muted);display:grid;gap:6px}
+.hosp{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,480px);gap:40px;align-items:start}
+form.glass{padding:22px;display:grid;gap:12px}
+.rules{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:30px}
+.rules .glass{padding:20px;display:grid;gap:6px}
+.rules h3{font-size:17px}
+.rules p{font-size:14px;color:var(--muted)}
+
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;font-weight:600;font-size:14px;z-index:70;max-width:calc(100% - 32px)}
-
 footer{padding-block:44px;border-top:1px solid var(--line);font-size:14px;color:var(--muted)}
 footer .cols{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
 footer a{color:var(--muted)}
 .disclaimer{margin-top:20px;padding:14px 16px;border-radius:14px;background:rgba(18,48,42,.05);color:var(--ink);font-size:13px}
 
-.rv{transition:opacity .7s var(--ease),transform .7s var(--ease)}
-.js .rv:not(.in){opacity:0;transform:translateY(24px)}
-
 @media (max-width:980px){
-  .grid,.forms{grid-template-columns:1fr 1fr}
-  .how{grid-template-columns:1fr 1fr}
-  .search{grid-template-columns:1fr 1fr}
-  .search .q{grid-column:1/-1}
+  .hero .wrap,.hosp{grid-template-columns:1fr}
+  .rules{grid-template-columns:1fr 1fr}
   .nav a:not(.btn){display:none}
 }
 @media (max-width:620px){
-  .grid,.forms,.how,.safe{grid-template-columns:1fr}
-  .nav .long{display:none}
-  .nav .short{display:inline}
-  .logo{font-size:18px}
-  .search{grid-template-columns:1fr}
-  .row2{grid-template-columns:1fr}
+  .why,.rules{grid-template-columns:1fr}
+  .row2,.choice{grid-template-columns:1fr}
+  .states{grid-template-columns:repeat(5,minmax(0,1fr))}
+  .st small{display:none}
+  .hero .stats{display:none}
+  .checks{margin-top:16px}
   section{padding-block:60px}
+  .logo{font-size:18px}
 }
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
   html{scroll-behavior:auto}
-  .js .rv:not(.in){opacity:1;transform:none}
+  .done .big svg{stroke-dashoffset:0}
 }
 </style>
 </head>
@@ -189,8 +177,8 @@ footer a{color:var(--muted)}
 <header class="top">
   <div class="wrap">
     <div class="topbar glass">
-      <a class="logo" href="#topo"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#1C6B58"/><path d="M4 17h6l2.5-6 4 12 3-9 2 3h6.5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Revezo Grupos</a>
-      <nav class="nav" aria-label="Principal"><a href="#explorar">Grupos</a><a href="#explorar" data-open-tab="vagas">Vagas</a><a href="#seguranca">Segurança</a><a href="#participar">Cadastrar grupo</a><a class="btn primary sm" href="#participar" data-focus="al-esp"><span class="long">Receber vagas no WhatsApp</span><span class="short">Alertas</span></a></nav>
+      <a class="logo" href="#topo"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#1C6B58"/><path d="M4 17h6l2.5-6 4 12 3-9 2 3h6.5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Revezo Plantões</a>
+      <nav class="nav" aria-label="Principal"><a href="#estados">Grupos por estado</a><a href="#hospitais">Para hospitais</a><a href="#regras">Regras</a><a class="btn primary sm" href="#topo" data-restart>Entrar no grupo</a></nav>
     </div>
   </div>
 </header>
@@ -199,115 +187,123 @@ footer a{color:var(--muted)}
 <section class="hero" id="topo" aria-labelledby="h1">
   <div class="field" aria-hidden="true"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
   <div class="wrap">
-    <p class="eyebrow">Grupos de WhatsApp e comunidades da saúde</p>
-    <h1 id="h1" style="margin-top:12px">Os grupos de plantão da sua cidade, <em>num só lugar.</em></h1>
-    <p class="lead">Encontre grupos de plantões, trocas, vagas fixas e serviços por estado, cidade e especialidade. Veja as vagas publicadas nos grupos e entre só nos que fazem sentido para você.</p>
-    <form class="search glass" id="busca" role="search" aria-label="Buscar grupos e vagas">
-      <label class="q" for="q">Buscar<input id="q" type="search" placeholder="Ex.: UTI, pediatria, Campinas…" autocomplete="off"></label>
-      <label for="fuf">Estado<select id="fuf"><option value="">Todos</option></select></label>
-      <label for="fesp">Especialidade<select id="fesp"><option value="">Todas</option></select></label>
-      <button class="btn primary" type="submit">Buscar</button>
+    <div>
+      <p class="eyebrow">Grupos de WhatsApp para médicos</p>
+      <h1 id="h1">O grupo de plantões do seu estado. <em>Grátis.</em></h1>
+      <p class="lead">Escolha o estado, diga se tem RQE e entre direto no grupo certo. Hospitais e empresas publicam as vagas lá todos os dias.</p>
+      <ul class="checks">
+        <li>Um grupo por estado, separado para médicos com e sem RQE</li>
+        <li>Sem mensalidade e sem cadastro longo</li>
+        <li>Entrada aprovada pela equipe, só para médicos com CRM</li>
+      </ul>
+      <div class="stats">
+        <div><b class="mono">27</b><span>estados</span></div>
+        <div><b class="mono">54</b><span>grupos</span></div>
+        <div id="s-ativos-box" hidden><b class="mono" id="s-ativos">0</b><span>grupos já abertos</span></div>
+      </div>
+    </div>
+
+    <div class="wiz glass" id="wiz" aria-live="polite">
+      <div class="progress" aria-hidden="true"><i class="on"></i><i></i><i></i></div>
+
+      <div class="step" data-step="1">
+        <h2>1. Em qual estado você dá plantão?</h2>
+        <div class="states" id="states" role="group" aria-label="Estados" style="margin-top:14px"></div>
+      </div>
+
+      <div class="step" data-step="2" hidden>
+        <button type="button" class="back" data-back="1">← Trocar estado</button>
+        <h2 style="margin-top:8px">2. Você tem RQE?</h2>
+        <p class="note" style="margin-top:4px">RQE é o Registro de Qualificação de Especialista no CRM.</p>
+        <div class="choice" role="group" aria-label="Tem RQE?" style="margin-top:14px">
+          <button type="button" class="opt" data-rqe="rqe" aria-pressed="false"><b>Sim, tenho RQE</b><span>Especialistas com título registrado no CRM</span></button>
+          <button type="button" class="opt" data-rqe="sem-rqe" aria-pressed="false"><b>Não tenho RQE</b><span>Generalistas, recém-formados e residentes</span></button>
+        </div>
+      </div>
+
+      <form class="step" data-step="3" id="dados" novalidate hidden>
+        <button type="button" class="back" data-back="2">← Voltar</button>
+        <h2 style="margin-top:8px">3. Seus dados para a aprovação</h2>
+        <div class="dest" style="margin-top:12px"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.5-3.9-4.7-4.1-.1-.2-1.1-1.5-1.1-2.8 0-1.3.7-2 1-2.3.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .6l-.4.6-.3.4c.1.2.6 1 1.3 1.7.9.8 1.7 1.1 2 1.2.2.1.4.1.5-.1l.7-.9c.2-.2.4-.2.6-.1l1.9.9c.2.1.4.2.4.3.1.2.1.8-.1 1.4z"/></svg></span><span>Você vai entrar em <b id="dest-nome"></b></span></div>
+        <div style="display:grid;gap:12px;margin-top:12px">
+          <label for="nome">Nome completo<input id="nome" name="nome" autocomplete="name" required></label>
+          <div class="row-crm">
+            <label for="crm">Número do CRM<input id="crm" name="crm" inputmode="numeric" placeholder="Ex.: 123456" required></label>
+            <label for="crmuf">UF do CRM<select id="crmuf" name="crm_uf" required></select></label>
+          </div>
+          <div class="row2" id="rqe-fields">
+            <label for="esp">Especialidade<select id="esp" name="especialidade"><option value="">Selecione</option></select></label>
+            <label for="rqe">Número do RQE<input id="rqe" name="rqe" inputmode="numeric" placeholder="Ex.: 45678"></label>
+          </div>
+          <label for="wa">WhatsApp (o mesmo que vai entrar no grupo)<input id="wa" name="whatsapp" type="tel" autocomplete="tel" placeholder="(11) 90000-0000" required></label>
+          <label class="consent" for="ok"><input type="checkbox" id="ok" name="consentimento_lgpd" value="sim" required><span>Autorizo o uso destes dados para aprovar minha entrada e receber vagas. Li a <a href="privacidade.html" target="_blank" rel="noopener">política de privacidade</a> e as <a href="#regras">regras dos grupos</a>.</span></label>
+          <p class="err" id="err" hidden></p>
+          <button class="btn wa" type="submit" id="go">Entrar no grupo</button>
+          <p class="note" id="demo" hidden>Modo demonstração: os dados não são enviados e os links dos grupos ainda não foram cadastrados.</p>
+        </div>
+      </form>
+
+      <div class="step done" data-step="4" hidden>
+        <div class="big"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <h2 id="done-title"></h2>
+        <p class="note" id="done-text" style="max-width:40ch"></p>
+        <a class="btn wa" id="done-link" hidden target="_self">Abrir o grupo no WhatsApp</a>
+        <button type="button" class="btn soft sm" data-restart>Escolher outro grupo</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="estados" aria-labelledby="h-est" style="padding-top:20px">
+  <div class="wrap">
+    <p class="eyebrow">Grupos por estado</p>
+    <h2 class="h2" id="h-est">Todos os estados, com e sem RQE</h2>
+    <p class="sub">Toque no seu estado para entrar. Grupos marcados "em breve" ainda estão sendo abertos: deixe seus dados e você entra assim que abrir.</p>
+    <div class="regions" id="regions"></div>
+  </div>
+</section>
+
+<section aria-labelledby="h-why" style="padding-top:0">
+  <div class="wrap">
+    <p class="eyebrow">Por que separar</p>
+    <h2 class="h2" id="h-why">Cada vaga chega para quem pode assumir</h2>
+    <div class="why">
+      <div class="glass"><h3 style="font-size:20px">Grupo Com RQE</h3><ul><li>Vagas que exigem especialista: UTI, anestesia, pediatria, obstetrícia, ortopedia e outras.</li><li>Hospitais encontram especialistas sem filtrar centenas de mensagens.</li><li>Entrada conferida pelo RQE na especialidade informada.</li></ul></div>
+      <div class="glass"><h3 style="font-size:20px">Grupo Sem RQE</h3><ul><li>Pronto atendimento, UPA, clínica geral, enfermaria e plantões de porta.</li><li>Ideal para recém-formados, generalistas e residentes que podem dar plantão.</li><li>Sem vagas que você não pode assumir.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section id="hospitais" aria-labelledby="h-hosp" style="padding-top:0">
+  <div class="wrap hosp">
+    <div>
+      <p class="eyebrow">Para hospitais e empresas</p>
+      <h2 class="h2" id="h-hosp">Anuncie sua vaga grátis nos grupos do estado</h2>
+      <p class="sub">Preencha a vaga uma vez. Depois de conferir o CNPJ, a equipe publica no grupo certo: com RQE ou sem RQE, no estado da vaga.</p>
+    </div>
+    <form class="glass" id="vaga" novalidate>
+      <label for="v-tit">Vaga<input id="v-tit" name="vaga" placeholder="Ex.: PS adulto, plantão noturno" required></label>
+      <div class="row2"><label for="v-uf">Estado<select id="v-uf" name="uf" required><option value="">Selecione</option></select></label><label for="v-cid">Cidade<input id="v-cid" name="cidade" required></label></div>
+      <div class="row2"><label for="v-tipo">Exige RQE?<select id="v-tipo" name="grupo" required><option value="">Selecione</option><option value="rqe">Sim, especialista</option><option value="sem-rqe">Não</option></select></label><label for="v-valor">Valor (R$)<input id="v-valor" name="valor" type="number" min="0" step="50" required></label></div>
+      <div class="row2"><label for="v-data">Data<input id="v-data" name="data" type="date" required></label><label for="v-hora">Horário<input id="v-hora" name="horario" placeholder="19:00–07:00" required></label></div>
+      <label for="v-emp">Hospital ou empresa e CNPJ<input id="v-emp" name="contratante" required></label>
+      <label for="v-wa">WhatsApp para os médicos chamarem<input id="v-wa" name="contato" type="tel" required></label>
+      <p class="err" hidden></p>
+      <button class="btn primary" type="submit">Enviar vaga</button>
     </form>
-    <div class="stats" aria-label="Números do portal">
-      <div><b class="mono" id="s-grupos">0</b><span>grupos listados</span></div>
-      <div><b class="mono" id="s-membros">0</b><span>participantes nos grupos</span></div>
-      <div><b class="mono" id="s-vagas">0</b><span>vagas por semana nos grupos</span></div>
-    </div>
   </div>
 </section>
 
-<section id="explorar" style="padding-top:20px" aria-label="Explorar">
+<section id="regras" aria-labelledby="h-reg" style="padding-top:0">
   <div class="wrap">
-    <div class="tabs glass" role="tablist" aria-label="O que explorar">
-      <button role="tab" aria-selected="true" data-tab="grupos">Grupos<span class="n" id="n-grupos"></span></button>
-      <button role="tab" aria-selected="false" data-tab="vagas">Vagas nos grupos<span class="n" id="n-vagas"></span></button>
-      <button role="tab" aria-selected="false" data-tab="comunidades">Comunidades<span class="n" id="n-comunidades"></span></button>
-      <button role="tab" aria-selected="false" data-tab="servicos">Serviços<span class="n" id="n-servicos"></span></button>
+    <p class="eyebrow">Regras dos grupos</p>
+    <h2 class="h2" id="h-reg">Grupos limpos, só com vagas</h2>
+    <div class="rules">
+      <div class="glass"><h3>Só médicos</h3><p>Entrada aprovada pela equipe depois de conferir o CRM.</p></div>
+      <div class="glass"><h3>Vaga completa</h3><p>Local, data, horário, valor e contato em toda vaga publicada.</p></div>
+      <div class="glass"><h3>Sem propaganda</h3><p>Nada de correntes, cursos ou vendas fora das regras.</p></div>
+      <div class="glass"><h3>Contra golpes</h3><p>Nunca pague para conseguir plantão. Confira o CNPJ de quem contrata.</p></div>
     </div>
-
-    <div id="p-grupos" role="tabpanel">
-      <div class="chips" id="cats" aria-label="Tipo de grupo"></div>
-      <p class="result-line" id="r-grupos" aria-live="polite"></p>
-      <div class="grid" id="l-grupos"></div>
-    </div>
-    <div id="p-vagas" role="tabpanel" hidden>
-      <p class="result-line" id="r-vagas" aria-live="polite"></p>
-      <div class="grid" id="l-vagas"></div>
-    </div>
-    <div id="p-comunidades" role="tabpanel" hidden>
-      <p class="result-line">Comunidades do WhatsApp reúnem vários grupos sob um mesmo administrador, com um canal de avisos para todos.</p>
-      <div class="grid" id="l-comunidades"></div>
-    </div>
-    <div id="p-servicos" role="tabpanel" hidden>
-      <p class="result-line">Empresas e profissionais que atendem a área da saúde. Anúncios são identificados como tal.</p>
-      <div class="grid" id="l-servicos"></div>
-    </div>
-    <p class="note" style="margin-top:16px">Grupos, vagas e serviços desta página são exemplos fictícios para demonstração.</p>
-  </div>
-</section>
-
-<section id="como" aria-labelledby="h-como" style="padding-top:20px">
-  <div class="wrap">
-    <p class="eyebrow rv">Como funciona</p>
-    <h2 class="h2 rv" id="h-como">Do filtro ao grupo certo em menos de um minuto</h2>
-    <div class="how">
-      <div class="glass rv"><h3>Filtre</h3><p>Escolha estado, cidade, especialidade e o tipo de grupo: plantões, trocas, vagas fixas, residência ou serviços.</p></div>
-      <div class="glass rv"><h3>Compare</h3><p>Veja quantas pessoas participam, quantas vagas aparecem por semana e as regras de cada grupo antes de entrar.</p></div>
-      <div class="glass rv"><h3>Entre ou peça convite</h3><p>Grupos abertos têm link direto. Grupos fechados recebem seu pedido com CRM ou COREN para aprovação do administrador.</p></div>
-      <div class="glass rv"><h3>Receba alertas</h3><p>Cadastre especialidade e cidade e receba no WhatsApp as vagas novas que combinam com você.</p></div>
-    </div>
-  </div>
-</section>
-
-<section id="seguranca" aria-labelledby="h-seg" style="padding-top:0">
-  <div class="wrap">
-    <p class="eyebrow rv">Segurança</p>
-    <h2 class="h2 rv" id="h-seg">Grupos verificados e regras claras contra golpes</h2>
-    <div class="safe">
-      <div class="glass rv"><h3 style="font-size:20px">O que o selo "Verificado" significa</h3>
-        <ul><li><b>Administrador identificado</b> com nome e CRM ou CNPJ conferidos.</li><li><b>Regras publicadas</b> e moderação ativa contra spam.</li><li><b>Entrada com aprovação</b>: o administrador confere o registro profissional de quem pede para entrar.</li><li><b>Atividade real</b>: vagas publicadas nas últimas semanas.</li></ul></div>
-      <div class="glass rv"><h3 style="font-size:20px">Para não cair em golpe</h3>
-        <ul><li><b>Nunca pague</b> para conseguir um plantão ou para entrar num grupo.</li><li><b>Confira o CNPJ</b> do hospital ou da empresa antes de aceitar.</li><li><b>Peça tudo por escrito</b>: valor, data, horário, local e forma de pagamento.</li><li><b>Denuncie</b> grupos ou vagas suspeitas pelo botão em cada cartão.</li></ul></div>
-    </div>
-  </div>
-</section>
-
-<section id="participar" aria-labelledby="h-part" style="padding-top:0">
-  <div class="wrap">
-    <p class="eyebrow rv">Participe</p>
-    <h2 class="h2 rv" id="h-part">Tem um grupo, uma vaga ou quer receber alertas?</h2>
-    <div class="forms">
-      <form class="glass rv" data-form="alerta" novalidate>
-        <h3>Receber vagas no WhatsApp</h3>
-        <label for="al-esp">Especialidade<select id="al-esp" name="especialidade" required><option value="">Selecione</option></select></label>
-        <div class="row2"><label for="al-cid">Cidade<input id="al-cid" name="cidade" required></label><label for="al-uf">UF<select id="al-uf" name="uf" required><option value="">UF</option></select></label></div>
-        <label for="al-wa">WhatsApp<input id="al-wa" name="whatsapp" type="tel" placeholder="(11) 90000-0000" required></label>
-        <label class="consent" for="al-ok"><input type="checkbox" id="al-ok" name="consentimento_lgpd" value="sim" required><span>Aceito receber vagas no WhatsApp e a <a href="privacidade.html" target="_blank" rel="noopener">política de privacidade</a>. Posso sair a qualquer momento.</span></label>
-        <p class="err" hidden></p>
-        <button class="btn wa" type="submit">Quero receber</button>
-      </form>
-      <form class="glass rv" data-form="grupo" novalidate>
-        <h3>Cadastrar meu grupo</h3>
-        <label for="gr-nome">Nome do grupo<input id="gr-nome" name="nome_grupo" required></label>
-        <label for="gr-link">Link de convite<input id="gr-link" name="link" type="url" placeholder="https://chat.whatsapp.com/…" required></label>
-        <div class="row2"><label for="gr-cat">Tipo<select id="gr-cat" name="tipo_grupo" required></select></label><label for="gr-uf">UF<select id="gr-uf" name="uf" required><option value="">UF</option></select></label></div>
-        <label for="gr-adm">Seu nome e CRM ou CNPJ<input id="gr-adm" name="administrador" required></label>
-        <label class="consent" for="gr-ok"><input type="checkbox" id="gr-ok" name="declaracao" value="sim" required><span>Sou administrador do grupo e autorizo a divulgação do link. Li a <a href="privacidade.html" target="_blank" rel="noopener">política de privacidade</a>.</span></label>
-        <p class="err" hidden></p>
-        <button class="btn primary" type="submit">Enviar para análise</button>
-      </form>
-      <form class="glass rv" data-form="vaga" novalidate>
-        <h3>Anunciar uma vaga</h3>
-        <label for="va-tit">Vaga<input id="va-tit" name="vaga" placeholder="Ex.: PS adulto, noturno" required></label>
-        <div class="row2"><label for="va-data">Data<input id="va-data" name="data" type="date" required></label><label for="va-valor">Valor (R$)<input id="va-valor" name="valor" type="number" min="0" step="50" required></label></div>
-        <div class="row2"><label for="va-cid">Cidade<input id="va-cid" name="cidade" required></label><label for="va-uf">UF<select id="va-uf" name="uf" required><option value="">UF</option></select></label></div>
-        <label for="va-cnpj">Hospital ou empresa e CNPJ<input id="va-cnpj" name="contratante" required></label>
-        <label class="consent" for="va-ok"><input type="checkbox" id="va-ok" name="declaracao" value="sim" required><span>As informações são verdadeiras e o valor é o que será pago.</span></label>
-        <p class="err" hidden></p>
-        <button class="btn primary" type="submit">Enviar vaga</button>
-      </form>
-    </div>
-    <p class="note" id="demo-note" style="margin-top:14px" hidden>Modo demonstração: os formulários ainda não estão ligados a um serviço de envio, então nada é salvo.</p>
   </div>
 </section>
 </main>
@@ -315,189 +311,103 @@ footer a{color:var(--muted)}
 <footer>
   <div class="wrap">
     <div class="cols">
-      <div><b style="color:var(--ink)">Revezo Grupos</b><p style="margin-top:6px;max-width:46ch">Diretório independente de grupos e comunidades da área da saúde. Não temos ligação com o WhatsApp nem com a Meta.</p></div>
-      <div style="display:grid;gap:4px"><a href="#explorar">Grupos</a><a href="#seguranca">Segurança</a><a href="#participar">Cadastrar grupo</a><a href="privacidade.html">Política de privacidade</a></div>
+      <div><b style="color:var(--ink)">Revezo Plantões</b><p style="margin-top:6px;max-width:48ch">Grupos de plantões médicos por estado. Não temos ligação com o WhatsApp nem com a Meta.</p></div>
+      <div style="display:grid;gap:4px"><a href="#estados">Grupos por estado</a><a href="#hospitais">Anunciar vaga</a><a href="#regras">Regras</a><a href="privacidade.html">Política de privacidade</a></div>
     </div>
-    <p class="disclaimer">O Revezo não intermedeia contratos nem garante pagamentos de vagas publicadas por terceiros nos grupos. Confira sempre quem está contratando. O Revezo não presta atendimento médico. Em emergência, ligue 192 (SAMU).</p>
+    <p class="disclaimer">O Revezo não intermedeia contratos nem garante pagamentos de vagas publicadas por terceiros. O Revezo não presta atendimento médico. Em emergência, ligue 192 (SAMU).</p>
   </div>
 </footer>
-
-<div id="modal-root"></div>
 
 <script src="dados.js"></script>
 <script>
 /* CONFIGURAÇÃO: endereço do Formspree (https://formspree.io/f/...). Vazio = modo demonstração. */
 const FORM_ENDPOINT = "";
 
-document.documentElement.classList.add('js');
-const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
-const D=window.PORTAL||{grupos:[],comunidades:[],vagas:[],servicos:[]};
-const UFS="AC AL AP AM BA CE DF ES GO MA MT MS MG PA PB PR PE PI RJ RN RS RO RR SC SP SE TO".split(" ");
-const CATS=["Plantões","Trocas","Vagas fixas","Residência","Serviços"];
-const ESPS=["Anestesiologia","Clínica Médica","Medicina de Emergência","Medicina Intensiva","Pediatria","Enfermagem","Ginecologia e Obstetrícia","Ortopedia","Cirurgia Geral","Psiquiatria"];
-const brl=v=>'R$ '+Number(v).toLocaleString('pt-BR');
-const num=v=>Number(v).toLocaleString('pt-BR');
-const el=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e};
-const norm=s=>(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
-const WA_ICON='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.5-3.9-4.7-4.1-.1-.2-1.1-1.5-1.1-2.8 0-1.3.7-2 1-2.3.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .6l-.4.6-.3.4c.1.2.6 1 1.3 1.7.9.8 1.7 1.1 2 1.2.2.1.4.1.5-.1l.7-.9c.2-.2.4-.2.6-.1l1.9.9c.2.1.4.2.4.3.1.2.1.8-.1 1.4z"/></svg>';
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const ESTADOS=[["AC","Acre","Norte"],["AP","Amapá","Norte"],["AM","Amazonas","Norte"],["PA","Pará","Norte"],["RO","Rondônia","Norte"],["RR","Roraima","Norte"],["TO","Tocantins","Norte"],
+ ["AL","Alagoas","Nordeste"],["BA","Bahia","Nordeste"],["CE","Ceará","Nordeste"],["MA","Maranhão","Nordeste"],["PB","Paraíba","Nordeste"],["PE","Pernambuco","Nordeste"],["PI","Piauí","Nordeste"],["RN","Rio Grande do Norte","Nordeste"],["SE","Sergipe","Nordeste"],
+ ["DF","Distrito Federal","Centro-Oeste"],["GO","Goiás","Centro-Oeste"],["MT","Mato Grosso","Centro-Oeste"],["MS","Mato Grosso do Sul","Centro-Oeste"],
+ ["ES","Espírito Santo","Sudeste"],["MG","Minas Gerais","Sudeste"],["RJ","Rio de Janeiro","Sudeste"],["SP","São Paulo","Sudeste"],
+ ["PR","Paraná","Sul"],["RS","Rio Grande do Sul","Sul"],["SC","Santa Catarina","Sul"]];
+const ORDEM_UF=[...ESTADOS].sort((a,b)=>a[0].localeCompare(b[0]));
+const nomeUF=uf=>(ESTADOS.find(e=>e[0]===uf)||[,uf])[1];
+const TIPO={rqe:'Com RQE','sem-rqe':'Sem RQE'};
+const ESPS=["Anestesiologia","Cardiologia","Cirurgia Geral","Clínica Médica","Ginecologia e Obstetrícia","Medicina de Emergência","Medicina de Família","Medicina Intensiva","Neurologia","Ortopedia e Traumatologia","Pediatria","Psiquiatria","Radiologia","Outra"];
+let GRUPOS=((window.PORTAL||{}).grupos||[]).slice();
 
-/* listas de seleção */
-const fill=(sel,list,keep)=>{list.forEach(v=>sel.add(new Option(v,v)))};
-fill($('#fuf'),["BR (nacional)",...UFS].map(x=>x));$('#fuf').options[1].value='BR';
-fill($('#fesp'),ESPS);fill($('#al-esp'),ESPS);
-['#al-uf','#gr-uf','#va-uf'].forEach(s=>fill($(s),UFS));
-fill($('#gr-cat'),CATS);
+/* links: escolhe o primeiro grupo ativo com link, pela ordem */
+function destino(uf,tipo){return GRUPOS.filter(g=>g.uf===uf&&g.tipo===tipo&&g.link&&String(g.status||'ativo').toLowerCase()!=='cheio').sort((a,b)=>(+a.ordem||1)-(+b.ordem||1))[0]||null}
+function nomeGrupo(uf,tipo,g){return `Revezo Plantões ${uf} · ${TIPO[tipo]}${g&&+g.ordem>1?' '+g.ordem:''}`}
 
-/* números */
-const totalMembros=D.grupos.reduce((a,g)=>a+g.membros,0),totalVagas=D.grupos.reduce((a,g)=>a+g.vagasSemana,0);
-function countTo(node,n){if(reduce){node.textContent=num(n);return}const t0=performance.now();(function s(t){const k=Math.min(1,(t-t0)/1100);node.textContent=num(Math.round(n*(1-Math.pow(1-k,3))));if(k<1)requestAnimationFrame(s)})(t0)}
-countTo($('#s-grupos'),D.grupos.length);countTo($('#s-membros'),totalMembros);countTo($('#s-vagas'),totalVagas);
+/* planilha do Google publicada como CSV (opcional) */
+function parseCSV(t){const rows=[];let row=[],f='',q=false;for(let i=0;i<t.length;i++){const c=t[i];
+  if(q){if(c==='"'){if(t[i+1]==='"'){f+='"';i++}else q=false}else f+=c}
+  else if(c==='"')q=true;else if(c===','){row.push(f);f=''}else if(c==='\n'||c==='\r'){if(c==='\r'&&t[i+1]==='\n')i++;row.push(f);rows.push(row);row=[];f=''}else f+=c}
+  if(f||row.length){row.push(f);rows.push(row)}
+  const h=rows.shift().map(x=>x.trim().toLowerCase());return rows.filter(r=>r.some(x=>x.trim())).map(r=>Object.fromEntries(h.map((k,i)=>[k,(r[i]||'').trim()])))}
+async function carregar(){const url=(window.PORTAL||{}).planilhaCSV;if(!url)return;
+  try{const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw 0;const rows=parseCSV(await r.text()).map(o=>({uf:o.uf.toUpperCase(),tipo:o.tipo.toLowerCase(),ordem:+o.ordem||1,link:o.link,status:o.status||'ativo'}));if(rows.length)GRUPOS=rows}
+  catch(e){console.warn('Não foi possível ler a planilha; usando dados.js')}}
 
-/* filtros */
-const F={q:'',uf:'',esp:'',cat:''};
-const chipBox=$('#cats');
-['Todos',...CATS].forEach(c=>{const b=el('button','chip',c);b.type='button';b.setAttribute('aria-pressed',c==='Todos');b.onclick=()=>{F.cat=c==='Todos'?'':c;$$('#cats .chip').forEach(x=>x.setAttribute('aria-pressed',x===b));render()};chipBox.appendChild(b)});
-$('#busca').addEventListener('submit',e=>{e.preventDefault();F.q=$('#q').value;F.uf=$('#fuf').value;F.esp=$('#fesp').value;render();$('#explorar').scrollIntoView({behavior:reduce?'auto':'smooth'})});
-$('#q').addEventListener('input',e=>{F.q=e.target.value;render()});
-$('#fuf').addEventListener('change',e=>{F.uf=e.target.value;render()});
-$('#fesp').addEventListener('change',e=>{F.esp=e.target.value;render()});
+/* assistente */
+const S={uf:null,tipo:null};
+function go(n){$$('#wiz [data-step]').forEach(s=>s.hidden=+s.dataset.step!==n);$$('.progress i').forEach((p,i)=>p.classList.toggle('on',i<Math.min(n,3)));
+  const first=$(`#wiz [data-step="${n}"] button:not(.back), #wiz [data-step="${n}"] input`);if(first&&n>1)first.focus({preventScroll:true})}
+function pickUF(uf){S.uf=uf;$$('.st').forEach(b=>b.setAttribute('aria-pressed',b.dataset.uf===uf));$('#crmuf').value=uf;go(2)}
+const sbox=$('#states');ORDEM_UF.forEach(([uf,nm])=>{const b=document.createElement('button');b.type='button';b.className='st';b.dataset.uf=uf;b.setAttribute('aria-pressed','false');b.setAttribute('aria-label',nm);
+  b.innerHTML=`${uf}<small></small>`;b.querySelector('small').textContent=nm;b.onclick=()=>pickUF(uf);sbox.appendChild(b)});
+$$('[data-rqe]').forEach(b=>b.onclick=()=>{S.tipo=b.dataset.rqe;$$('[data-rqe]').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  $('#rqe-fields').hidden=S.tipo!=='rqe';$('#esp').required=$('#rqe').required=S.tipo==='rqe';
+  $('#dest-nome').textContent=nomeGrupo(S.uf,S.tipo,destino(S.uf,S.tipo));go(3)});
+$$('[data-back]').forEach(b=>b.onclick=()=>go(+b.dataset.back));
+$$('[data-restart]').forEach(b=>b.addEventListener('click',()=>{S.uf=S.tipo=null;$$('.st,[data-rqe]').forEach(x=>x.setAttribute('aria-pressed','false'));$('#dados').reset();go(1)}));
+ORDEM_UF.forEach(([uf])=>{$('#crmuf').add(new Option(uf,uf));$('#v-uf').add(new Option(uf,uf))});
+ESPS.forEach(e=>$('#esp').add(new Option(e,e)));
+if(!FORM_ENDPOINT)$('#demo').hidden=false;
 
-const matchText=(o,keys)=>!F.q||norm(keys.map(k=>o[k]).join(' ')).includes(norm(F.q));
-const matchUf=o=>!F.uf||o.uf===F.uf||o.uf==='BR';
-const matchEsp=o=>!F.esp||o.esp===F.esp||o.esp==='Todas';
-const COLORS=['#1C6B58','#3E7CB1','#7A5BB5','#B36B00','#2E8B57','#A3312A'];
-const initials=s=>s.replace(/[^A-Za-zÀ-ú ]/g,' ').split(/\s+/).filter(w=>w.length>2).slice(0,2).map(w=>w[0]).join('').toUpperCase();
-const groupById=id=>D.grupos.find(g=>g.id===id);
-
-function renderGrupos(){
-  const list=D.grupos.filter(g=>matchText(g,['nome','cidade','esp','cat'])&&matchUf(g)&&matchEsp(g)&&(!F.cat||g.cat===F.cat))
-    .sort((a,b)=>(b.verificado-a.verificado)||(b.vagasSemana-a.vagasSemana));
-  $('#n-grupos').textContent=list.length;$('#r-grupos').textContent=list.length?`${list.length} grupo${list.length>1?'s':''} encontrado${list.length>1?'s':''}`:'';
-  const box=$('#l-grupos');box.innerHTML='';
-  if(!list.length){box.appendChild(el('div','empty glass','Nenhum grupo com esses filtros. Tente outro estado ou especialidade, ou cadastre o seu grupo mais abaixo.'));return}
-  list.forEach((g,i)=>{const c=el('article','card glass');
-    const head=el('div','ghead');const ic=el('div','gicon',initials(g.nome));ic.style.background=COLORS[i%COLORS.length];head.appendChild(ic);
-    const t=el('div');t.appendChild(el('h3',null,g.nome));t.appendChild(el('span','note',`${g.cidade}${g.uf!=='BR'?' · '+g.uf:''}`));head.appendChild(t);c.appendChild(head);
-    const m=el('div','meta');m.appendChild(el('span','pill',g.cat));if(g.esp!=='Todas')m.appendChild(el('span','pill',g.esp));if(g.verificado)m.appendChild(el('span','pill ok','✓ Verificado'));c.appendChild(m);
-    const f=el('div','facts');f.appendChild(el('span',null,`${num(g.membros)} de 1.024 participantes`));f.appendChild(el('span',null,g.vagasSemana?`${g.vagasSemana} vagas/semana`:'sem vagas'));c.appendChild(f);
-    const bar=el('div','bar');const fillb=el('i');fillb.style.width=Math.min(100,g.membros/1024*100)+'%';bar.appendChild(fillb);c.appendChild(bar);
-    const a=el('div','acts');const enter=el('button','btn wa sm');enter.type='button';enter.innerHTML=WA_ICON+(g.convite?'Entrar no grupo':'Pedir convite');enter.onclick=()=>openGroup(g);a.appendChild(enter);
-    const rep=el('button','btn soft sm','Denunciar');rep.type='button';rep.onclick=()=>report('grupo',g.nome);a.appendChild(rep);c.appendChild(a);
-    box.appendChild(c)});
-}
-function renderVagas(){
-  const list=D.vagas.filter(v=>matchText(v,['titulo','local','cidade','esp'])&&matchUf(v)&&matchEsp(v)).sort((a,b)=>a.horas-b.horas);
-  $('#n-vagas').textContent=list.length;$('#r-vagas').textContent=list.length?`${list.length} vaga${list.length>1?'s':''} publicada${list.length>1?'s':''} nos grupos`:'';
-  const box=$('#l-vagas');box.innerHTML='';
-  if(!list.length){box.appendChild(el('div','empty glass','Nenhuma vaga com esses filtros agora. Cadastre um alerta e receba as próximas no WhatsApp.'));return}
-  list.forEach(v=>{const g=groupById(v.grupo),c=el('article','card glass vaga');
-    const m=el('div','meta');m.appendChild(el('span','pill',v.esp));m.appendChild(el('span','pill '+(v.regime==='Troca'?'amber':''),v.regime));m.appendChild(el('span','pill wa',`há ${v.horas} h`));c.appendChild(m);
-    c.appendChild(el('h3',null,v.titulo));
-    c.appendChild(el('span','note',`${v.local} · ${v.cidade}/${v.uf}`));
-    c.appendChild(el('span','mono',`${v.data} · ${v.turno}`));
-    c.appendChild(el('span','valor mono',brl(v.valor)));
-    if(g){const via=el('span','via','Publicada em ');const l=el('a',null,g.nome);l.href='#explorar';l.onclick=e=>{e.preventDefault();openGroup(g)};via.appendChild(l);c.appendChild(via)}
-    const a=el('div','acts');const b=el('button','btn wa sm');b.type='button';b.innerHTML=WA_ICON+'Tenho interesse';b.onclick=()=>interest(v,g);a.appendChild(b);
-    const rep=el('button','btn soft sm','Denunciar');rep.type='button';rep.onclick=()=>report('vaga',v.titulo);a.appendChild(rep);c.appendChild(a);
-    box.appendChild(c)});
-}
-function renderComunidades(){
-  const list=D.comunidades.filter(c=>matchText(c,['nome','desc'])&&matchUf(c));
-  $('#n-comunidades').textContent=list.length;const box=$('#l-comunidades');box.innerHTML='';
-  if(!list.length){box.appendChild(el('div','empty glass','Nenhuma comunidade com esses filtros.'));return}
-  list.forEach(cm=>{const c=el('article','card glass comm');c.appendChild(el('h3',null,cm.nome));c.appendChild(el('p','note',cm.desc));
-    const sg=el('div','sub-groups');for(let i=0;i<Math.min(cm.grupos,10);i++)sg.appendChild(el('i'));c.appendChild(sg);
-    const f=el('div','facts');f.appendChild(el('span',null,`${cm.grupos} grupos`));f.appendChild(el('span',null,`${num(cm.membros)} participantes`));c.appendChild(f);
-    const b=el('button','btn wa sm');b.type='button';b.innerHTML=WA_ICON+'Pedir para entrar';b.onclick=()=>openGroup({nome:cm.nome,convite:'',regras:['Entrada com aprovação do administrador','Escolha os grupos da comunidade depois de entrar']});
-    const a=el('div','acts');a.appendChild(b);c.appendChild(a);box.appendChild(c)});
-}
-function renderServicos(){
-  const list=D.servicos.filter(s=>matchText(s,['nome','desc','cat']));
-  $('#n-servicos').textContent=list.length;const box=$('#l-servicos');box.innerHTML='';
-  list.forEach(s=>{const c=el('article','card glass serv');c.appendChild(el('span','cat',s.cat));c.appendChild(el('h3',null,s.nome));c.appendChild(el('p','note',s.desc));
-    const m=el('div','meta');m.appendChild(el('span','pill amber',s.selo));c.appendChild(m);
-    const b=el('button','btn soft sm','Quero contato');b.type='button';b.onclick=()=>contactService(s);const a=el('div','acts');a.appendChild(b);c.appendChild(a);box.appendChild(c)});
-}
-function render(){renderGrupos();renderVagas();renderComunidades();renderServicos()}
-render();
-
-/* abas */
-function tab(name){$$('[data-tab]').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===name));['grupos','vagas','comunidades','servicos'].forEach(k=>$('#p-'+k).hidden=k!==name)}
-$$('[data-tab]').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
-$$('[data-open-tab]').forEach(a=>a.addEventListener('click',()=>tab(a.dataset.openTab)));
-$$('[data-focus]').forEach(a=>a.addEventListener('click',()=>setTimeout(()=>$('#'+a.dataset.focus).focus({preventScroll:true}),400)));
-
-/* modal + toast */
-let lastFocus;
-function modal(build){lastFocus=document.activeElement;const root=$('#modal-root');root.innerHTML='';
-  const s=el('div','scrim'),m=el('div','modal');m.setAttribute('role','dialog');m.setAttribute('aria-modal','true');build(m,close);s.appendChild(m);root.appendChild(s);
-  s.addEventListener('click',e=>{if(e.target===s)close()});document.addEventListener('keydown',esc);
-  const first=m.querySelector('input,button,a');if(first)first.focus();
-  function esc(e){if(e.key==='Escape')close()}
-  function close(){root.innerHTML='';document.removeEventListener('keydown',esc);if(lastFocus)lastFocus.focus()}}
-let tt;function toast(msg){let t=$('.toast');if(!t){t=el('div','toast');t.setAttribute('role','status');document.body.appendChild(t)}t.textContent=msg;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,3600)}
-
-function openGroup(g){modal((m,close)=>{
-  m.appendChild(el('p','eyebrow',g.convite?'Entrar no grupo':'Pedir convite'));m.appendChild(el('h3',null,g.nome));
-  m.appendChild(el('b',null,'Regras do grupo'));const ul=el('ul');(g.regras||[]).forEach(r=>ul.appendChild(el('li',null,r)));m.appendChild(ul);
-  const ok=el('label','consent');ok.style.display='flex';const cb=el('input');cb.type='checkbox';cb.id='aceite';ok.htmlFor='aceite';ok.appendChild(cb);ok.appendChild(el('span',null,'Li e aceito as regras do grupo.'));m.appendChild(ok);
-  if(g.convite){
-    const a=el('div','acts');const cancel=el('button','btn soft','Voltar');cancel.type='button';cancel.onclick=close;
-    const go=el('a','btn wa');go.innerHTML=WA_ICON+'Abrir no WhatsApp';go.href=g.convite;go.target='_blank';go.rel='noopener';go.setAttribute('aria-disabled','true');go.style.opacity=.5;go.style.pointerEvents='none';
-    cb.onchange=()=>{go.style.opacity=cb.checked?1:.5;go.style.pointerEvents=cb.checked?'auto':'none';go.setAttribute('aria-disabled',!cb.checked)};
-    a.appendChild(cancel);a.appendChild(go);m.appendChild(a);
-  }else{
-    m.appendChild(el('p','note','Este grupo aprova a entrada de cada participante. Envie seus dados e o administrador chama você no WhatsApp.'));
-    const f=el('form');f.noValidate=true;f.style.display='grid';f.style.gap='10px';
-    f.innerHTML='<label for="pc-nome">Nome<input id="pc-nome" name="nome" required autocomplete="name"></label><label for="pc-reg">CRM ou COREN (com UF)<input id="pc-reg" name="registro" placeholder="Ex.: CRM-SP 123456" required></label><label for="pc-wa">WhatsApp<input id="pc-wa" name="whatsapp" type="tel" required autocomplete="tel"></label><p class="err" hidden></p>';
-    const a=el('div','acts');const cancel=el('button','btn soft','Voltar');cancel.type='button';cancel.onclick=close;const send=el('button','btn wa','Enviar pedido');send.type='submit';a.appendChild(cancel);a.appendChild(send);f.appendChild(a);
-    f.addEventListener('submit',async e=>{e.preventDefault();const er=f.querySelector('.err');er.hidden=true;
-      if(!cb.checked){er.textContent='Marque que leu e aceita as regras do grupo.';er.hidden=false;return}
-      const miss=[...f.querySelectorAll('[required]')].filter(i=>!i.value.trim()).map(i=>i.previousSibling.textContent.trim());
-      if(miss.length){er.textContent='Falta preencher: '+miss.join(', ')+'.';er.hidden=false;return}
-      const ok2=await send_({tipo:'pedido_convite',grupo:g.nome,...Object.fromEntries(new FormData(f))});
-      if(ok2){close();toast(FORM_ENDPOINT?'Pedido enviado. O administrador vai chamar você no WhatsApp.':'Modo demonstração: pedido não enviado.')}else{er.textContent='Não conseguimos enviar agora. Verifique sua conexão e tente de novo.';er.hidden=false}});
-    m.appendChild(f);
-  }
-})}
-function interest(v,g){modal((m,close)=>{
-  m.appendChild(el('p','eyebrow','Tenho interesse'));m.appendChild(el('h3',null,v.titulo));
-  m.appendChild(el('p','mono',`${v.data} · ${v.turno} · ${brl(v.valor)}`));m.appendChild(el('p','note',`${v.local} · ${v.cidade}/${v.uf}${g?' · publicada em '+g.nome:''}`));
-  const msg=`Olá! Vi no Revezo a vaga "${v.titulo}" em ${v.data} (${v.turno}), ${brl(v.valor)}. Ainda está disponível?`;
-  const a=el('div','acts');const cancel=el('button','btn soft','Voltar');cancel.type='button';cancel.onclick=close;a.appendChild(cancel);
-  if(v.contato){const go=el('a','btn wa');go.innerHTML=WA_ICON+'Chamar no WhatsApp';go.href='https://wa.me/'+v.contato+'?text='+encodeURIComponent(msg);go.target='_blank';go.rel='noopener';a.appendChild(go)}
-  else{m.appendChild(el('p','note','Esta é uma vaga de exemplo, sem contato cadastrado. Nas vagas reais, o botão abre uma conversa no WhatsApp com esta mensagem pronta:'));const q=el('p',null,'“'+msg+'”');q.style.cssText='background:rgba(31,168,85,.08);padding:12px;border-radius:12px;font-size:14px';m.appendChild(q)}
-  m.appendChild(el('p','note','Antes de aceitar, confira o CNPJ de quem contrata e peça valor, data e forma de pagamento por escrito.'));m.appendChild(a);
-})}
-function contactService(s){modal((m,close)=>{m.appendChild(el('p','eyebrow',s.cat));m.appendChild(el('h3',null,s.nome));m.appendChild(el('p','note',s.desc+' Este anúncio é um exemplo; nos anúncios reais aparece o contato da empresa.'));
-  const a=el('div','acts');const b=el('button','btn primary','Fechar');b.type='button';b.onclick=close;a.appendChild(b);m.appendChild(a)})}
-function report(tipo,nome){modal((m,close)=>{m.appendChild(el('p','eyebrow','Denunciar'));m.appendChild(el('h3',null,nome));
-  const f=el('form');f.noValidate=true;f.style.display='grid';f.style.gap='10px';
-  f.innerHTML='<label for="dn-mot">Motivo<select id="dn-mot" name="motivo"><option>Golpe ou cobrança para entrar</option><option>Vaga falsa ou sem pagamento</option><option>Spam ou propaganda</option><option>Link quebrado</option><option>Outro</option></select></label><label for="dn-det">Detalhes (opcional)<textarea id="dn-det" name="detalhes" rows="3"></textarea></label>';
-  const a=el('div','acts');const c=el('button','btn soft','Voltar');c.type='button';c.onclick=close;const s=el('button','btn primary','Enviar denúncia');s.type='submit';a.appendChild(c);a.appendChild(s);f.appendChild(a);
-  f.addEventListener('submit',async e=>{e.preventDefault();await send_({tipo:'denuncia_'+tipo,item:nome,...Object.fromEntries(new FormData(f))});close();toast(FORM_ENDPOINT?'Denúncia enviada. Vamos analisar em até 24 h.':'Modo demonstração: denúncia não enviada.')});
-  m.appendChild(f)})}
-
-/* envio */
-async function send_(data){data.enviado_em=new Date().toISOString();
+async function enviar(data){data.enviado_em=new Date().toISOString();data.pagina=location.pathname;
+  const ref=new URLSearchParams(location.search).get('ref');if(ref)data.origem=ref;
   if(!FORM_ENDPOINT)return true;
-  try{const r=await fetch(FORM_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(data)});return r.ok}catch(e){return false}}
-if(!FORM_ENDPOINT)$('#demo-note').hidden=false;
-$$('form[data-form]').forEach(f=>f.addEventListener('submit',async e=>{e.preventDefault();const er=f.querySelector('.err');er.hidden=true;
-  const miss=[...f.querySelectorAll('[required]')].filter(i=>i.type==='checkbox'?!i.checked:!i.value.trim()).map(i=>i.type==='checkbox'?'confirmação':(i.closest('label').firstChild.textContent.trim()));
-  if(miss.length){er.textContent='Falta preencher: '+miss.join(', ')+'.';er.hidden=false;return}
-  const link=f.querySelector('[name=link]');if(link&&!/^https:\/\/chat\.whatsapp\.com\/\S+$/.test(link.value.trim())){er.textContent='O link de convite deve começar com https://chat.whatsapp.com/';er.hidden=false;return}
-  const btn=f.querySelector('[type=submit]'),txt=btn.textContent;btn.disabled=true;btn.textContent='Enviando…';
-  const ok=await send_({tipo:f.dataset.form,...Object.fromEntries(new FormData(f))});btn.disabled=false;btn.textContent=txt;
-  if(!ok){er.textContent='Não conseguimos enviar agora. Verifique sua conexão e tente de novo.';er.hidden=false;return}
-  const msgs={alerta:'Pronto. Você vai receber no WhatsApp as vagas novas da sua especialidade e cidade.',grupo:'Grupo enviado. Conferimos o administrador e publicamos em até 48 h.',vaga:'Vaga enviada. Depois da conferência do CNPJ, ela aparece no portal e nos grupos da região.'};
-  f.reset();toast(FORM_ENDPOINT?msgs[f.dataset.form]:'Modo demonstração: nada foi enviado.')}));
+  const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),5000);
+  try{const r=await fetch(FORM_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(data),signal:ctl.signal});return r.ok}catch(e){return false}finally{clearTimeout(t)}}
 
-/* revelação */
-(function(){const els=$$('.rv');if(!('IntersectionObserver' in window)||reduce){els.forEach(e=>e.classList.add('in'));return}
-  const io=new IntersectionObserver(es=>{let k=0;es.forEach(e=>{if(e.isIntersecting){const t=e.target;setTimeout(()=>t.classList.add('in'),(k++)*70);io.unobserve(t)}})},{threshold:.12});
-  els.forEach(e=>io.observe(e));setTimeout(()=>els.forEach(e=>e.classList.add('in')),4000)})();
+$('#dados').addEventListener('submit',async e=>{e.preventDefault();const f=e.target,err=$('#err');err.hidden=true;
+  const miss=[];if(!f.nome.value.trim())miss.push('nome');if(!/^\d{3,8}$/.test(f.crm.value.replace(/\D/g,'')))miss.push('número do CRM');
+  if(S.tipo==='rqe'){if(!f.especialidade.value)miss.push('especialidade');if(!f.rqe.value.trim())miss.push('número do RQE')}
+  if(f.whatsapp.value.replace(/\D/g,'').length<10)miss.push('WhatsApp com DDD');if(!f.ok.checked)miss.push('autorização');
+  if(miss.length){err.textContent='Falta preencher: '+miss.join(', ')+'.';err.hidden=false;return}
+  const g=destino(S.uf,S.tipo),btn=$('#go');btn.disabled=true;btn.textContent='Enviando…';
+  const ok=await enviar({tipo:'entrada_grupo',uf:S.uf,grupo:S.tipo,grupo_nome:nomeGrupo(S.uf,S.tipo,g),link_destino:g?g.link:'',...Object.fromEntries(new FormData(f))});
+  btn.disabled=false;btn.textContent='Entrar no grupo';
+  if(!ok){err.textContent='Não conseguimos enviar agora. Verifique sua conexão e tente de novo.';err.hidden=false;return}
+  const link=$('#done-link');
+  if(g){$('#done-title').textContent='Tudo certo! Abrindo o grupo…';$('#done-text').textContent=`Peça para entrar em ${nomeGrupo(S.uf,S.tipo,g)}. A equipe confere seu CRM e aprova em breve.`;link.href=g.link;link.hidden=false;go(4);
+    if(FORM_ENDPOINT)setTimeout(()=>{location.href=g.link},1200)}
+  else{$('#done-title').textContent=`O grupo ${nomeGrupo(S.uf,S.tipo)} abre em breve`;$('#done-text').textContent=FORM_ENDPOINT?'Seus dados foram salvos. Quando o grupo abrir, você recebe o convite no WhatsApp.':'Modo demonstração: este grupo ainda não tem link cadastrado e nenhum dado foi enviado.';link.hidden=true;go(4)}
+});
+
+/* lista de estados */
+function renderEstados(){const box=$('#regions');box.innerHTML='';let ativos=0;
+  ["Norte","Nordeste","Centro-Oeste","Sudeste","Sul"].forEach(reg=>{const sec=document.createElement('div');sec.className='region';const h=document.createElement('h3');h.textContent=reg;sec.appendChild(h);
+    const grid=document.createElement('div');grid.className='ufgrid';
+    ESTADOS.filter(e=>e[2]===reg).forEach(([uf,nm])=>{const c=document.createElement('button');c.type='button';c.className='ufcard glass';
+      c.innerHTML=`<span class="sig">${uf}</span><span class="nm"></span><span class="gs"></span>`;c.querySelector('.nm').textContent=nm;
+      ['rqe','sem-rqe'].forEach(t=>{const on=!!destino(uf,t);if(on)ativos++;const p=document.createElement('span');p.className='pill '+(on?'on':'soon');p.textContent=`${TIPO[t]} · ${on?'aberto':'em breve'}`;c.querySelector('.gs').appendChild(p)});
+      c.onclick=()=>{pickUF(uf);$('#topo').scrollIntoView({behavior:reduce?'auto':'smooth'})};grid.appendChild(c)});
+    sec.appendChild(grid);box.appendChild(sec)});
+  $('#s-ativos').textContent=ativos;$('#s-ativos-box').hidden=!ativos}
+
+/* vaga de hospital */
+let tt;function toast(m){let t=$('.toast');if(!t){t=document.createElement('div');t.className='toast';t.setAttribute('role','status');document.body.appendChild(t)}t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,3800)}
+$('#vaga').addEventListener('submit',async e=>{e.preventDefault();const f=e.target,er=f.querySelector('.err');er.hidden=true;
+  const miss=[...f.querySelectorAll('[required]')].filter(i=>!i.value.trim()).map(i=>i.closest('label').firstChild.textContent.trim());
+  if(miss.length){er.textContent='Falta preencher: '+miss.join(', ')+'.';er.hidden=false;return}
+  const btn=f.querySelector('[type=submit]');btn.disabled=true;const ok=await enviar({tipo:'vaga',...Object.fromEntries(new FormData(f))});btn.disabled=false;
+  if(!ok){er.textContent='Não conseguimos enviar agora. Tente de novo.';er.hidden=false;return}
+  f.reset();toast(FORM_ENDPOINT?'Vaga recebida. Depois de conferir o CNPJ, publicamos no grupo do estado.':'Modo demonstração: a vaga não foi enviada.')});
+
+carregar().then(renderEstados);renderEstados();
 </script>
 </body>
 </html>
