@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Gabinete Digital</title>
+<meta name="description" content="Prazos, intimações do DJEN, atas e recursos administrativos em um só painel para advogados autônomos e pequenos escritórios.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,500;0,6..96,600;1,6..96,500&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: capa escura de "autos" no topo com a demonstração viva do prazo; depois folhas claras em coluna, como peças de um processo. */
+:root {
+  --papel: #F2F4F1;
+  --folha: #FFFFFF;
+  --tinta: #16201B;
+  --tinta-2: #4A5650;
+  --tinta-3: #74817A;
+  --linha: #D7DDD8;
+  --bordo: #7C1E2C;
+  --bordo-suave: #F4E4E6;
+  --latao: #8E6A22;
+  --capa: #18231E;
+  --capa-2: #23312B;
+  --capa-3: #31423A;
+  --capa-tinta: #E9EEEA;
+  --capa-tinta-2: #A3B3AA;
+  --latao-claro: #D6AE5E;
+  --ok: #2B7049;
+  --f-display: "Bodoni Moda", "Didot", "Bodoni 72", Georgia, serif;
+  --f-texto: "Public Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --papel: #0F1412; --folha: #161D1A; --tinta: #E5ECE7; --tinta-2: #A6B4AC; --tinta-3: #7F8D86; --linha: #2A3631;
+    --bordo: #E8919D; --bordo-suave: #3A2026; --latao: #D9B266; --capa: #0A0E0C; --capa-2: #141B18; --capa-3: #24302A;
+    --ok: #6CCB94; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --papel: #0F1412; --folha: #161D1A; --tinta: #E5ECE7; --tinta-2: #A6B4AC; --tinta-3: #7F8D86; --linha: #2A3631;
+  --bordo: #E8919D; --bordo-suave: #3A2026; --latao: #D9B266; --capa: #0A0E0C; --capa-2: #141B18; --capa-3: #24302A;
+  --ok: #6CCB94; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--papel); color: var(--tinta); font: 16px/1.6 var(--f-texto); -webkit-font-smoothing: antialiased; }
+[hidden] { display: none !important; }
+h1, h2, h3 { margin: 0; line-height: 1.1; text-wrap: balance; }
+h1, h2 { font-family: var(--f-display); font-weight: 500; }
+h3 { font-size: 1.05rem; font-weight: 700; }
+p { margin: 0; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--latao-claro); outline-offset: 3px; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.rotulo { font-size: .74rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; }
+.largura { width: min(1160px, 100%); margin-inline: auto; padding-inline: 20px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; padding: .85rem 1.3rem; border-radius: 6px; font-weight: 600; text-decoration: none; border: 1px solid transparent; cursor: pointer; font-size: .95rem; transition: transform .15s ease, background .15s ease; }
+.btn:hover { transform: translateY(-1px); }
+.btn.latao { background: var(--latao-claro); color: #1A140A; }
+.btn.latao:hover { background: #E2BD72; }
+.btn.contorno { border-color: var(--capa-3); color: var(--capa-tinta); }
+.btn.contorno:hover { border-color: var(--capa-tinta-2); }
+.btn.bordo { background: var(--bordo); color: var(--folha); }
+
+/* ---------- topo ---------- */
+.topo { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; background: color-mix(in srgb, var(--capa) 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--capa-2); color: var(--capa-tinta); }
+.topo .largura { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: .8rem; }
+.marca { display: flex; align-items: center; gap: .65rem; text-decoration: none; }
+.selo { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--latao-claro); display: grid; place-items: center; font-family: var(--f-display); font-style: italic; color: var(--latao-claro); flex: none; }
+.marca b { font-family: var(--f-display); font-weight: 600; font-size: 1.15rem; }
+.topo nav { display: flex; gap: 1.5rem; font-size: .9rem; color: var(--capa-tinta-2); }
+.topo nav a { text-decoration: none; }
+.topo nav a:hover { color: var(--capa-tinta); }
+.topo .btn { padding: .55rem 1rem; font-size: .88rem; }
+
+/* ---------- capa ---------- */
+.capa { background: var(--capa); color: var(--capa-tinta); position: relative; overflow: hidden; }
+.capa::before { content: ""; position: absolute; inset: 0; background:
+  repeating-linear-gradient(90deg, transparent 0 119px, rgba(214, 174, 94, .05) 119px 120px),
+  radial-gradient(60% 80% at 85% 10%, rgba(214, 174, 94, .10), transparent 60%); pointer-events: none; }
+.capa .largura { position: relative; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: clamp(2rem, 5vw, 4.5rem); align-items: center; padding-block: clamp(3rem, 8vw, 6.5rem) clamp(3rem, 7vw, 5.5rem); }
+.capa .rotulo { color: var(--latao-claro); }
+.capa h1 { font-size: clamp(2.6rem, 6.4vw, 5.2rem); margin-top: 1rem; letter-spacing: -.01em; }
+.capa h1 em { color: var(--latao-claro); font-style: italic; }
+.capa .lead { color: var(--capa-tinta-2); font-size: clamp(1.02rem, 1.6vw, 1.18rem); max-width: 34rem; margin-top: 1.4rem; }
+.capa .acoes { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 2rem; }
+.capa .nota { margin-top: 1.25rem; font-size: .84rem; color: var(--capa-tinta-2); }
+
+/* demonstração viva */
+.demo { background: var(--capa-2); border: 1px solid var(--capa-3); border-radius: 12px; padding: 1.1rem; display: grid; gap: .9rem; box-shadow: 0 30px 60px rgba(0, 0, 0, .35); min-width: 0; }
+.demo-topo { display: flex; justify-content: space-between; align-items: center; font-size: .78rem; color: var(--capa-tinta-2); }
+.demo-topo .ao-vivo { display: inline-flex; align-items: center; gap: .4rem; }
+.demo-topo .ao-vivo i { width: 7px; height: 7px; border-radius: 50%; background: #E2554F; display: inline-block; }
+.intimacao { background: var(--capa); border: 1px solid var(--capa-3); border-radius: 8px; padding: .85rem .95rem; display: grid; gap: .45rem; }
+.intimacao .fonte { font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--latao-claro); font-weight: 600; }
+.intimacao .texto { font-size: .95rem; min-height: 3em; }
+.intimacao .texto::after { content: "▍"; color: var(--latao-claro); animation: pisca 1s steps(1) infinite; }
+.intimacao.pronta .texto::after { content: ""; }
+@keyframes pisca { 50% { opacity: 0; } }
+.cnj { display: flex; flex-wrap: wrap; font-family: var(--f-mono); font-size: .84rem; border: 1px solid var(--capa-3); border-radius: 6px; overflow: hidden; width: fit-content; max-width: 100%; }
+.cnj span { padding: .22rem .4rem; border-left: 1px solid var(--capa-3); transition: background .3s, color .3s; }
+.cnj span:first-child { border-left: 0; }
+.cnj span.acende { background: rgba(214, 174, 94, .16); color: var(--latao-claro); }
+.legenda-cnj { font-size: .76rem; color: var(--capa-tinta-2); min-height: 1.3em; }
+.regua { display: grid; grid-template-columns: repeat(13, minmax(0, 1fr)); gap: 3px; }
+.dia { aspect-ratio: 1; border-radius: 4px; background: var(--capa); border: 1px solid var(--capa-3); display: grid; place-items: center; font-family: var(--f-mono); font-size: .66rem; color: var(--capa-tinta-2); position: relative; transition: background .25s, color .25s, border-color .25s; max-width: 100%; }
+.dia small { position: absolute; top: 1px; left: 3px; font-size: .5rem; opacity: .7; }
+.dia.fds { opacity: .35; }
+.dia.feriado { border-color: #A2484F; color: #E7A0A7; }
+.dia.conta { background: var(--capa-3); color: var(--capa-tinta); }
+.dia.vence { background: var(--latao-claro); color: #1A140A; border-color: var(--latao-claro); font-weight: 700; }
+.resultado { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .6rem; padding-top: .2rem; }
+.resultado strong { font-family: var(--f-display); font-size: 1.5rem; font-weight: 500; }
+.resultado .pill { font-size: .76rem; border: 1px solid var(--capa-3); border-radius: 999px; padding: .2rem .6rem; color: var(--capa-tinta-2); }
+.resultado .pill.ok { border-color: #3E8A5E; color: #8FD3AA; }
+.descontos { font-size: .76rem; color: var(--capa-tinta-2); }
+
+/* ---------- seções claras ---------- */
+section.bloco { padding-block: clamp(3.5rem, 8vw, 6rem); }
+.cabeca-secao { display: grid; gap: .8rem; max-width: 46rem; margin-bottom: 2.5rem; }
+.cabeca-secao .rotulo { color: var(--bordo); }
+.cabeca-secao h2 { font-size: clamp(2rem, 4.2vw, 3.1rem); }
+.cabeca-secao p { color: var(--tinta-2); font-size: 1.05rem; }
+
+.dor { border-block: 1px solid var(--linha); background: var(--folha); }
+.dor .largura { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 2rem; align-items: center; padding-block: 2.2rem; }
+.dor p.frase { font-family: var(--f-display); font-size: clamp(1.4rem, 2.6vw, 2rem); line-height: 1.2; }
+.lugares { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .6rem; }
+.lugar { border: 1px dashed var(--linha); border-radius: 8px; padding: .8rem; font-size: .88rem; color: var(--tinta-2); display: grid; gap: .2rem; }
+.lugar b { color: var(--tinta); font-size: .92rem; }
+
+.passos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border-top: 1px solid var(--tinta); }
+.passo { padding: 1.5rem 1.5rem 0 0; display: grid; gap: .6rem; align-content: start; }
+.passo + .passo { padding-left: 1.5rem; border-left: 1px solid var(--linha); }
+.passo .n { font-family: var(--f-display); font-size: 3rem; line-height: 1; color: var(--bordo); }
+.passo p { color: var(--tinta-2); }
+
+.recursos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--linha); border: 1px solid var(--linha); border-radius: 10px; overflow: hidden; }
+.recurso { background: var(--folha); padding: 1.5rem; display: grid; gap: .55rem; align-content: start; }
+.recurso .base { font-family: var(--f-mono); font-size: .74rem; color: var(--latao); }
+.recurso p { color: var(--tinta-2); font-size: .95rem; }
+
+.publicos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; }
+.publico { border-top: 3px solid var(--bordo); padding-top: 1rem; display: grid; gap: .5rem; }
+.publico p { color: var(--tinta-2); }
+
+.compromissos { background: var(--capa); color: var(--capa-tinta); }
+.compromissos .cabeca-secao .rotulo { color: var(--latao-claro); }
+.compromissos .cabeca-secao p { color: var(--capa-tinta-2); }
+.lista-comp { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem 3rem; }
+.lista-comp div { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .9rem; }
+.lista-comp .sig { font-family: var(--f-display); font-size: 1.6rem; color: var(--latao-claro); line-height: 1; }
+.lista-comp p { color: var(--capa-tinta-2); font-size: .95rem; }
+
+.planos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; align-items: start; }
+.plano { background: var(--folha); border: 1px solid var(--linha); border-radius: 10px; padding: 1.6rem; display: grid; gap: 1rem; }
+.plano.destaque { border-color: var(--bordo); box-shadow: 0 0 0 1px var(--bordo); }
+.plano .preco { font-family: var(--f-display); font-size: 2.6rem; line-height: 1; }
+.plano .preco small { font-family: var(--f-texto); font-size: .9rem; color: var(--tinta-2); }
+.plano ul { margin: 0; padding: 0; list-style: none; display: grid; gap: .45rem; font-size: .94rem; color: var(--tinta-2); }
+.plano li::before { content: "§ "; color: var(--latao); font-family: var(--f-display); }
+.selo-fundador { font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--bordo); background: var(--bordo-suave); padding: .25rem .6rem; border-radius: 999px; width: fit-content; }
+
+.faq { display: grid; gap: 0; border-top: 1px solid var(--linha); max-width: 52rem; }
+.faq details { border-bottom: 1px solid var(--linha); padding: 1.1rem 0; }
+.faq summary { cursor: pointer; font-weight: 600; font-size: 1.05rem; list-style: none; display: flex; justify-content: space-between; gap: 1rem; }
+.faq summary::after { content: "+"; font-family: var(--f-display); font-size: 1.4rem; line-height: 1; color: var(--bordo); }
+.faq details[open] summary::after { content: "–"; }
+.faq details p { color: var(--tinta-2); margin-top: .6rem; max-width: 46rem; }
+
+.espera { background: var(--folha); border-top: 1px solid var(--linha); }
+.espera .largura { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: clamp(2rem, 5vw, 4rem); align-items: start; }
+.espera .cabeca-secao { position: sticky; top: 6rem; }
+form.form { display: grid; gap: .9rem; }
+.campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .9rem; }
+.campo { display: grid; gap: .3rem; min-width: 0; }
+.campo span { font-size: .82rem; font-weight: 600; color: var(--tinta-2); }
+.campo input, .campo select, .campo textarea { width: 100%; min-width: 0; font: inherit; color: var(--tinta); background: var(--papel); border: 1px solid var(--linha); border-radius: 6px; padding: .7rem .8rem; }
+.campo textarea { min-height: 5rem; resize: vertical; }
+.aceite { display: flex; gap: .6rem; align-items: start; font-size: .85rem; color: var(--tinta-2); }
+.aceite input { margin-top: .3rem; accent-color: var(--bordo); }
+.retorno { border: 1px solid var(--linha); border-radius: 8px; padding: 1rem; background: var(--papel); display: grid; gap: .6rem; }
+.retorno pre { margin: 0; white-space: pre-wrap; font-family: var(--f-mono); font-size: .82rem; color: var(--tinta-2); }
+
+footer { background: var(--capa); color: var(--capa-tinta-2); font-size: .85rem; }
+footer .largura { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; padding-block: 2rem calc(env(safe-area-inset-bottom, 0px) + 2rem); }
+
+/* entrada suave sem esconder o conteúdo em repouso */
+@media (prefers-reduced-motion: no-preference) {
+  .sobe { animation: sobe .7s cubic-bezier(.2, .7, .2, 1) both; }
+  .sobe.d2 { animation-delay: .12s; } .sobe.d3 { animation-delay: .24s; } .sobe.d4 { animation-delay: .36s; }
+  @keyframes sobe { from { transform: translateY(14px); opacity: .01; } to { transform: none; opacity: 1; } }
+}
+
+@media (max-width: 960px) {
+  .capa .largura, .dor .largura, .espera .largura { grid-template-columns: minmax(0, 1fr); }
+  .recursos, .planos, .publicos { grid-template-columns: minmax(0, 1fr); }
+  .lugares { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .topo nav { display: none; }
+}
+@media (max-width: 720px) {
+  .passos { grid-template-columns: minmax(0, 1fr); }
+  .passo + .passo { padding-left: 0; border-left: 0; border-top: 1px solid var(--linha); margin-top: 1.5rem; }
+  .lista-comp, .campos { grid-template-columns: minmax(0, 1fr); }
+  .regua { grid-template-columns: repeat(9, minmax(0, 1fr)); }
+}
+</style>
+</head>
+<body>
+
+<header class="topo">
+  <div class="largura">
+    <a class="marca" href="#inicio"><span class="selo" aria-hidden="true">§</span><b>Gabinete Digital</b></a>
+    <nav aria-label="Seções"><a href="#como-funciona">Como funciona</a><a href="#recursos">Recursos</a><a href="#planos">Planos</a><a href="#perguntas">Perguntas</a></nav>
+    <a class="btn latao" href="#lista">Entrar na lista</a>
+  </div>
+</header>
+
+<main id="inicio">
+  <!-- CAPA -->
+  <section class="capa">
+    <div class="largura">
+      <div>
+        <p class="rotulo sobe">Para advogados autônomos e pequenos escritórios</p>
+        <h1 class="sobe d2">A intimação chega. O prazo já está <em>na sua pauta.</em></h1>
+        <p class="lead sobe d3">O Gabinete Digital lê as publicações do DJEN pela sua OAB, conta o prazo em dias úteis com feriados e recesso, e organiza o dia. Atas, recursos administrativos e relatórios ao cliente saem prontos para revisar.</p>
+        <div class="acoes sobe d4">
+          <a class="btn latao" href="#lista">Quero testar primeiro</a>
+          <a class="btn contorno" href="#como-funciona">Ver como funciona</a>
+        </div>
+        <p class="nota sobe d4">Vagas de fundador limitadas: preço travado enquanto a assinatura estiver ativa.</p>
+      </div>
+
+      <div class="demo" id="demo" aria-label="Demonstração: uma intimação vira prazo calculado">
+        <div class="demo-topo"><span class="ao-vivo"><i></i> DJEN · nova publicação</span><span class="mono">exemplo fictício</span></div>
+        <div class="intimacao pronta" id="intimacao">
+          <span class="fonte">Intimação · TJRJ</span>
+          <p class="texto" id="texto-intimacao">Fica a parte apelada intimada para apresentar contrarrazões à apelação no prazo legal.</p>
+          <div class="cnj" id="cnj" aria-label="Número CNJ 1234567-77.2025.8.19.0001"><span data-leg="Número sequencial">1234567</span><span data-leg="Dígito verificador: confere">77</span><span data-leg="Ano: 2025">2025</span><span data-leg="Segmento 8: Justiça Estadual">8</span><span data-leg="Tribunal 19: TJRJ">19</span><span data-leg="Origem: unidade 0001">0001</span></div>
+          <p class="legenda-cnj" id="legenda-cnj">Segmento 8 · Justiça Estadual · TJRJ</p>
+        </div>
+        <div>
+          <div class="demo-topo" style="margin-bottom:.4rem"><span>15 dias úteis · CPC art. 1.010 §1º</span><span class="mono" id="contador">15/15</span></div>
+          <div class="regua" id="regua"></div>
+        </div>
+        <div class="resultado">
+          <div><span class="rotulo" style="color:var(--capa-tinta-2)">Vencimento</span><br><strong id="vencimento">03/11/2026 · terça</strong></div>
+          <span class="pill ok" id="na-pauta">Adicionado à pauta</span>
+        </div>
+        <p class="descontos" id="descontos">Descontados: 12/10 Nossa Senhora Aparecida · 02/11 Finados</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- DOR -->
+  <section class="dor" aria-label="O problema">
+    <div class="largura">
+      <p class="frase">Hoje um único prazo passa por quatro lugares antes de ser cumprido.</p>
+      <div class="lugares">
+        <div class="lugar"><b>DJEN e tribunais</b>a intimação aparece</div>
+        <div class="lugar"><b>Planilha</b>alguém anota o andamento</div>
+        <div class="lugar"><b>Agenda</b>alguém conta os dias</div>
+        <div class="lugar"><b>WhatsApp</b>o cliente pergunta</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMO FUNCIONA -->
+  <section class="bloco" id="como-funciona">
+    <div class="largura">
+      <div class="cabeca-secao">
+        <p class="rotulo">Como funciona</p>
+        <h2>Da planilha ao prazo cumprido em três passos.</h2>
+      </div>
+      <div class="passos">
+        <article class="passo"><span class="n">1</span><h3>Traga sua planilha</h3><p>Importe o controle de processos que você já usa, em Excel. Números CNJ, partes, andamentos e próximos passos viram fichas organizadas em minutos.</p></article>
+        <article class="passo"><span class="n">2</span><h3>O robô lê as intimações</h3><p>Todos os dias, consultamos o DJEN pela sua OAB e o DataJud do CNJ. O que é novo entra na linha do tempo do processo, com o texto completo da publicação.</p></article>
+        <article class="passo"><span class="n">3</span><h3>O prazo cai na pauta</h3><p>O sistema identifica o ato (sentença, embargos, contrarrazões, recurso na Lei 14.133), conta em dias úteis e avisa você de manhã. Você confere e cumpre.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <!-- RECURSOS -->
+  <section class="bloco" id="recursos" style="padding-top:0">
+    <div class="largura">
+      <div class="cabeca-secao">
+        <p class="rotulo">Recursos</p>
+        <h2>Feito para a rotina de quem advoga sozinho ou com equipe pequena.</h2>
+      </div>
+      <div class="recursos">
+        <article class="recurso"><span class="base">CPC art. 219, 220 e 224</span><h3>Prazos em dias úteis</h3><p>Feriados nacionais, Carnaval, Semana Santa, Corpus Christi e recesso de 20/12 a 20/01. Prazo de 8 dias na Justiça do Trabalho.</p></article>
+        <article class="recurso"><span class="base">Resumo das 7h</span><h3>Pauta da manhã</h3><p>Prazos atrasados, de hoje e da semana, audiências e processos parados há mais de 45 dias, por e-mail ou WhatsApp.</p></article>
+        <article class="recurso"><span class="base">Lei 14.133/2021</span><h3>Ateliê de peças</h3><p>Recurso administrativo, contrarrazões, impugnação ao edital, embargos de declaração e petições já preenchidas com os dados do processo.</p></article>
+        <article class="recurso"><span class="base">Teams · Meet · Zoom</span><h3>Atas transcritas</h3><p>Envie a transcrição ou dite a reunião. A IA organiza em ata formal e transforma os encaminhamentos em tarefas com data.</p></article>
+        <article class="recurso"><span class="base">Res. CNJ 65/2008</span><h3>Ficha do processo</h3><p>Número CNJ conferido pelo dígito verificador, links diretos para o tribunal e o DJEN, linha do tempo e relatório ao cliente em um clique.</p></article>
+        <article class="recurso"><span class="base">Excel · Google Agenda · Gmail</span><h3>Horas e conexões</h3><p>Cronômetro por processo, horas por cliente, exportação para Excel e agenda, e-mail e WhatsApp já preenchidos.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <!-- PÚBLICOS -->
+  <section class="bloco" style="padding-top:0">
+    <div class="largura">
+      <div class="cabeca-secao">
+        <p class="rotulo">Para quem</p>
+        <h2>Três escritórios que saem da planilha.</h2>
+      </div>
+      <div class="publicos">
+        <article class="publico"><h3>Advogado autônomo</h3><p>Você é o escritório inteiro. O painel faz a triagem das intimações e você abre o dia sabendo o que vence.</p></article>
+        <article class="publico"><h3>Escritório de 2 a 5 pessoas</h3><p>Tarefas divididas entre advogados e estagiários, com conferência do prazo por uma segunda pessoa.</p></article>
+        <article class="publico"><h3>Quem atua em licitações</h3><p>Prazos de 3 dias úteis da Lei 14.133 e modelos de recurso, contrarrazões e impugnação prontos para adaptar.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMPROMISSOS -->
+  <section class="bloco compromissos">
+    <div class="largura">
+      <div class="cabeca-secao">
+        <p class="rotulo">Nossos compromissos</p>
+        <h2>Tecnologia que respeita o sigilo profissional.</h2>
+        <p>Você lida com dados de clientes. Estes são os princípios que guiam o produto.</p>
+      </div>
+      <div class="lista-comp">
+        <div><span class="sig">I</span><div><h3>O advogado decide</h3><p>A IA sugere prazos e minutas. Nada é protocolado ou enviado sem a sua revisão.</p></div></div>
+        <div><span class="sig">II</span><div><h3>Seus dados são seus</h3><p>Exporte tudo em Excel quando quiser. Nada de reféns.</p></div></div>
+        <div><span class="sig">III</span><div><h3>LGPD por contrato</h3><p>Cada escritório recebe termo de tratamento de dados, com acesso restrito e registro de alterações.</p></div></div>
+        <div><span class="sig">IV</span><div><h3>Fontes oficiais</h3><p>Intimações do DJEN e dados do DataJud, ambos do CNJ. Sem raspagem de sites.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PLANOS -->
+  <section class="bloco" id="planos">
+    <div class="largura">
+      <div class="cabeca-secao">
+        <p class="rotulo">Planos de fundador</p>
+        <h2>Preço de quem entra primeiro, travado para sempre.</h2>
+        <p>Os primeiros escritórios ajudam a definir o produto e pagam menos enquanto mantiverem a assinatura. 14 dias de teste sem cartão.</p>
+      </div>
+      <div class="planos">
+        <article class="plano"><h3>Solo</h3><p class="preco">R$ 97<small>/mês</small></p><ul><li>1 advogado</li><li>Intimações do DJEN pela OAB</li><li>Prazos e pauta da manhã</li><li>Ateliê com modelos prontos</li></ul><a class="btn bordo" href="#lista" data-plano="Solo">Reservar vaga</a></article>
+        <article class="plano destaque"><span class="selo-fundador">Mais procurado</span><h3>Escritório</h3><p class="preco">R$ 247<small>/mês</small></p><ul><li>Até 5 usuários</li><li>Tudo do Solo</li><li>Atas e peças redigidas com IA</li><li>Conferência de prazo em dupla</li><li>Horas e relatório mensal ao cliente</li></ul><a class="btn bordo" href="#lista" data-plano="Escritório">Reservar vaga</a></article>
+        <article class="plano"><h3>Implantação</h3><p class="preco">R$ 297<small> uma vez</small></p><ul><li>Importamos sua planilha por você</li><li>Revisão dos números CNJ</li><li>Treinamento de 1 hora por vídeo</li></ul><a class="btn bordo" href="#lista" data-plano="Implantação">Quero ajuda</a></article>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="bloco" id="perguntas" style="padding-top:0">
+    <div class="largura">
+      <div class="cabeca-secao"><p class="rotulo">Perguntas</p><h2>Antes de entrar na lista.</h2></div>
+      <div class="faq">
+        <details><summary>Preciso parar de usar minha planilha?</summary><p>Não no primeiro dia. Você importa a planilha, usa o painel em paralelo e pode exportar de volta para Excel a qualquer momento.</p></details>
+        <details><summary>O sistema substitui a conferência do prazo?</summary><p>Não. Ele lê a publicação, sugere o prazo com a base legal e mostra quais dias foram descontados. A conferência final é sempre do advogado, e feriados locais e suspensões do tribunal devem ser checados.</p></details>
+        <details><summary>De onde vêm as intimações?</summary><p>Do Diário de Justiça Eletrônico Nacional (DJEN), consultado pela sua OAB, e das movimentações públicas do DataJud do CNJ. Não fazemos raspagem de sites de terceiros.</p></details>
+        <details><summary>A IA escreve a peça sozinha?</summary><p>Ela monta uma minuta com os dados do processo e os fundamentos que você indicar, sem inventar jurisprudência. A peça só sai depois da sua revisão.</p></details>
+        <details><summary>Quando começa?</summary><p>Estamos abrindo turmas pequenas de escritórios fundadores. Quem entra na lista recebe o convite por ordem de inscrição.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <!-- LISTA DE ESPERA -->
+  <section class="bloco espera" id="lista">
+    <div class="largura">
+      <div class="cabeca-secao" style="margin:0">
+        <p class="rotulo">Lista de espera</p>
+        <h2>Garanta sua vaga de fundador.</h2>
+        <p>Leva um minuto. Entramos em contato pelo WhatsApp ou e-mail para agendar a importação da sua planilha.</p>
+      </div>
+      <form class="form" id="form-lista" novalidate>
+        <div class="campos">
+          <label class="campo"><span>Nome</span><input id="f-nome" name="nome" type="text" autocomplete="name" required></label>
+          <label class="campo"><span>E-mail</span><input id="f-email" name="email" type="email" autocomplete="email" required></label>
+          <label class="campo"><span>WhatsApp</span><input id="f-whats" name="whatsapp" type="tel" autocomplete="tel" placeholder="(21) 9 0000-0000"></label>
+          <label class="campo"><span>OAB / UF</span><input id="f-oab" name="oab" type="text" placeholder="123456/RJ"></label>
+          <label class="campo"><span>Tamanho do escritório</span><select id="f-tamanho" name="tamanho"><option>Só eu</option><option>2 a 5 pessoas</option><option>6 a 15 pessoas</option><option>Mais de 15</option></select></label>
+          <label class="campo"><span>Plano de interesse</span><select id="f-plano" name="plano"><option>Solo</option><option selected>Escritório</option><option>Implantação</option><option>Ainda não sei</option></select></label>
+        </div>
+        <label class="campo"><span>Hoje, o que mais toma seu tempo?</span><textarea id="f-dor" name="dor" placeholder="Ex.: conferir publicações todo dia, contar prazo, responder cliente…"></textarea></label>
+        <label class="aceite"><input id="f-aceite" type="checkbox" required> Autorizo o contato sobre o Gabinete Digital e o uso destes dados apenas para esse fim, conforme a LGPD.</label>
+        <p id="f-erro" role="alert" style="color:var(--bordo);font-size:.9rem;min-height:1.2em;margin:0"></p>
+        <button class="btn bordo" type="submit" id="f-enviar">Entrar na lista de espera</button>
+        <div class="retorno" id="retorno" hidden></div>
+      </form>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="largura"><span>© <span id="ano">2026</span> Gabinete Digital · Software de gestão para advocacia</span><span>Prazos sugeridos não substituem a conferência do advogado.</span></div>
+</footer>
+
+<script>
+/*
+ * CONFIGURAÇÃO DA LISTA DE ESPERA
+ * - endpoint: URL de um formulário que aceite POST em JSON (ex.: Formspree, Google Apps Script, Supabase).
+ * - whatsapp: número do vendedor no formato 5521999999999 (usado se não houver endpoint).
+ * - email: endereço exibido como alternativa.
+ */
+const LISTA = { endpoint: "", whatsapp: "", email: "" };
+
+(function demonstracao() {
+  const regua = document.getElementById("regua");
+  const reduz = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // Intimação em 09/10/2026 (sexta). Contagem começa no dia útil seguinte.
+  const inicio = new Date(2026, 9, 10);
+  const feriados = { "2026-10-12": "N. Sra. Aparecida", "2026-11-02": "Finados" };
+  const iso = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  const dias = [];
+  for (let i = 0; i < 25; i++) {
+    const d = new Date(inicio); d.setDate(d.getDate() + i);
+    const fds = d.getDay() === 0 || d.getDay() === 6;
+    const fer = feriados[iso(d)];
+    dias.push({ d, fds, fer, util: !fds && !fer });
+  }
+  dias.forEach((x, i) => {
+    const el = document.createElement("div");
+    el.className = "dia" + (x.fds ? " fds" : "") + (x.fer ? " feriado" : "");
+    el.title = x.fer || (x.fds ? "Fim de semana" : "");
+    el.innerHTML = (i === 0 || x.d.getDate() === 1 ? "<small>" + (x.d.getMonth() + 1 === 10 ? "out" : "nov") + "</small>" : "") + x.d.getDate();
+    x.el = el;
+    regua.appendChild(el);
+  });
+  const contador = document.getElementById("contador");
+  const marcarFinal = () => { let n = 0; dias.forEach((x) => { if (x.util && n < 15) { n++; x.el.classList.add("conta"); if (n === 15) x.el.classList.add("vence"); } }); };
+  marcarFinal();
+  if (reduz) return;
+
+  const caixa = document.getElementById("intimacao");
+  const texto = document.getElementById("texto-intimacao");
+  const frase = texto.textContent;
+  const segs = [...document.querySelectorAll("#cnj span")];
+  const legenda = document.getElementById("legenda-cnj");
+  const fim = [document.getElementById("vencimento"), document.getElementById("na-pauta"), document.getElementById("descontos")];
+  const espera = (ms) => new Promise((r) => setTimeout(r, ms));
+  let visivel = true;
+  new IntersectionObserver((e) => { visivel = e[0].isIntersecting; }).observe(document.getElementById("demo"));
+
+  async function ciclo() {
+    while (true) {
+      if (!visivel || document.hidden) { await espera(800); continue; }
+      // zera
+      dias.forEach((x) => x.el.classList.remove("conta", "vence"));
+      fim.forEach((el) => { el.style.visibility = "hidden"; });
+      contador.textContent = "0/15";
+      caixa.classList.remove("pronta");
+      texto.textContent = "";
+      for (let i = 1; i <= frase.length; i++) { texto.textContent = frase.slice(0, i); await espera(22); }
+      caixa.classList.add("pronta");
+      for (const s of segs) { s.classList.add("acende"); legenda.textContent = s.dataset.leg; await espera(420); s.classList.remove("acende"); }
+      legenda.textContent = "Segmento 8 · Justiça Estadual · TJRJ";
+      let n = 0;
+      for (const x of dias) {
+        if (n >= 15) break;
+        if (x.util) { n++; x.el.classList.add("conta"); contador.textContent = n + "/15"; if (n === 15) x.el.classList.add("vence"); }
+        await espera(x.util ? 150 : 90);
+      }
+      for (const el of fim) { el.style.visibility = "visible"; await espera(350); }
+      await espera(5200);
+    }
+  }
+  ciclo();
+})();
+
+document.querySelectorAll("[data-plano]").forEach((a) => a.addEventListener("click", () => { document.getElementById("f-plano").value = a.dataset.plano; }));
+document.getElementById("ano").textContent = new Date().getFullYear();
+
+document.getElementById("form-lista").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const erro = document.getElementById("f-erro");
+  const v = (id) => document.getElementById(id).value.trim();
+  erro.textContent = "";
+  if (!v("f-nome")) { erro.textContent = "Informe seu nome."; document.getElementById("f-nome").focus(); return; }
+  if (!/^\S+@\S+\.\S+$/.test(v("f-email"))) { erro.textContent = "Informe um e-mail válido, como nome@escritorio.com.br."; document.getElementById("f-email").focus(); return; }
+  if (!document.getElementById("f-aceite").checked) { erro.textContent = "Marque a autorização de contato para continuar."; return; }
+  const dados = { nome: v("f-nome"), email: v("f-email"), whatsapp: v("f-whats"), oab: v("f-oab"), tamanho: v("f-tamanho"), plano: v("f-plano"), dor: v("f-dor"), origem: "site", data: new Date().toISOString() };
+  const retorno = document.getElementById("retorno");
+  const botao = document.getElementById("f-enviar");
+  const resumo = `Quero entrar na lista do Gabinete Digital.\nNome: ${dados.nome}\nE-mail: ${dados.email}\nWhatsApp: ${dados.whatsapp}\nOAB: ${dados.oab}\nEscritório: ${dados.tamanho}\nPlano: ${dados.plano}\nMaior dificuldade: ${dados.dor}`;
+  if (LISTA.endpoint) {
+    botao.disabled = true; botao.textContent = "Enviando…";
+    try {
+      const r = await fetch(LISTA.endpoint, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(dados) });
+      if (!r.ok) throw new Error(r.status);
+      retorno.hidden = false;
+      retorno.innerHTML = "<strong>Inscrição recebida.</strong><span>Vamos falar com você em até 2 dias úteis.</span>";
+      ev.target.reset();
+    } catch (e) {
+      erro.textContent = "Não conseguimos registrar agora. Tente de novo em instantes.";
+    } finally { botao.disabled = false; botao.textContent = "Entrar na lista de espera"; }
+    return;
+  }
+  retorno.hidden = false;
+  retorno.innerHTML = "";
+  const t = document.createElement("strong"); t.textContent = "Quase lá: envie sua inscrição.";
+  const pre = document.createElement("pre"); pre.textContent = resumo;
+  retorno.append(t, pre);
+  const acoes = document.createElement("div"); acoes.style.cssText = "display:flex;flex-wrap:wrap;gap:.5rem";
+  if (LISTA.whatsapp) { const a = document.createElement("a"); a.className = "btn bordo"; a.href = "https://wa.me/" + LISTA.whatsapp + "?text=" + encodeURIComponent(resumo); a.target = "_blank"; a.rel = "noopener"; a.textContent = "Enviar pelo WhatsApp"; acoes.append(a); }
+  const copiar = document.createElement("button"); copiar.type = "button"; copiar.className = "btn"; copiar.style.border = "1px solid var(--linha)"; copiar.textContent = "Copiar inscrição";
+  copiar.onclick = async () => { try { await navigator.clipboard.writeText(resumo); copiar.textContent = "Copiado"; } catch (e) { const r = document.createRange(); r.selectNodeContents(pre); getSelection().removeAllRanges(); getSelection().addRange(r); copiar.textContent = "Texto selecionado"; } };
+  acoes.append(copiar);
+  retorno.append(acoes);
+  if (LISTA.email) { const p = document.createElement("span"); p.textContent = "Ou envie para " + LISTA.email; retorno.append(p); }
+});
+</script>
+</body>
+</html>
