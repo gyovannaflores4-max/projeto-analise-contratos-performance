@@ -141,7 +141,28 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:40;padding-t
 .why{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:30px}
 .why .glass{padding:24px;display:grid;gap:10px}
 .why ul{margin:0;padding-left:20px;color:var(--muted);display:grid;gap:6px}
-.hosp{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,480px);gap:40px;align-items:start}
+.hosp{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:40px;align-items:start}
+.ctabs-box{padding:8px 22px 22px}
+.ctabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:18px;overflow-x:auto}
+.ctabs button{border:0;background:none;padding:14px 12px;font:700 15px var(--f);color:var(--muted);border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+.ctabs button[aria-selected="true"]{color:var(--ink);border-color:var(--accent)}
+.cform{display:grid;gap:12px}
+.fs{border:0;padding:0;margin:0;display:grid;gap:6px;min-width:0}
+.fs legend{font-size:14px;font-weight:600;padding:0;margin-bottom:6px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg input{position:absolute;opacity:0;width:1px;height:1px}
+.seg label{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:7px 13px;cursor:pointer;background:rgba(255,255,255,.8);color:var(--muted);font-size:14px;font-weight:600}
+.seg input:checked+label{background:var(--accent);color:#fff;border-color:var(--accent)}
+.seg input:focus-visible+label{outline:3px solid var(--accent);outline-offset:2px}
+.ufchips{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px}
+.ufchips label{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:10px;padding:6px 8px;cursor:pointer;background:rgba(255,255,255,.8);font-size:13px;font-weight:700}
+.ufchips input{position:absolute;opacity:0;width:1px;height:1px}
+.ufchips label:has(input:checked){border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset;background:#fff}
+.ufchips label:has(input:focus-visible){outline:3px solid var(--accent);outline-offset:2px}
+.ufchips img{height:14px;width:auto;border-radius:2px;box-shadow:0 0 0 1px rgba(18,48,42,.14)}
+.ufchips .all{grid-column:1/-1;justify-self:start;background:none;border:0;color:var(--accent);font:700 13px var(--f);cursor:pointer;padding:2px 0}
+.hero-alt{margin-top:22px;font-size:15px}
+.hero-alt a{font-weight:700}
 form.glass{padding:22px;display:grid;gap:12px}
 .rules{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:30px}
 .rules .glass{padding:20px;display:grid;gap:6px}
@@ -181,7 +202,7 @@ footer a{color:var(--muted)}
   <div class="wrap">
     <div class="topbar glass">
       <a class="logo" href="#topo"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#1C6B58"/><path d="M4 17h6l2.5-6 4 12 3-9 2 3h6.5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Revezo Plantões</a>
-      <nav class="nav" aria-label="Principal"><a href="#estados">Grupos por estado</a><a href="#hospitais">Para hospitais</a><a href="#regras">Regras</a><a class="btn primary sm" href="#topo" data-restart>Entrar no grupo</a></nav>
+      <nav class="nav" aria-label="Principal"><a href="#estados">Grupos por estado</a><a href="#hospitais">Para coordenadores e hospitais</a><a href="#regras">Regras</a><a class="btn primary sm" href="#topo" data-restart>Entrar no grupo</a></nav>
     </div>
   </div>
 </header>
@@ -199,6 +220,7 @@ footer a{color:var(--muted)}
         <li>Sem mensalidade e sem cadastro longo</li>
         <li>Entrada aprovada pela equipe, só para médicos com CRM</li>
       </ul>
+      <p class="hero-alt">É coordenador médico ou hospital e está captando médicos? <a href="#hospitais" data-ctab-link="cad">Cadastre sua instituição →</a></p>
       <div class="stats">
         <div><b class="mono">27</b><span>estados</span></div>
         <div><b class="mono">54</b><span>grupos</span></div>
@@ -280,20 +302,69 @@ footer a{color:var(--muted)}
 <section id="hospitais" aria-labelledby="h-hosp" style="padding-top:0">
   <div class="wrap hosp">
     <div>
-      <p class="eyebrow">Para hospitais e empresas</p>
-      <h2 class="h2" id="h-hosp">Anuncie sua vaga grátis nos grupos do estado</h2>
-      <p class="sub">Preencha a vaga uma vez. Depois de conferir o CNPJ, a equipe publica no grupo certo: com RQE ou sem RQE, no estado da vaga.</p>
+      <p class="eyebrow">Para coordenadores e hospitais</p>
+      <h2 class="h2" id="h-hosp">Está captando médicos? Cadastre sua instituição</h2>
+      <p class="sub">Coordenadores médicos, diretores técnicos, RH de hospitais, clínicas e empresas de escala se cadastram uma vez. Depois disso, anunciam vagas grátis nos grupos do estado certo, com e sem RQE.</p>
+      <ul class="checks">
+        <li>Cadastro conferido pela equipe: CNPJ e, para coordenadores, CRM</li>
+        <li>Selo de anunciante verificado nas vagas publicadas</li>
+        <li>Vagas enviadas só para o grupo que pode assumir: com RQE ou sem RQE</li>
+        <li>Sem mensalidade e sem taxa por vaga</li>
+      </ul>
     </div>
-    <form class="glass" id="vaga" novalidate>
-      <label for="v-tit">Vaga<input id="v-tit" name="vaga" placeholder="Ex.: PS adulto, plantão noturno" required></label>
-      <div class="row2"><label for="v-uf">Estado<select id="v-uf" name="uf" required><option value="">Selecione</option></select></label><label for="v-cid">Cidade<input id="v-cid" name="cidade" required></label></div>
-      <div class="row2"><label for="v-tipo">Exige RQE?<select id="v-tipo" name="grupo" required><option value="">Selecione</option><option value="rqe">Sim, especialista</option><option value="sem-rqe">Não</option></select></label><label for="v-valor">Valor (R$)<input id="v-valor" name="valor" type="number" min="0" step="50" required></label></div>
-      <div class="row2"><label for="v-data">Data<input id="v-data" name="data" type="date" required></label><label for="v-hora">Horário<input id="v-hora" name="horario" placeholder="19:00–07:00" required></label></div>
-      <label for="v-emp">Hospital ou empresa e CNPJ<input id="v-emp" name="contratante" required></label>
-      <label for="v-wa">WhatsApp para os médicos chamarem<input id="v-wa" name="contato" type="tel" required></label>
-      <p class="err" hidden></p>
-      <button class="btn primary" type="submit">Enviar vaga</button>
-    </form>
+
+    <div class="glass ctabs-box">
+      <div class="ctabs" role="tablist" aria-label="Contratantes">
+        <button type="button" role="tab" aria-selected="true" data-ctab="cad">Cadastrar instituição</button>
+        <button type="button" role="tab" aria-selected="false" data-ctab="vaga">Anunciar vaga</button>
+      </div>
+
+      <form id="cad" class="cform" novalidate>
+        <fieldset class="fs"><legend>Você é</legend>
+          <div class="seg" id="c-perfil">
+            <input type="radio" name="perfil" id="cp1" value="Coordenador médico" checked><label for="cp1">Coordenador médico</label>
+            <input type="radio" name="perfil" id="cp2" value="Diretor técnico ou clínico"><label for="cp2">Diretor técnico ou clínico</label>
+            <input type="radio" name="perfil" id="cp3" value="RH ou recrutamento"><label for="cp3">RH / recrutamento</label>
+            <input type="radio" name="perfil" id="cp4" value="Empresa de escala ou cooperativa"><label for="cp4">Empresa de escala ou cooperativa</label>
+          </div>
+        </fieldset>
+        <div class="row2"><label for="c-nome">Seu nome completo<input id="c-nome" name="nome" autocomplete="name" required></label><label for="c-cargo">Cargo<input id="c-cargo" name="cargo" placeholder="Ex.: Coordenador do PS" required></label></div>
+        <div class="row-crm" id="c-crm-row"><label for="c-crm">Seu CRM<input id="c-crm" name="crm" inputmode="numeric" placeholder="Ex.: 123456"></label><label for="c-crmuf">UF do CRM<select id="c-crmuf" name="crm_uf"></select></label></div>
+        <div class="row2"><label for="c-inst">Hospital, clínica ou empresa<input id="c-inst" name="instituicao" autocomplete="organization" required></label><label for="c-tipo">Tipo<select id="c-tipo" name="tipo_instituicao" required><option value="">Selecione</option><option>Hospital</option><option>UPA ou pronto atendimento</option><option>Clínica</option><option>Empresa de gestão de escalas</option><option>Cooperativa médica</option><option>Prefeitura ou secretaria de saúde</option><option>Outro</option></select></label></div>
+        <div class="row2"><label for="c-cnpj">CNPJ<input id="c-cnpj" name="cnpj" inputmode="numeric" placeholder="00.000.000/0000-00" required></label><label for="c-vol">Vagas por mês<select id="c-vol" name="vagas_mes" required><option value="">Selecione</option><option>1 a 5</option><option>6 a 20</option><option>21 a 50</option><option>Mais de 50</option></select></label></div>
+        <div class="row2"><label for="c-cid">Cidade da sede<input id="c-cid" name="cidade" required></label><label for="c-uf">UF da sede<select id="c-uf" name="uf" required><option value="">Selecione</option></select></label></div>
+        <fieldset class="fs"><legend>Estados onde contrata</legend><div class="ufchips" id="c-ufs"></div></fieldset>
+        <fieldset class="fs"><legend>Perfil que procura</legend>
+          <div class="seg"><input type="checkbox" name="perfil_medico" id="cm1" value="Com RQE"><label for="cm1">Médicos com RQE</label><input type="checkbox" name="perfil_medico" id="cm2" value="Sem RQE"><label for="cm2">Médicos sem RQE</label></div>
+        </fieldset>
+        <fieldset class="fs"><legend>Tipo de vaga</legend>
+          <div class="seg"><input type="checkbox" name="tipo_vaga" id="ct1" value="Plantão avulso"><label for="ct1">Plantão avulso</label><input type="checkbox" name="tipo_vaga" id="ct2" value="Escala fixa"><label for="ct2">Escala fixa</label><input type="checkbox" name="tipo_vaga" id="ct3" value="Rotina ou diarista"><label for="ct3">Rotina / diarista</label></div>
+        </fieldset>
+        <div class="row2"><label for="c-mail">E-mail profissional<input id="c-mail" name="email" type="email" autocomplete="email" required></label><label for="c-wa">WhatsApp<input id="c-wa" name="whatsapp" type="tel" autocomplete="tel" placeholder="(11) 90000-0000" required></label></div>
+        <label class="consent" for="c-ok"><input type="checkbox" id="c-ok" name="declaracao" value="sim" required><span>Declaro que represento esta instituição e autorizo o uso destes dados para validar o cadastro e publicar vagas. Li a <a href="privacidade.html" target="_blank" rel="noopener">política de privacidade</a>.</span></label>
+        <p class="err" hidden></p>
+        <button class="btn primary" type="submit">Cadastrar instituição</button>
+      </form>
+
+      <div class="done" id="cad-done" hidden>
+        <div class="big"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <h2 id="cad-title" style="font-size:22px"></h2>
+        <p class="note" id="cad-text" style="max-width:42ch"></p>
+        <button type="button" class="btn primary" id="cad-to-vaga">Anunciar a primeira vaga</button>
+      </div>
+
+      <form id="vaga" class="cform" novalidate hidden>
+        <label for="v-tit">Vaga<input id="v-tit" name="vaga" placeholder="Ex.: PS adulto, plantão noturno" required></label>
+        <div class="row2"><label for="v-uf">Estado<select id="v-uf" name="uf" required><option value="">Selecione</option></select></label><label for="v-cid">Cidade<input id="v-cid" name="cidade" required></label></div>
+        <div class="row2"><label for="v-tipo">Exige RQE?<select id="v-tipo" name="grupo" required><option value="">Selecione</option><option value="rqe">Sim, especialista</option><option value="sem-rqe">Não</option></select></label><label for="v-valor">Valor (R$)<input id="v-valor" name="valor" type="number" min="0" step="50" required></label></div>
+        <div class="row2"><label for="v-data">Data<input id="v-data" name="data" type="date" required></label><label for="v-hora">Horário<input id="v-hora" name="horario" placeholder="19:00–07:00" required></label></div>
+        <div class="row2"><label for="v-emp">Instituição<input id="v-emp" name="contratante" required></label><label for="v-cnpj">CNPJ<input id="v-cnpj" name="cnpj" inputmode="numeric" placeholder="00.000.000/0000-00" required></label></div>
+        <label for="v-wa">WhatsApp para os médicos chamarem<input id="v-wa" name="contato" type="tel" required></label>
+        <p class="note">Ainda não tem cadastro? <a href="#hospitais" data-ctab-link="cad">Cadastre sua instituição</a> para ganhar o selo de anunciante verificado.</p>
+        <p class="err" hidden></p>
+        <button class="btn primary" type="submit">Enviar vaga</button>
+      </form>
+    </div>
   </div>
 </section>
 
@@ -315,7 +386,7 @@ footer a{color:var(--muted)}
   <div class="wrap">
     <div class="cols">
       <div><b style="color:var(--ink)">Revezo Plantões</b><p style="margin-top:6px;max-width:48ch">Grupos de plantões médicos por estado. Não temos ligação com o WhatsApp nem com a Meta.</p></div>
-      <div style="display:grid;gap:4px"><a href="#estados">Grupos por estado</a><a href="#hospitais">Anunciar vaga</a><a href="#regras">Regras</a><a href="privacidade.html">Política de privacidade</a></div>
+      <div style="display:grid;gap:4px"><a href="#estados">Grupos por estado</a><a href="#hospitais" data-ctab-link="cad">Cadastrar instituição</a><a href="#hospitais" data-ctab-link="vaga">Anunciar vaga</a><a href="#regras">Regras</a><a href="privacidade.html">Política de privacidade</a></div>
     </div>
     <p class="disclaimer">O Revezo não intermedeia contratos nem garante pagamentos de vagas publicadas por terceiros. O Revezo não presta atendimento médico. Em emergência, ligue 192 (SAMU).</p>
   </div>
@@ -403,14 +474,57 @@ function renderEstados(){const box=$('#regions');box.innerHTML='';let ativos=0;
     sec.appendChild(grid);box.appendChild(sec)});
   $('#s-ativos').textContent=ativos;$('#s-ativos-box').hidden=!ativos}
 
-/* vaga de hospital */
+/* contratantes: cadastro de instituição e anúncio de vaga */
 let tt;function toast(m){let t=$('.toast');if(!t){t=document.createElement('div');t.className='toast';t.setAttribute('role','status');document.body.appendChild(t)}t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,3800)}
-$('#vaga').addEventListener('submit',async e=>{e.preventDefault();const f=e.target,er=f.querySelector('.err');er.hidden=true;
-  const miss=[...f.querySelectorAll('[required]')].filter(i=>!i.value.trim()).map(i=>i.closest('label').firstChild.textContent.trim());
+let cadastro=null;
+const onlyDigits=v=>(v||'').replace(/\D/g,'');
+function cnpjValido(v){const c=onlyDigits(v);if(c.length!==14||/^(\d)\1+$/.test(c))return false;
+  const dv=n=>{let s=0,p=n-7;for(let i=0;i<n;i++){s+=+c[i]*p--;if(p<2)p=9}const r=s%11;return r<2?0:11-r};
+  return dv(12)===+c[12]&&dv(13)===+c[13]}
+function maskCNPJ(e){const d=onlyDigits(e.target.value).slice(0,14);e.target.value=d.replace(/^(\d{2})(\d)/,'$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/,'$1.$2.$3').replace(/\.(\d{3})(\d)/,'.$1/$2').replace(/(\d{4})(\d)/,'$1-$2')}
+['#c-cnpj','#v-cnpj'].forEach(s=>$(s).addEventListener('input',maskCNPJ));
+ORDEM_UF.forEach(([uf])=>{$('#c-crmuf').add(new Option(uf,uf));$('#c-uf').add(new Option(uf,uf))});
+const ufBox=$('#c-ufs');ORDEM_UF.forEach(([uf,nm])=>{const l=document.createElement('label');l.title=nm;l.innerHTML=`<input type="checkbox" name="estados_atuacao" value="${uf}"><img src="${FLAGS[uf]}" alt="">${uf}`;ufBox.appendChild(l)});
+const allBtn=document.createElement('button');allBtn.type='button';allBtn.className='all';allBtn.textContent='Marcar todos os estados';
+allBtn.onclick=()=>{const cbs=$$('#c-ufs input'),all=cbs.every(c=>c.checked);cbs.forEach(c=>c.checked=!all);allBtn.textContent=all?'Marcar todos os estados':'Desmarcar todos'};ufBox.appendChild(allBtn);
+$('#c-uf').addEventListener('change',e=>{const cb=$(`#c-ufs input[value="${e.target.value}"]`);if(cb&&!$$('#c-ufs input:checked').length)cb.checked=true});
+const precisaCRM=()=>/Coordenador|Diretor/.test($('#cad').perfil.value);
+function syncPerfil(){const need=precisaCRM();$('#c-crm-row').hidden=!need;$('#c-crm').required=need}
+$$('#c-perfil input').forEach(r=>r.addEventListener('change',syncPerfil));syncPerfil();
+
+function ctab(name){$$('[data-ctab]').forEach(b=>b.setAttribute('aria-selected',b.dataset.ctab===name));
+  $('#vaga').hidden=name!=='vaga';$('#cad').hidden=name!=='cad'||!!cadastro;$('#cad-done').hidden=name!=='cad'||!cadastro}
+$$('[data-ctab]').forEach(b=>b.onclick=()=>ctab(b.dataset.ctab));
+$$('[data-ctab-link]').forEach(a=>a.addEventListener('click',()=>ctab(a.dataset.ctabLink)));
+
+function faltando(f){return [...f.querySelectorAll('[required]')].filter(i=>i.type==='checkbox'?!i.checked:!i.value.trim()).map(i=>i.type==='checkbox'?'declaração':i.closest('label').firstChild.textContent.trim())}
+$('#cad').addEventListener('submit',async e=>{e.preventDefault();const f=e.target,er=f.querySelector('.err');er.hidden=true;
+  const miss=faltando(f);
+  if(!f.querySelector('[name=estados_atuacao]:checked'))miss.push('estados onde contrata');
+  if(!f.querySelector('[name=perfil_medico]:checked'))miss.push('perfil que procura');
   if(miss.length){er.textContent='Falta preencher: '+miss.join(', ')+'.';er.hidden=false;return}
-  const btn=f.querySelector('[type=submit]');btn.disabled=true;const ok=await enviar({tipo:'vaga',...Object.fromEntries(new FormData(f))});btn.disabled=false;
+  if(!cnpjValido(f.cnpj.value)){er.textContent='O CNPJ informado não é válido. Confira os 14 números.';er.hidden=false;f.cnpj.focus();return}
+  if(precisaCRM()&&!/^\d{3,8}$/.test(onlyDigits(f.crm.value))){er.textContent='Informe o número do CRM só com os números.';er.hidden=false;return}
+  if(onlyDigits(f.whatsapp.value).length<10){er.textContent='Informe o WhatsApp com DDD.';er.hidden=false;return}
+  const fd=new FormData(f),data={tipo:'cadastro_contratante'};
+  for(const [k,v] of fd){data[k]=data[k]?data[k]+', '+v:v}
+  if(!precisaCRM()){delete data.crm;delete data.crm_uf}
+  const btn=f.querySelector('[type=submit]');btn.disabled=true;btn.textContent='Enviando…';const ok=await enviar(data);btn.disabled=false;btn.textContent='Cadastrar instituição';
+  if(!ok){er.textContent='Não conseguimos enviar agora. Verifique sua conexão e tente de novo.';er.hidden=false;return}
+  cadastro=data;f.hidden=true;$('#cad-done').hidden=false;
+  $('#cad-title').textContent=`Cadastro recebido: ${data.instituicao}`;
+  $('#cad-text').textContent=FORM_ENDPOINT?'Vamos conferir o CNPJ'+(data.crm?' e o CRM':'')+' em até 1 dia útil e avisar no seu WhatsApp. Você já pode enviar a primeira vaga.':'Modo demonstração: nenhum dado foi enviado.'});
+$('#cad-to-vaga').onclick=()=>{ctab('vaga');const v=$('#vaga');
+  if(cadastro){v.contratante.value=cadastro.instituicao;v.cnpj.value=cadastro.cnpj;v.contato.value=cadastro.whatsapp;v.cidade.value=cadastro.cidade;v.uf.value=cadastro.uf}
+  v.vaga.focus()};
+
+$('#vaga').addEventListener('submit',async e=>{e.preventDefault();const f=e.target,er=f.querySelector('.err');er.hidden=true;
+  const miss=faltando(f);if(miss.length){er.textContent='Falta preencher: '+miss.join(', ')+'.';er.hidden=false;return}
+  if(!cnpjValido(f.cnpj.value)){er.textContent='O CNPJ informado não é válido. Confira os 14 números.';er.hidden=false;return}
+  const btn=f.querySelector('[type=submit]');btn.disabled=true;const ok=await enviar({tipo:'vaga',cadastrado:cadastro?'sim':'não',...Object.fromEntries(new FormData(f))});btn.disabled=false;
   if(!ok){er.textContent='Não conseguimos enviar agora. Tente de novo.';er.hidden=false;return}
-  f.reset();toast(FORM_ENDPOINT?'Vaga recebida. Depois de conferir o CNPJ, publicamos no grupo do estado.':'Modo demonstração: a vaga não foi enviada.')});
+  const keep={contratante:f.contratante.value,cnpj:f.cnpj.value,contato:f.contato.value};f.reset();for(const k in keep)f[k].value=keep[k];
+  toast(FORM_ENDPOINT?'Vaga recebida. Depois de conferir o CNPJ, publicamos no grupo do estado.':'Modo demonstração: a vaga não foi enviada.')});
 
 carregar().then(renderEstados);renderEstados();
 </script>

@@ -4,7 +4,7 @@ Pasta pronta para publicar em qualquer hospedagem de site estático (GitHub Page
 
 | Arquivo | O que é |
 |---|---|
-| `index.html` | **Página principal: grupos de WhatsApp por estado**, separados em *Com RQE* e *Sem RQE* (54 grupos). O médico escolhe o estado, diz se tem RQE, deixa nome, CRM e WhatsApp, e é levado ao grupo certo. Grupo cheio é pulado automaticamente. Hospitais anunciam vagas grátis. As bandeiras dos 27 estados (Wikimedia Commons, domínio público) ficam embutidas no próprio arquivo, então elas aparecem mesmo se o `index.html` for aberto sozinho |
+| `index.html` | **Página principal: grupos de WhatsApp por estado**, separados em *Com RQE* e *Sem RQE* (54 grupos). O médico escolhe o estado, diz se tem RQE, deixa nome, CRM e WhatsApp, e é levado ao grupo certo. Grupo cheio é pulado automaticamente. Coordenadores médicos, diretores, RH, hospitais e empresas de escala têm um **cadastro de instituição** (CNPJ validado, CRM para coordenadores, estados onde contratam, perfil com/sem RQE, volume de vagas) e anunciam vagas grátis. As bandeiras dos 27 estados (Wikimedia Commons, domínio público) ficam embutidas no próprio arquivo, então elas aparecem mesmo se o `index.html` for aberto sozinho |
 | `dados.js` | Onde ficam os links dos grupos, ou o endereço da planilha do Google com eles |
 | `grupos.csv` | Planilha-modelo com os 54 grupos. Importe no Google Planilhas e preencha a coluna `link` |
 | `CRIAR-GRUPOS.md` | Passo a passo para criar os 54 grupos: nomes, descrições, configurações e o que fazer quando um grupo lotar |
@@ -26,7 +26,7 @@ Pasta pronta para publicar em qualquer hospedagem de site estático (GitHub Page
 Enquanto um grupo não tiver link, o site mostra "em breve" e guarda os dados do médico para você mandar o convite depois.
 
 ## Antes de publicar
-1. **Formulário:** crie uma conta gratuita em [formspree.io](https://formspree.io), crie um formulário e cole o endereço (`https://formspree.io/f/...`) em `FORM_ENDPOINT`, no `<script>` do `index.html`, do `lista-espera.html`, do `animado.html` e do `vidro.html`. No portal, os pedidos chegam com o campo `tipo` (`alerta`, `grupo`, `vaga`, `pedido_convite`, `denuncia_...`). Sem isso a página fica em modo demonstração e não salva inscrições.
+1. **Formulário:** crie uma conta gratuita em [formspree.io](https://formspree.io), crie um formulário e cole o endereço (`https://formspree.io/f/...`) em `FORM_ENDPOINT`, no `<script>` do `index.html`, do `lista-espera.html`, do `animado.html` e do `vidro.html`. No portal, os pedidos chegam com o campo `tipo` (`entrada_grupo` para médicos, `cadastro_contratante` para coordenadores e hospitais, `vaga` para vagas anunciadas). Sem isso a página fica em modo demonstração e não salva inscrições.
 2. **Privacidade:** preencha nome/CNPJ e e-mail de contato em `privacidade.html`.
 3. **Imagem de compartilhamento:** depois de ter o endereço final do site, troque `content="og.png"` por `content="https://SEU-ENDERECO/og.png"` no `index.html`. O WhatsApp só mostra a imagem com o endereço completo.
 4. Se mudar o protótipo, rode `./scripts/montar-site.sh` para atualizar a demonstração.
