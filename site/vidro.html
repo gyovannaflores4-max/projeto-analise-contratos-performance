@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Revezo Plantões</title>
+<meta name="description" content="Plantões médicos com pagamento em até 24 horas. Entre na lista de espera do Revezo.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:title" content="Revezo · Plantão fechado em minutos. Pago em 24 horas.">
+<meta property="og:description" content="Vagas que combinam com você, trocas registradas e Pix em até 24 horas. Entre na lista de espera.">
+<meta property="og:image" content="og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#F2F7F5">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap">
+<style>
+/* Baseado no template "Clinic Liquid Glass" (AnimatedWebs), adaptado ao Revezo.
+   Layout: herói em degradê de malha com 3 cartões de vidro líquido → recursos em vidro → perfis em carrossel →
+   simulador de plantão em 3 passos → perguntas (acordeão) → onde começamos → lista de espera → rodapé. */
+:root{
+  --bg:#F2F7F5; --ink:#12302A; --muted:#4B655D; --line:rgba(18,48,42,.12);
+  --accent:#1C6B58; --accent-ink:#FFFFFF; --mint:#7FE0C3; --amber:#B36B00;
+  --glass:rgba(255,255,255,.55); --glass-strong:rgba(255,255,255,.78);
+  --f:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --ease:cubic-bezier(.22,1,.36,1);
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.65 var(--f);overflow-x:hidden}
+h1,h2,h3{margin:0;line-height:1.08;text-wrap:balance;letter-spacing:-.025em}
+p{margin:0}
+a{color:var(--accent)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:6px}
+.wrap{max-width:1180px;margin-inline:auto;padding-inline:20px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.h2{font-size:clamp(32px,4.4vw,52px);font-weight:700;letter-spacing:-.035em;margin-top:10px;max-width:20ch}
+.sub{color:var(--muted);max-width:56ch;margin-top:12px}
+section{padding-block:96px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:14px;padding:14px 22px;font:700 16px var(--f);text-decoration:none;cursor:pointer;transition:transform .25s var(--ease),box-shadow .25s var(--ease),background .2s}
+.btn.primary{background:var(--accent);color:var(--accent-ink);box-shadow:0 10px 24px -12px rgba(28,107,88,.7)}
+.btn.primary:hover{transform:translateY(-2px);box-shadow:0 16px 30px -12px rgba(28,107,88,.7)}
+.btn.glass{background:var(--glass-strong);color:var(--ink);box-shadow:inset 0 1px 0 #ffffffb3,0 1px 2px rgba(18,48,42,.08)}
+.glassbox{background:var(--glass);backdrop-filter:blur(22px) saturate(160%);-webkit-backdrop-filter:blur(22px) saturate(160%);border:1px solid rgba(255,255,255,.7);box-shadow:inset 0 1px 0 #ffffffb3,0 20px 40px -24px rgba(18,48,42,.25);border-radius:24px}
+
+/* header */
+header.top{position:fixed;inset:0 0 auto;z-index:40;padding-top:env(safe-area-inset-top,0px)}
+header.top .bar{margin:12px auto 0;max-width:1180px;width:calc(100% - 32px);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 10px 10px 18px;border-radius:18px}
+.logo{display:flex;align-items:center;gap:9px;font-weight:800;font-size:20px;color:var(--ink);text-decoration:none;letter-spacing:-.02em}
+.logo svg{width:28px;height:28px}
+.nav{display:flex;align-items:center;gap:22px;font-size:15px;font-weight:600}
+.nav a{color:var(--muted);text-decoration:none}
+.nav a:hover{color:var(--ink)}
+.nav .btn{padding:10px 16px;font-size:15px;color:var(--accent-ink)}
+
+/* gradiente de malha */
+.field{position:absolute;inset:0;overflow:hidden;z-index:0;pointer-events:none}
+.blob{position:absolute;border-radius:50%;filter:blur(80px);opacity:.95;will-change:transform}
+.b1{width:55vw;height:55vw;background:#CFE9DF;left:-12vw;top:-18vw;animation:d1 22s ease-in-out infinite alternate}
+.b2{width:45vw;height:45vw;background:#BFF1E2;right:-8vw;top:6vh;animation:d2 26s ease-in-out infinite alternate}
+.b3{width:40vw;height:40vw;background:#E3E6FA;left:30vw;bottom:-20vw;animation:d3 28s ease-in-out infinite alternate}
+.b4{width:30vw;height:30vw;background:#FFFFFF;right:18vw;bottom:-6vw;animation:d4 20s ease-in-out infinite alternate}
+@keyframes d1{to{transform:translate(10vw,8vh) scale(1.1)}}
+@keyframes d2{to{transform:translate(-12vw,10vh) scale(.92)}}
+@keyframes d3{to{transform:translate(-8vw,-12vh) scale(1.12)}}
+@keyframes d4{to{transform:translate(6vw,-10vh) scale(1.2)}}
+
+/* herói */
+.hero{position:relative;min-height:min(100svh,920px);display:grid;align-items:center;padding-block:130px 80px;overflow:hidden}
+.hero .wrap{position:relative;z-index:1;display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center;width:100%}
+.hero h1{font-size:clamp(40px,6vw,72px);font-weight:700;letter-spacing:-.035em;line-height:1.02}
+.hero h1 em{font-style:normal;color:var(--accent)}
+.hero .lead{color:var(--muted);font-size:clamp(17px,1.5vw,19px);margin-top:20px;max-width:46ch}
+.hero .ctas{display:flex;flex-wrap:wrap;align-items:center;gap:18px;margin-top:30px}
+.hero .ctas a.link{font-weight:700;text-decoration:none;border-bottom:2px solid rgba(28,107,88,.25)}
+.enter{opacity:0;transform:translateY(30px);filter:blur(10px);animation:enter .9s var(--ease) forwards}
+@keyframes enter{to{opacity:1;transform:none;filter:blur(0)}}
+.stage{position:relative;height:520px;perspective:1000px}
+.gcard{position:absolute;padding:20px;width:300px;display:grid;gap:10px;transform-style:preserve-3d}
+.gcard .rim{position:absolute;inset:-1px;border-radius:24px;border:1px solid rgba(255,255,255,.75);pointer-events:none;filter:url(#liquid)}
+.bob{animation:bob var(--t,6s) ease-in-out infinite alternate}
+@keyframes bob{from{translate:0 -4px}to{translate:0 4px}}
+.c1{left:4%;top:20px;--t:6s}
+.c2{right:0;top:190px;--t:7s;width:270px}
+.c3{left:14%;top:360px;--t:8s;width:290px}
+.gcard .k{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.gcard .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.gcard b.big{font-size:30px;font-weight:800;letter-spacing:-.02em}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;background:rgba(127,224,195,.35);color:#0F4D3F}
+.chip.amber{background:rgba(240,178,84,.25);color:var(--amber)}
+.ring{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--accent) 94%,rgba(18,48,42,.1) 0);flex:none}
+.ring span{width:44px;height:44px;border-radius:50%;background:#fff;display:grid;place-items:center;font:600 13px var(--mono)}
+.stars{color:var(--amber);letter-spacing:2px}
+
+/* revelação */
+.rv{transition:opacity .8s var(--ease),transform .8s var(--ease),filter .8s var(--ease)}
+.js .rv:not(.in){opacity:0;transform:translateY(30px);filter:blur(8px)}
+
+/* recursos */
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:44px}
+.tile{padding:26px;display:grid;gap:12px;align-content:start;transition:transform .35s var(--ease)}
+.tile:hover{transform:translateY(-4px)}
+.tile svg{width:40px;height:40px;stroke:var(--accent);stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.tile svg *{stroke-dasharray:120;stroke-dashoffset:0}
+.tile:hover svg *{animation:drawicon .4s var(--ease)}
+@keyframes drawicon{from{stroke-dashoffset:120}to{stroke-dashoffset:0}}
+.tile h3{font-size:21px;font-weight:700}
+.tile p{color:var(--muted);font-size:15px}
+.tile .fact{font:600 13px var(--mono);color:var(--accent)}
+
+/* carrossel */
+.carousel{margin-top:40px;display:flex;gap:18px;overflow-x:auto;scroll-snap-type:x mandatory;padding:16px 4px 26px;scrollbar-width:none}
+.carousel::-webkit-scrollbar{display:none}
+.person{flex:0 0 min(300px,80vw);scroll-snap-align:center;padding:22px;display:grid;gap:12px;align-content:start;transition:transform .4s var(--ease),box-shadow .4s var(--ease)}
+.person.active{transform:scale(1.04);box-shadow:0 0 0 3px var(--accent),inset 0 1px 0 #ffffffb3,0 24px 44px -24px rgba(18,48,42,.35)}
+.portrait{height:150px;border-radius:24px;display:grid;place-items:center;font-size:44px;font-weight:800;color:#fff;letter-spacing:-.03em}
+.person h3{font-size:20px}
+.person .langs{font-size:13px;color:var(--muted)}
+.person ul{margin:0;padding-left:18px;color:var(--muted);font-size:15px;display:grid;gap:4px}
+.car-ctrl{display:flex;gap:10px;margin-top:6px}
+.car-ctrl button{width:46px;height:46px;border-radius:14px;border:0;font-size:20px;cursor:pointer}
+
+/* simulador */
+.sim{margin-top:40px;padding:26px;display:grid;gap:22px}
+.steps-nav{display:flex;gap:8px;flex-wrap:wrap}
+.steps-nav button{border:0;border-radius:12px;padding:9px 14px;font:700 14px var(--f);background:rgba(18,48,42,.06);color:var(--muted);cursor:pointer}
+.steps-nav button[aria-current="step"]{background:var(--accent);color:#fff}
+.steps-nav button:disabled{opacity:.45;cursor:not-allowed}
+.opts{display:flex;flex-wrap:wrap;gap:10px}
+.opt{border:1px solid var(--line);background:rgba(255,255,255,.7);border-radius:14px;padding:12px 16px;font:600 15px var(--f);color:var(--ink);cursor:pointer;text-align:left}
+.opt small{display:block;font-weight:500;color:var(--muted);font-size:13px}
+.opt[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
+.dates{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin}
+.date{flex:0 0 64px;border:1px solid var(--line);background:rgba(255,255,255,.7);border-radius:14px;padding:10px 0;text-align:center;cursor:pointer;font:600 13px var(--f);color:var(--muted)}
+.date b{display:block;font-size:20px;color:var(--ink)}
+.date[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#DDF3EC}
+.date[aria-pressed="true"] b{color:#fff}
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.slot{border:1px solid var(--line);background:rgba(255,255,255,.75);border-radius:14px;padding:12px;font:600 14px var(--f);color:var(--ink);cursor:pointer;text-align:left;display:grid;gap:2px}
+.slot span{font:600 13px var(--mono);color:var(--accent)}
+.slot[aria-pressed="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+.slot[aria-pressed="true"] span{color:var(--mint)}
+.slot:disabled{opacity:.4;cursor:not-allowed;text-decoration:line-through}
+.summary{padding:20px;display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;background:var(--glass-strong);border-radius:20px;box-shadow:inset 0 1px 0 #fff,0 16px 30px -20px rgba(18,48,42,.4);animation:slideup .35s var(--ease)}
+@keyframes slideup{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+.check{width:48px;height:48px;border-radius:50%;background:var(--accent);display:grid;place-items:center}
+.check svg{width:26px;height:26px;stroke:#fff;stroke-width:3;fill:none;stroke-dasharray:30;stroke-dashoffset:30;animation:draw .5s .1s var(--ease) forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.summary .note{font-size:13px;color:var(--muted)}
+
+/* botão fixo no celular aparece depois do herói e some perto da lista */
+(function(){const b=$('.mcta'),hero=$('.hero'),lista=$('#lista');
+  const upd=()=>{const past=hero.getBoundingClientRect().bottom<0,near=lista.getBoundingClientRect().top<innerHeight;b.classList.toggle('show',past&&!near)};
+  addEventListener('scroll',upd,{passive:true});upd()})();
+
+/* acordeão */
+.acc{margin-top:36px;display:grid;gap:12px;max-width:860px}
+.acc-item{padding:0;overflow:hidden}
+.acc-item button{width:100%;display:flex;justify-content:space-between;align-items:center;gap:16px;background:none;border:0;padding:20px 22px;font:700 18px var(--f);color:var(--ink);cursor:pointer;text-align:left}
+.plus{width:28px;height:28px;border-radius:50%;background:rgba(28,107,88,.12);position:relative;flex:none;transition:transform .3s var(--ease)}
+.plus::before,.plus::after{content:"";position:absolute;left:50%;top:50%;width:12px;height:2px;background:var(--accent);translate:-50% -50%}
+.plus::after{rotate:90deg}
+.acc-item button[aria-expanded="true"] .plus{transform:rotate(45deg)}
+.acc-panel{display:grid;grid-template-rows:0fr;transition:grid-template-rows .3s var(--ease)}
+.acc-panel>div{overflow:hidden}
+.acc-panel p{padding:0 22px 20px;color:var(--muted);max-width:68ch}
+.acc-item.open .acc-panel{grid-template-rows:1fr}
+
+/* onde começamos */
+.where{display:grid;grid-template-columns:1.1fr .9fr;gap:20px;margin-top:40px}
+.mapbox{position:relative;min-height:380px;overflow:hidden;padding:0}
+.mapbox svg{position:absolute;inset:0;width:100%;height:100%}
+.pin{position:absolute;width:16px;height:16px;border-radius:50%;background:var(--accent);translate:-50% -50%;box-shadow:0 0 0 4px #fff}
+.pin::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:3px solid var(--accent);animation:pulse 2s infinite}
+.pin.later{background:#9DB5AD}
+.pin.later::after{display:none}
+@keyframes pulse{from{transform:scale(1);opacity:.8}to{transform:scale(1.6);opacity:0}}
+.pinlabel{position:absolute;translate:12px -50%;font-size:13px;font-weight:700;background:rgba(255,255,255,.85);padding:3px 8px;border-radius:8px}
+.phases{padding:24px;display:grid;gap:4px;align-content:start}
+.phase{display:grid;grid-template-columns:110px 1fr;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.phase:last-of-type{border-bottom:0}
+.phase.now{font-weight:700}
+.phase.now .when{color:var(--accent)}
+.when{font:600 13px var(--mono);color:var(--muted)}
+
+/* lista */
+.join-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,480px);gap:48px;align-items:start}
+form,.done{padding:26px;display:grid;gap:14px}
+label{display:grid;gap:5px;font-size:14px;font-weight:600}
+input,select,textarea{font:inherit;font-size:16px;color:inherit;border:1px solid var(--line);background:rgba(255,255,255,.85);border-radius:12px;padding:11px 13px;width:100%}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(28,107,88,.18)}
+textarea{resize:vertical}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg input{position:absolute;opacity:0;width:1px;height:1px}
+.seg label{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:7px 13px;cursor:pointer;background:rgba(255,255,255,.7);color:var(--muted);font-size:14px}
+.seg input:checked+label{background:var(--accent);color:#fff;border-color:var(--accent)}
+.seg input:focus-visible+label{outline:3px solid var(--accent);outline-offset:2px}
+.consent{display:flex;gap:10px;align-items:flex-start;font-weight:400;color:var(--muted);font-size:13px}
+.consent input{width:18px;height:18px;flex:none;margin-top:2px;accent-color:var(--accent)}
+.err{color:#A3312A;font-size:14px}
+.note{font-size:13px;color:var(--muted)}
+.share{display:flex;gap:8px}
+.share input{flex:1;min-width:0}
+
+footer{padding-block:48px calc(48px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);font-size:14px;color:var(--muted)}
+footer .cols{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:28px}
+footer b{color:var(--ink)}
+footer a{color:var(--muted)}
+footer .sos{margin-top:28px;padding:14px 16px;border-radius:14px;background:rgba(18,48,42,.05);color:var(--ink)}
+.mcta{display:none}
+.mcta.show{opacity:1;transform:none;pointer-events:auto}
+
+@media (max-width:960px){
+  .hero .wrap{grid-template-columns:1fr}
+  .stage{height:auto;display:grid;gap:14px;perspective:none}
+  .gcard{position:relative;left:auto;right:auto;top:auto;width:100%;max-width:420px}
+  .gcard .rim{filter:none}
+  .c3{display:none}
+  .b4{display:none}
+  .blob{filter:blur(60px)}
+  .tiles{grid-template-columns:1fr 1fr}
+  .where,.join-grid{grid-template-columns:1fr}
+  footer .cols{grid-template-columns:1fr 1fr}
+  .nav a:not(.btn){display:none}
+}
+@media (max-width:767px){
+  .mcta{display:flex;position:fixed;left:16px;right:16px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:45;opacity:0;transform:translateY(20px);pointer-events:none;transition:opacity .3s var(--ease),transform .3s var(--ease)}
+  footer{padding-bottom:calc(110px + env(safe-area-inset-bottom,0px))}
+  section{padding-block:72px}
+}
+@media (max-width:560px){
+  .tiles{grid-template-columns:1fr}
+  .row2{grid-template-columns:1fr}
+  footer .cols{grid-template-columns:1fr}
+  .summary{grid-template-columns:auto 1fr}
+  .summary .btn{grid-column:1/-1}
+  .phase{grid-template-columns:90px 1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  html{scroll-behavior:auto}
+  .enter{opacity:1;transform:none;filter:none}
+  .js .rv:not(.in){opacity:1;transform:none;filter:none}
+  .check svg{stroke-dashoffset:0}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="liquid" x="-10%" y="-10%" width="120%" height="120%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.012 0.02" numOctaves="2" seed="7" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="18" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
+
+<header class="top">
+  <div class="bar glassbox">
+    <a class="logo" href="#topo"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#1C6B58"/><path d="M4 17h6l2.5-6 4 12 3-9 2 3h6.5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Revezo</a>
+    <nav class="nav" aria-label="Principal"><a href="#recursos">Recursos</a><a href="#simulador">Simulador</a><a href="#perguntas">Perguntas</a><a href="demo/">Demonstração</a><a class="btn primary" href="#lista">Entrar na lista</a></nav>
+  </div>
+</header>
+
+<main>
+<section class="hero" id="topo" aria-labelledby="h1">
+  <div class="field" aria-hidden="true"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="blob b4"></div></div>
+  <div class="wrap">
+    <div>
+      <p class="eyebrow enter" style="animation-delay:0ms">Plantões para médicos, enfermeiros e técnicos</p>
+      <h1 id="h1" class="enter" style="margin-top:14px;animation-delay:80ms">Plantão fechado em minutos. <em>Pago em 24 horas.</em></h1>
+      <p class="lead enter" style="animation-delay:160ms">O Revezo mostra só os plantões que combinam com você. O hospital deposita o valor antes do turno, e você recebe via Pix no dia seguinte ao check-out.</p>
+      <div class="ctas enter" style="animation-delay:240ms"><a class="btn primary" href="#lista">Entrar na lista de espera</a><a class="link" href="#simulador">Simular um plantão</a></div>
+    </div>
+    <div class="stage" id="stage" aria-label="Exemplos do app">
+      <div class="gcard glassbox c1 enter" style="animation-delay:200ms"><div class="bob" style="display:grid;gap:10px"><div class="rim"></div>
+        <span class="k">Próximo plantão compatível</span>
+        <div class="row"><div><b>UTI Adulto · Sáb 17/10</b><br><span class="mono" style="font-size:14px;color:var(--muted)">19:00–07:00 · 3,8 km</span></div><div class="ring"><span>94%</span></div></div>
+        <div class="row"><span class="chip">Pix D+1 garantido</span><b class="mono">R$ 1.950</b></div>
+      </div></div>
+      <div class="gcard glassbox c2 enter" style="animation-delay:320ms"><div class="bob" style="display:grid;gap:8px;--t:7s"><div class="rim"></div>
+        <span class="k">Pix recebido</span>
+        <b class="big mono">R$ 1.950</b>
+        <span style="font-size:14px;color:var(--muted)">18 h depois do check-out</span>
+        <span class="chip">Nota fiscal emitida</span>
+      </div></div>
+      <div class="gcard glassbox c3 enter" style="animation-delay:440ms"><div class="bob" style="display:grid;gap:8px;--t:8s"><div class="rim"></div>
+        <span class="k">Troca aprovada</span>
+        <span><b>Dr. Moura → Dra. Prado</b></span>
+        <span style="font-size:14px;color:var(--muted)">Mesma qualificação · descanso respeitado</span>
+        <span class="chip amber">Aprovação automática</span>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<section id="recursos" aria-labelledby="h-rec">
+  <div class="wrap">
+    <p class="eyebrow rv">Recursos</p>
+    <h2 class="h2 rv" id="h-rec">Tudo que um app de plantões faz, sem as partes que cansam</h2>
+    <div class="tiles">
+      <article class="tile glassbox rv"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="14"/><circle cx="20" cy="20" r="7"/><circle cx="20" cy="20" r="1.5"/></svg><h3>Vagas compatíveis</h3><p>Nota de 0 a 100% por especialidade, distância, valor por hora e histórico no setor.</p><span class="fact">aviso só acima do seu mínimo</span></article>
+      <article class="tile glassbox rv"><svg viewBox="0 0 40 40"><path d="M20 5l12 6v9c0 7.5-5.2 12.8-12 15-6.8-2.2-12-7.5-12-15v-9z"/><path d="M14 20l4 4 8-8"/></svg><h3>Pagamento em custódia</h3><p>O hospital deposita antes do turno. O Pix sai até 24 h depois do check-out.</p><span class="fact">Pix em D+1</span></article>
+      <article class="tile glassbox rv"><svg viewBox="0 0 40 40"><path d="M10 13h20l-5-5"/><path d="M30 27H10l5 5"/></svg><h3>Bolsa de trocas</h3><p>Passe um plantão para um colega habilitado, com registro e aprovação automática.</p><span class="fact">histórico para auditoria</span></article>
+      <article class="tile glassbox rv"><svg viewBox="0 0 40 40"><path d="M31 23A12 12 0 1 1 17 9a10 10 0 0 0 14 14z"/></svg><h3>Guardião de descanso</h3><p>Aviso antes de passar do seu limite semanal ou do descanso mínimo entre turnos.</p><span class="fact">você define os limites</span></article>
+      <article class="tile glassbox rv"><svg viewBox="0 0 40 40"><path d="M20 35s11-10 11-18a11 11 0 0 0-22 0c0 8 11 18 11 18z"/><circle cx="20" cy="17" r="4"/></svg><h3>Check-in sem papel</h3><p>Por geolocalização ou QR code no setor. O coordenador vê a presença ao vivo.</p><span class="fact">GPS ou QR code</span></article>
+      <article class="tile glassbox rv"><svg viewBox="0 0 40 40"><path d="M20 6l4 8.5 9.2 1.1-6.8 6.3 1.8 9.1L20 26.6l-8.2 4.4 1.8-9.1-6.8-6.3 9.2-1.1z"/></svg><h3>Hospital também é avaliado</h3><p>Pontualidade no pagamento e estrutura do setor visíveis antes de aceitar.</p><span class="fact">avaliação de mão dupla</span></article>
+    </div>
+  </div>
+</section>
+
+<section id="equipe" aria-labelledby="h-eq" style="padding-top:0">
+  <div class="wrap">
+    <p class="eyebrow rv">Para toda a equipe</p>
+    <h2 class="h2 rv" id="h-eq">Um app para quem faz o plantão e para quem monta a escala</h2>
+    <div class="carousel" id="car" tabindex="0" aria-label="Perfis atendidos pelo Revezo">
+      <article class="person glassbox"><div class="portrait" style="background:linear-gradient(135deg,#1C6B58,#7FE0C3)">MP</div><h3>Médico plantonista</h3><span class="langs">Clínica Médica, Intensiva, Pediatria, Emergência</span><ul><li>Vagas por compatibilidade</li><li>Pix em D+1</li><li>Agenda única de todos os hospitais</li></ul></article>
+      <article class="person glassbox"><div class="portrait" style="background:linear-gradient(135deg,#3E7CB1,#BFE3F7)">EN</div><h3>Enfermeiro</h3><span class="langs">UTI, pronto-socorro, centro cirúrgico</span><ul><li>Escala fixa e extras no mesmo app</li><li>Trocas com registro</li><li>COREN e documentos em dia</li></ul></article>
+      <article class="person glassbox"><div class="portrait" style="background:linear-gradient(135deg,#7A5BB5,#E3DCFA)">TE</div><h3>Técnico de enfermagem</h3><span class="langs">12×36, noturnos, coberturas</span><ul><li>Avisos de plantões próximos</li><li>Horas do mês sempre visíveis</li><li>Pagamento sem atraso</li></ul></article>
+      <article class="person glassbox"><div class="portrait" style="background:linear-gradient(135deg,#B36B00,#FBE3B8)">CO</div><h3>Coordenador de escala</h3><span class="langs">Gestão por setor e turno</span><ul><li>Escala do mês gerada por regras</li><li>Vagas abertas anunciadas em um clique</li><li>Presença e faltas ao vivo</li></ul></article>
+      <article class="person glassbox"><div class="portrait" style="background:linear-gradient(135deg,#12302A,#4B8F7D)">DT</div><h3>Diretor técnico</h3><span class="langs">Cobertura, custo e auditoria</span><ul><li>Cobertura da escala em %</li><li>Fechamento financeiro mensal</li><li>Histórico para auditoria</li></ul></article>
+      <article class="person glassbox"><div class="portrait" style="background:linear-gradient(135deg,#2E8B57,#D6F5E3)">RE</div><h3>Residente</h3><span class="langs">Primeiros plantões fora da residência</span><ul><li>Filtro por RQE e experiência</li><li>Limite de horas configurável</li><li>Informe de rendimentos pronto</li></ul></article>
+    </div>
+    <div class="car-ctrl"><button class="glassbox" id="prev" aria-label="Perfil anterior">←</button><button class="glassbox" id="next" aria-label="Próximo perfil">→</button></div>
+  </div>
+</section>
+
+<section id="simulador" aria-labelledby="h-sim" style="padding-top:0">
+  <div class="wrap">
+    <p class="eyebrow rv">Simulador</p>
+    <h2 class="h2 rv" id="h-sim">Veja como seria pegar um plantão</h2>
+    <p class="sub rv">Exemplo com hospitais e valores fictícios. Nenhum plantão é reservado.</p>
+    <div class="sim glassbox rv">
+      <div class="steps-nav" role="list">
+        <button role="listitem" data-go="0" aria-current="step">1. Especialidade</button>
+        <button role="listitem" data-go="1" disabled>2. Hospital e setor</button>
+        <button role="listitem" data-go="2" disabled>3. Data e turno</button>
+      </div>
+      <div data-step="0"><div class="opts" id="o-esp"></div></div>
+      <div data-step="1" hidden><div class="opts" id="o-hosp"></div></div>
+      <div data-step="2" hidden>
+        <div class="dates" id="dates" aria-label="Próximos 14 dias"></div>
+        <div class="slots" id="slots" style="margin-top:14px" aria-label="Turnos disponíveis"></div>
+      </div>
+      <div id="summary" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<section id="perguntas" aria-labelledby="h-faq" style="padding-top:0">
+  <div class="wrap">
+    <p class="eyebrow rv">Planos e perguntas</p>
+    <h2 class="h2 rv" id="h-faq">O que todo mundo pergunta antes de entrar</h2>
+    <div class="acc" id="acc">
+      <div class="acc-item glassbox rv"><button aria-expanded="false" aria-controls="a1" id="q1">Quanto custa para profissionais?<span class="plus" aria-hidden="true"></span></button><div class="acc-panel" id="a1" role="region" aria-labelledby="q1"><div><p>Nada. Profissionais não pagam mensalidade nem taxa sobre o valor do plantão.</p></div></div></div>
+      <div class="acc-item glassbox rv"><button aria-expanded="false" aria-controls="a2" id="q2">E para hospitais e clínicas?<span class="plus" aria-hidden="true"></span></button><div class="acc-panel" id="a2" role="region" aria-labelledby="q2"><div><p>Uma taxa por plantão preenchido, sem mensalidade. A gestão de escala, presença, trocas e comunicados está incluída.</p></div></div></div>
+      <div class="acc-item glassbox rv"><button aria-expanded="false" aria-controls="a3" id="q3">Como funciona a conta-custódia?<span class="plus" aria-hidden="true"></span></button><div class="acc-panel" id="a3" role="region" aria-labelledby="q3"><div><p>O hospital deposita o valor do plantão antes do turno numa conta de pagamento de uma instituição autorizada pelo Banco Central. Depois do check-out, o valor é liberado para o seu Pix em até 24 horas.</p></div></div></div>
+      <div class="acc-item glassbox rv"><button aria-expanded="false" aria-controls="a4" id="q4">Preciso ter CNPJ?<span class="plus" aria-hidden="true"></span></button><div class="acc-panel" id="a4" role="region" aria-labelledby="q4"><div><p>Depende do hospital. Cada vaga informa se aceita pessoa física, PJ ou cooperativa, e a nota fiscal é emitida pela plataforma quando for o caso.</p></div></div></div>
+      <div class="acc-item glassbox rv"><button aria-expanded="false" aria-controls="a5" id="q5">Meus dados estão seguros?<span class="plus" aria-hidden="true"></span></button><div class="acc-panel" id="a5" role="region" aria-labelledby="q5"><div><p>Seguimos a LGPD. Na lista de espera coletamos só o necessário para avisar você, e você pode pedir a exclusão a qualquer momento. Veja a <a href="privacidade.html">política de privacidade</a>.</p></div></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="onde" aria-labelledby="h-onde" style="padding-top:0">
+  <div class="wrap">
+    <p class="eyebrow rv">Onde começamos</p>
+    <h2 class="h2 rv" id="h-onde">Abrindo cidade por cidade</h2>
+    <div class="where">
+      <div class="mapbox glassbox rv" aria-label="Mapa ilustrativo das cidades da primeira fase">
+        <svg viewBox="0 0 600 380" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <defs><pattern id="dots" width="18" height="18" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.4" fill="rgba(18,48,42,.16)"/></pattern></defs>
+          <rect width="600" height="380" fill="url(#dots)"/>
+          <path d="M60 300 C 160 260, 220 220, 300 210 S 450 160, 560 90" fill="none" stroke="rgba(28,107,88,.25)" stroke-width="3" stroke-dasharray="6 8"/>
+        </svg>
+        <span class="pin" style="left:30%;top:66%"></span><span class="pinlabel" style="left:30%;top:66%">São Paulo</span>
+        <span class="pin later" style="left:20%;top:52%"></span><span class="pinlabel" style="left:20%;top:52%">Campinas</span>
+        <span class="pin later" style="left:58%;top:52%"></span><span class="pinlabel" style="left:58%;top:52%">Rio de Janeiro</span>
+        <span class="pin later" style="left:52%;top:28%"></span><span class="pinlabel" style="left:52%;top:28%">Belo Horizonte</span>
+      </div>
+      <div class="phases glassbox rv">
+        <div class="phase now"><span class="when">Fase 1</span><span>São Paulo, capital</span></div>
+        <div class="phase"><span class="when">Fase 2</span><span>Campinas, ABC e Baixada Santista</span></div>
+        <div class="phase"><span class="when">Fase 3</span><span>Rio de Janeiro e Belo Horizonte</span></div>
+        <p class="note" style="margin-top:10px">A ordem depende de onde vierem mais inscrições. Informe sua cidade na lista para puxar o Revezo para perto de você.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="lista" aria-labelledby="h-lista" style="padding-top:0">
+  <div class="wrap join-grid">
+    <div class="rv">
+      <p class="eyebrow">Lista de espera</p>
+      <h2 class="h2" id="h-lista">Seja dos primeiros na sua cidade</h2>
+      <p class="sub">Quem entra na lista e indica colegas recebe acesso antes.</p>
+      <p style="margin-top:22px"><a href="demo/" style="font-weight:700">Ver a demonstração do app e do painel do hospital →</a></p>
+    </div>
+    <div class="rv">
+      <form id="f" class="glassbox" novalidate>
+        <fieldset style="border:0;padding:0;margin:0;display:grid;gap:6px">
+          <legend style="font-size:14px;font-weight:600;padding:0;margin-bottom:6px">Você é</legend>
+          <div class="seg">
+            <input type="radio" name="perfil" id="p1" value="Médico" checked><label for="p1">Médico</label>
+            <input type="radio" name="perfil" id="p2" value="Enfermeiro"><label for="p2">Enfermeiro</label>
+            <input type="radio" name="perfil" id="p3" value="Técnico de enfermagem"><label for="p3">Técnico</label>
+            <input type="radio" name="perfil" id="p4" value="Hospital ou coordenação"><label for="p4">Hospital / coordenação</label>
+          </div>
+        </fieldset>
+        <label for="nome">Nome completo<input id="nome" name="nome" autocomplete="name" required></label>
+        <div class="row2">
+          <label for="email">E-mail<input id="email" name="email" type="email" autocomplete="email" required></label>
+          <label for="whats">WhatsApp<input id="whats" name="whatsapp" type="tel" autocomplete="tel" placeholder="(11) 90000-0000"></label>
+        </div>
+        <div class="row2">
+          <label for="cidade">Cidade<input id="cidade" name="cidade" autocomplete="address-level2" required></label>
+          <label for="uf">UF<select id="uf" name="uf" required><option value="">Selecione</option></select></label>
+        </div>
+        <label for="esp" id="esp-l">Especialidade<input id="esp" name="especialidade" placeholder="Ex.: Clínica Médica"></label>
+        <label for="dor">O que mais te incomoda hoje nos plantões?<textarea id="dor" name="dor" rows="3" placeholder="Ex.: atraso no pagamento, trocas pelo WhatsApp…"></textarea></label>
+        <label class="consent" for="lgpd"><input type="checkbox" id="lgpd" name="consentimento_lgpd" value="sim" required><span>Autorizo o Revezo a usar estes dados para me avisar sobre o lançamento e para pesquisa sobre o produto. Posso pedir a exclusão a qualquer momento. <a href="privacidade.html" target="_blank" rel="noopener">Política de privacidade</a>.</span></label>
+        <p class="err" id="err" hidden></p>
+        <button class="btn primary" type="submit" id="btn">Quero ser avisado</button>
+        <p class="note" id="demo" hidden>Modo demonstração: o formulário ainda não está ligado a um serviço de envio, então nenhum dado foi salvo.</p>
+      </form>
+      <div class="done glassbox" id="done" hidden>
+        <h3 style="font-size:24px">Você está na lista</h3>
+        <p>Vamos avisar por e-mail quando o Revezo abrir na sua cidade. Quem indicar colegas entra primeiro.</p>
+        <div class="share"><input id="link" readonly aria-label="Link para indicar colegas"><button type="button" class="btn glass" id="copy">Copiar link</button></div>
+        <p class="note" id="demo2" hidden>Modo demonstração: nenhum dado foi enviado.</p>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="cols">
+      <div><b>Revezo</b><p style="margin-top:8px">Plataforma de plantões e gestão de escalas em pré-lançamento. CNPJ em registro.</p></div>
+      <div><b>Links</b><p style="margin-top:8px;display:grid;gap:4px"><a href="#recursos">Recursos</a><a href="#simulador">Simulador</a><a href="demo/">Demonstração</a><a href="privacidade.html">Política de privacidade</a></p></div>
+      <div><b>Contato</b><p style="margin-top:8px">Respondemos pelo e-mail informado na política de privacidade.</p></div>
+    </div>
+    <p class="sos">O Revezo não presta atendimento médico. Em caso de emergência, ligue 192 (SAMU).</p>
+    <p style="margin-top:18px">© 2026 Revezo. Hospitais, nomes e valores dos exemplos são fictícios.</p>
+  </div>
+</footer>
+
+<a class="btn primary mcta" href="#lista">Entrar na lista de espera</a>
+
+<script>
+/* CONFIGURAÇÃO: mesmo endereço do Formspree usado em index.html. Vazio = modo demonstração. */
+const FORM_ENDPOINT = "";
+
+document.documentElement.classList.add('js');
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+
+/* cartões de vidro inclinam em direção ao cursor (mola: rigidez 150, amortecimento 18) */
+(function(){
+  if(reduce||!matchMedia('(pointer:fine)').matches)return;
+  const stage=$('#stage'),cards=$$('.gcard');
+  const st=cards.map(()=>({x:0,y:0,vx:0,vy:0,tx:0,ty:0}));
+  stage.parentElement.addEventListener('pointermove',e=>{
+    cards.forEach((c,i)=>{const r=c.getBoundingClientRect(),dx=(e.clientX-(r.left+r.width/2))/innerWidth,dy=(e.clientY-(r.top+r.height/2))/innerHeight;
+      st[i].tx=Math.max(-6,Math.min(6,dx*14));st[i].ty=Math.max(-6,Math.min(6,-dy*14))})});
+  stage.parentElement.addEventListener('pointerleave',()=>st.forEach(s=>{s.tx=0;s.ty=0}));
+  let last=performance.now();
+  (function tick(now){const dt=Math.min(.032,(now-last)/1000);last=now;
+    st.forEach((s,i)=>{const ax=150*(s.tx-s.x)-18*s.vx,ay=150*(s.ty-s.y)-18*s.vy;s.vx+=ax*dt;s.vy+=ay*dt;s.x+=s.vx*dt;s.y+=s.vy*dt;
+      cards[i].style.transform=`rotateY(${s.x.toFixed(2)}deg) rotateX(${s.y.toFixed(2)}deg)`});
+    if(!document.hidden)requestAnimationFrame(tick);else setTimeout(()=>requestAnimationFrame(tick),300)})(last);
+})();
+/* depois da entrada, remove a animação para o transform da inclinação valer */
+$$('.gcard').forEach(c=>c.addEventListener('animationend',e=>{if(e.animationName==='enter'){c.classList.remove('enter');c.style.opacity=1}}));
+
+/* revelação única com escalonamento */
+(function(){
+  const els=$$('.rv');
+  if(!('IntersectionObserver' in window)||reduce){els.forEach(e=>e.classList.add('in'));return}
+  const io=new IntersectionObserver(es=>{let k=0;es.forEach(e=>{if(e.isIntersecting){const el=e.target;setTimeout(()=>el.classList.add('in'),(k++)*75);io.unobserve(el)}})},{threshold:.12});
+  els.forEach(e=>io.observe(e));
+})();
+
+/* carrossel */
+(function(){
+  const car=$('#car'),items=$$('.person');
+  function mark(){const c=car.getBoundingClientRect(),mid=c.left+c.width/2;let best=0,bd=1e9;
+    items.forEach((it,i)=>{const r=it.getBoundingClientRect(),d=Math.abs(r.left+r.width/2-mid);if(d<bd){bd=d;best=i}});
+    items.forEach((it,i)=>it.classList.toggle('active',i===best));return best}
+  car.addEventListener('scroll',()=>requestAnimationFrame(mark),{passive:true});mark();
+  const go=d=>{const i=Math.max(0,Math.min(items.length-1,mark()+d));const it=items[i];car.scrollTo({left:it.offsetLeft-(car.clientWidth-it.clientWidth)/2,behavior:reduce?'auto':'smooth'})};
+  $('#prev').onclick=()=>go(-1);$('#next').onclick=()=>go(1);
+  car.addEventListener('keydown',e=>{if(e.key==='ArrowRight'){e.preventDefault();go(1)}if(e.key==='ArrowLeft'){e.preventDefault();go(-1)}});
+  setTimeout(()=>go(1),50);
+})();
+
+/* simulador de plantão */
+(function(){
+  const ESP=[['Clínica Médica','PS, enfermaria'],['Medicina Intensiva','UTI adulto'],['Pediatria','PS infantil'],['Enfermagem','UTI e PS']];
+  const HOSP=[['Hospital Santa Clara','UTI Adulto · 3,8 km',1950],['Hospital São Lucas','PS Adulto · 5,1 km',1500],['Hospital Vida Leste','Enfermaria · 11,2 km',1300]];
+  const sel={esp:null,hosp:null,dia:null,slot:null};
+  const nav=$$('[data-go]'),panes=$$('[data-step]');
+  function step(i){panes.forEach((p,k)=>p.hidden=k!==i);nav.forEach((b,k)=>{b.toggleAttribute('aria-current',false);if(k===i)b.setAttribute('aria-current','step')})}
+  nav.forEach(b=>b.onclick=()=>step(+b.dataset.go));
+  function opts(el,list,key,next){el.innerHTML='';list.forEach((o,i)=>{const b=document.createElement('button');b.type='button';b.className='opt';b.setAttribute('aria-pressed','false');
+    b.innerHTML=`<span></span><small></small>`;b.firstChild.textContent=o[0];b.lastChild.textContent=o[1];
+    b.onclick=()=>{sel[key]=i;el.querySelectorAll('.opt').forEach(x=>x.setAttribute('aria-pressed',x===b));nav[next].disabled=false;sel.slot=null;$('#summary').innerHTML='';step(next);if(next===2)renderDates()};el.appendChild(b)})}
+  opts($('#o-esp'),ESP,'esp',1);opts($('#o-hosp'),HOSP.map(h=>[h[0],h[1]]),'hosp',2);
+  const base=new Date(2026,9,14),wd=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  function renderDates(){const d=$('#dates');d.innerHTML='';for(let i=0;i<14;i++){const dt=new Date(base);dt.setDate(base.getDate()+i);
+    const b=document.createElement('button');b.type='button';b.className='date';b.setAttribute('aria-pressed',sel.dia===i);b.innerHTML=`${wd[dt.getDay()]}<b>${dt.getDate()}</b>`;
+    b.setAttribute('aria-label',`${wd[dt.getDay()]} ${dt.getDate()}/${dt.getMonth()+1}`);
+    b.onclick=()=>{sel.dia=i;sel.slot=null;$('#summary').innerHTML='';d.querySelectorAll('.date').forEach(x=>x.setAttribute('aria-pressed',x===b));renderSlots()};d.appendChild(b)}
+    if(sel.dia===null){d.firstChild.click()}else renderSlots()}
+  function renderSlots(){const s=$('#slots');s.innerHTML='';const v=HOSP[sel.hosp][2];
+    [['Diurno','07:00–19:00',v*.85],['Noturno','19:00–07:00',v],['24 horas','07:00–07:00',v*1.8],['Meio período','07:00–13:00',v*.45]].forEach((t,i)=>{
+      const b=document.createElement('button');b.type='button';b.className='slot';b.setAttribute('aria-pressed','false');
+      const taken=(sel.dia*3+i)%5===0;b.disabled=taken;
+      b.innerHTML=`<b></b><span></span><small style="font-weight:500;opacity:.8"></small>`;b.children[0].textContent=t[0];b.children[1].textContent=t[1];
+      b.children[2].textContent=taken?'preenchido':'R$ '+(Math.round(t[2]/10)*10).toLocaleString('pt-BR');
+      b.onclick=()=>{sel.slot=i;s.querySelectorAll('.slot').forEach(x=>x.setAttribute('aria-pressed',x===b));summary(t)};s.appendChild(b)})}
+  function summary(t){const h=HOSP[sel.hosp],dt=new Date(base);dt.setDate(base.getDate()+sel.dia);const pix=new Date(dt);pix.setDate(dt.getDate()+(t[0]==='Noturno'||t[0]==='24 horas'?2:1));
+    const v='R$ '+(Math.round(t[2]/10)*10).toLocaleString('pt-BR');
+    $('#summary').innerHTML=`<div class="summary"><div class="check"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div><b></b><p class="note"></p></div><a class="btn primary" href="#lista">Quero vagas assim</a></div>`;
+    $('#summary b').textContent=`${t[0]} em ${h[0]} · ${wd[dt.getDay()]} ${dt.getDate()}/${dt.getMonth()+1} · ${v}`;
+    $('#summary .note').textContent=`${ESP[sel.esp][0]} · ${h[1]}. Simulação: neste exemplo, o Pix cairia em ${pix.getDate()}/${pix.getMonth()+1}.`}
+})();
+
+/* botão fixo no celular aparece depois do herói e some perto da lista */
+(function(){const b=$('.mcta'),hero=$('.hero'),lista=$('#lista');
+  const upd=()=>{const past=hero.getBoundingClientRect().bottom<0,near=lista.getBoundingClientRect().top<innerHeight;b.classList.toggle('show',past&&!near)};
+  addEventListener('scroll',upd,{passive:true});upd()})();
+
+/* acordeão */
+$$('.acc-item button').forEach(b=>b.onclick=()=>{const it=b.closest('.acc-item'),open=!it.classList.contains('open');it.classList.toggle('open',open);b.setAttribute('aria-expanded',open)});
+
+/* formulário */
+const UFS="AC AL AP AM BA CE DF ES GO MA MT MS MG PA PB PR PE PI RJ RN RS RO RR SC SP SE TO".split(" ");
+const uf=$('#uf');UFS.forEach(u=>uf.add(new Option(u,u)));
+const f=$('#f'),err=$('#err'),btn=$('#btn'),esp=$('#esp-l');
+f.querySelectorAll('[name=perfil]').forEach(r=>r.onchange=()=>{esp.hidden=f.perfil.value!=='Médico'});
+if(!FORM_ENDPOINT)$('#demo').hidden=false;
+f.addEventListener('submit',async e=>{
+  e.preventDefault();err.hidden=true;const miss=[];
+  if(!f.nome.value.trim())miss.push('nome');
+  if(!/^\S+@\S+\.\S+$/.test(f.email.value.trim()))miss.push('e-mail válido');
+  if(!f.cidade.value.trim())miss.push('cidade');
+  if(!f.uf.value)miss.push('UF');
+  if(!f.lgpd.checked)miss.push('autorização de uso dos dados');
+  if(miss.length){err.textContent='Falta preencher: '+miss.join(', ')+'.';err.hidden=false;return}
+  const data=Object.fromEntries(new FormData(f));
+  const ref=new URLSearchParams(location.search).get('ref');if(ref)data.indicado_por=ref;
+  data.pagina='vidro';data.enviado_em=new Date().toISOString();
+  btn.disabled=true;btn.textContent='Enviando…';
+  try{
+    if(FORM_ENDPOINT){const r=await fetch(FORM_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(data)});if(!r.ok)throw new Error(r.status)}
+    const code=btoa(unescape(encodeURIComponent(data.email))).replace(/[^a-z0-9]/gi,'').slice(0,8).toLowerCase();
+    $('#link').value=location.origin+location.pathname+'?ref='+code;
+    if(!FORM_ENDPOINT)$('#demo2').hidden=false;
+    f.hidden=true;$('#done').hidden=false;
+  }catch(x){err.textContent='Não conseguimos enviar agora. Verifique sua conexão e tente de novo.';err.hidden=false}
+  finally{btn.disabled=false;btn.textContent='Quero ser avisado'}
+});
+$('#copy').onclick=async()=>{const i=$('#link'),b=$('#copy');try{await navigator.clipboard.writeText(i.value);b.textContent='Copiado'}catch(x){i.select();b.textContent='Selecionado'}};
+</script>
+</body>
+</html>
