@@ -1,0 +1,8 @@
+# Dados de clientes nunca vão para o repositório público
+*.xlsx
+*.xls
+*.xlsm
+movimentacoes.json
+numeros-processos.txt
+gabinete-backup-*.json
+__pycache__/
