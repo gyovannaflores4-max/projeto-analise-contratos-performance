@@ -49,6 +49,8 @@ test("movimentação sugere o prazo certo", () => {
   assert.equal(N.sugerirAposMovimentacao("Publicada sentença", "2026-10-13", trab)[0].dias, 8);
   assert.equal(N.sugerirAposMovimentacao("Inabilitação no pregão eletrônico", "2026-10-13", civel)[0].dias, 3);
   assert.ok(N.sugerirAposMovimentacao("Processo arquivado definitivamente", "2026-10-13", civel)[0].encerrar);
+  const jec = { cnj: N.analisarCnj("1234567-77.2025.8.19.0001"), acao: "Indenização", vara: "JEC" };
+  assert.equal(N.sugerirAposMovimentacao("Sentença de procedência publicada", "2026-10-13", jec)[0].dias, 10);
 });
 
 test("planilha: cabeçalho, limpeza e chaves sem duplicar", () => {

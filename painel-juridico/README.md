@@ -16,6 +16,20 @@ Google Agenda, Gmail, Outlook, WhatsApp, DJEN, tribunais e DataJud (CNJ).
 3. Em **Conexões › Planilha Excel**, importe o arquivo `.xlsx`. Reimporte sempre
    que a planilha mudar: andamentos, tarefas e horas registrados no painel são preservados.
 
+## Demonstração
+
+`demo.html` abre o mesmo painel com um advogado e processos **fictícios**, sem senha e sem
+sincronização (os dados ficam em chaves separadas do navegador). Use para mostrar o produto a
+outros advogados. O botão **Simular intimação do DJEN** faz chegar duas publicações e mostra o
+prazo sendo criado na pauta. Os dados estão em `demo-dados.js`.
+
+`demo.html` é uma cópia de `index.html` com uma linha a mais (`<script src="demo-dados.js">`).
+Ao alterar `index.html`, recrie a cópia:
+
+```bash
+sed 's#<script src="nucleo.js"></script>#&\n<script src="demo-dados.js"></script>#; s#<title>Gabinete Digital</title>#<title>Gabinete Digital Demo</title>#' index.html > demo.html
+```
+
 ## O que o painel faz
 
 | Área | Automação |

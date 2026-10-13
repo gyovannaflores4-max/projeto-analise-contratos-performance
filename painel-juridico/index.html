@@ -260,6 +260,7 @@ table.processos tbody tr:hover { background: var(--superficie-2); }
 .abas button { background: none; border: 0; border-bottom: 2px solid transparent; padding: .5rem .8rem; cursor: pointer; font-weight: 600; color: var(--tinta-2); }
 .abas button[aria-selected="true"] { color: var(--tinta); border-color: var(--bordo); }
 
+.faixa-demo { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .6rem; background: var(--latao-suave); color: var(--tinta); border: 1px solid var(--latao); border-radius: var(--raio); padding: .6rem .9rem; margin-bottom: 1.25rem; font-size: .9rem; }
 .toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 84px); transform: translateX(-50%); background: var(--capa); color: var(--capa-tinta); padding: .65rem 1rem; border-radius: 8px; z-index: 40; font-size: .9rem; box-shadow: var(--sombra); max-width: calc(100% - 32px); }
 .dialogo { position: fixed; inset: 0; display: grid; place-items: center; z-index: 30; background: rgba(10, 14, 12, .45); padding: 16px; }
 .dialogo > div { background: var(--superficie); border-radius: var(--raio); padding: 1.25rem; width: min(440px, 100%); display: grid; gap: 1rem; box-shadow: var(--sombra); }
@@ -303,7 +304,7 @@ table.processos tbody tr:hover { background: var(--superficie-2); }
     <div class="selo" aria-hidden="true">§</div>
     <div style="display:grid;gap:1rem;position:relative;z-index:1">
       <h1>Gabinete <em>Digital</em></h1>
-      <p>Processos, prazos, atas e recursos administrativos da DIMPI &amp; Cia em um só lugar. Cada movimentação registrada vira prazo calculado em dias úteis.</p>
+      <p>Processos, prazos, atas e recursos administrativos do escritório em um só lugar. Cada movimentação registrada vira prazo calculado em dias úteis.</p>
     </div>
     <ul>
       <li>Pauta do dia gerada a partir dos próximos passos</li>
@@ -348,6 +349,10 @@ table.processos tbody tr:hover { background: var(--superficie-2); }
   </aside>
 
   <main id="principal">
+    <div class="faixa-demo" id="faixa-demo" hidden>
+      <span><b>Demonstração</b> · advogado, clientes e processos fictícios</span>
+      <span class="acoes"><button class="btn mini primario" data-acao="simular-djen">Simular intimação do DJEN</button><button class="btn mini" data-acao="restaurar-exemplo">Recomeçar exemplo</button></span>
+    </div>
     <!-- HOJE -->
     <section class="visao" data-visao="inicio">
       <div class="cabeca">

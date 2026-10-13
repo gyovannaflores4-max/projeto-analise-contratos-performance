@@ -289,9 +289,12 @@
   ];
   function sugerirAposMovimentacao(texto, dataIso, processo) {
     const trab = (processo && processo.cnj || []).some((c) => c.segmento === "5") || /trabalh/i.test(processo && processo.acao || "");
+    // Juizado Especial Cível: recurso inominado em 10 dias (Lei 9.099/95, art. 42).
+    const jec = /\bJEC\b|juizado/i.test(((processo && processo.vara) || "") + " " + ((processo && processo.acao) || ""));
     const sugestoes = [];
-    for (const r of REGRAS_MOV) {
-      if (!r.re.test(texto)) continue;
+    for (const r0 of REGRAS_MOV) {
+      if (!r0.re.test(texto)) continue;
+      const r = jec && /senten/.test(r0.titulo) ? Object.assign({}, r0, { titulo: "Avaliar recurso inominado contra a sentença", civel: 10, base: "Lei 9.099/1995 art. 42" }) : r0;
       const dias = trab ? r.trab || r.civel : r.civel;
       let venc = null;
       if (r.evento) {

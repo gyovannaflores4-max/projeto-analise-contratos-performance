@@ -2,6 +2,9 @@
 (function () {
   "use strict";
   const N = window.Nucleo;
+  // Demonstração: dados fictícios, sem senha, guardados à parte e nunca sincronizados.
+  const DEMO = window.GD_DEMO || null;
+  const P = DEMO ? "gdd:" : "gd:";
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -32,7 +35,7 @@
   function salvarLocal() {
     clearTimeout(timerLocal);
     timerLocal = setTimeout(() => {
-      if (!LS.set("gd:dados", E)) setSync("Sem armazenamento local: os dados valem só nesta aba");
+      if (!LS.set(P + "dados", E)) setSync("Sem armazenamento local: os dados valem só nesta aba");
     }, 250);
   }
 
@@ -57,6 +60,7 @@
       if (!u) return;
       try { const me = await u.me(); if (me && me.name) { NOME_CLAUDE = me.name; renderConectores(); } } catch (e) { /* sem identidade */ }
     });
+    if (DEMO) return;
     const db = await window.claude.use("db");
     if (!db) return;
     DB = db;
@@ -161,7 +165,17 @@
     let h = 0; for (const c of txt) h = (h * 31 + c.charCodeAt(0)) | 0; return "f" + h;
   }
   function prepararLogin() {
-    const conta = LS.get("gd:conta");
+    if (DEMO) {
+      ["#login-senha", "#login-confirma-wrap", "#login-lembrar"].forEach((s) => { const el = $(s); (el.closest("label") || el).hidden = true; });
+      $("#login-senha").required = false;
+      $("#login-usuario").value = DEMO.usuario; $("#login-usuario").readOnly = true;
+      $("#login-modo").textContent = "Demonstração · dados fictícios";
+      $("#login-titulo").textContent = "Conheça o painel por dentro";
+      $("#login-botao").textContent = "Entrar como Dr. " + DEMO.usuario;
+      $("#login-nota").textContent = "Advogado, clientes e processos desta demonstração são inventados. Tudo o que você fizer fica só neste navegador.";
+      return;
+    }
+    const conta = LS.get(P + "conta");
     const criando = !conta;
     $("#login-confirma-wrap").hidden = !criando;
     $("#login-confirma").required = criando;
@@ -173,31 +187,43 @@
   }
   $("#form-login").addEventListener("submit", async (ev) => {
     ev.preventDefault();
+    if (DEMO) {
+      SS.set(P + "sessao", { usuario: DEMO.usuario, ate: Date.now() + 12 * 3600 * 1000 });
+      if (!Object.keys(E.processos).length) carregarExemplo();
+      entrar(DEMO.usuario);
+      return;
+    }
     const usuario = $("#login-usuario").value.trim();
     const senha = $("#login-senha").value;
     const erro = $("#login-erro");
     erro.textContent = "";
     if (!usuario || senha.length < 4) { erro.textContent = "Informe o usuário e uma senha com pelo menos 4 caracteres."; return; }
-    let conta = LS.get("gd:conta");
+    let conta = LS.get(P + "conta");
     if (!conta) {
       if (senha !== $("#login-confirma").value) { erro.textContent = "As senhas não conferem. Digite a mesma senha nos dois campos."; return; }
       const sal = Math.random().toString(36).slice(2) + Date.now().toString(36);
       conta = { usuario, sal, hash: await hash(sal + senha) };
-      if (!LS.set("gd:conta", conta)) toast("Este navegador bloqueia armazenamento: a senha vale só nesta sessão.");
+      if (!LS.set(P + "conta", conta)) toast("Este navegador bloqueia armazenamento: a senha vale só nesta sessão.");
     } else {
       if (N.norm(usuario) !== N.norm(conta.usuario) || (await hash(conta.sal + senha)) !== conta.hash) { erro.textContent = "Usuário ou senha incorretos."; $("#login-senha").select(); return; }
     }
     const sessao = { usuario: conta.usuario, ate: Date.now() + 12 * 3600 * 1000 };
-    if ($("#login-lembrar").checked) LS.set("gd:sessao", sessao); else SS.set("gd:sessao", sessao);
+    if ($("#login-lembrar").checked) LS.set(P + "sessao", sessao); else SS.set(P + "sessao", sessao);
     $("#login-senha").value = ""; $("#login-confirma").value = "";
     entrar(conta.usuario);
   });
   function sessaoValida() {
-    const s = LS.get("gd:sessao") || SS.get("gd:sessao");
+    const s = LS.get(P + "sessao") || SS.get(P + "sessao");
     return s && s.ate > Date.now() ? s : null;
+  }
+  function carregarExemplo() {
+    const dados = DEMO.gerar();
+    COLS.forEach((c) => { E[c] = dados[c]; });
+    salvarLocal();
   }
   function entrar(usuario) {
     USUARIO = usuario;
+    $("#faixa-demo").hidden = !DEMO;
     $("#tela-login").hidden = true;
     $("#app").hidden = false;
     $("#marca-usuario").textContent = "Dr. " + usuario;
@@ -208,7 +234,7 @@
     retomarCronometro();
   }
   function sair() {
-    LS.del("gd:sessao"); SS.del("gd:sessao");
+    LS.del(P + "sessao"); SS.del(P + "sessao");
     $("#app").hidden = true; $("#tela-login").hidden = false;
     fecharFicha(); prepararLogin(); $("#login-senha").focus();
   }
@@ -302,9 +328,9 @@
     const movs = [];
     ms.forEach((p) => (p.andamentos || []).forEach((a) => { if (a.data) movs.push({ p, a }); }));
     movs.sort((x, y) => (y.a.data > x.a.data ? 1 : y.a.data < x.a.data ? -1 : 0));
-    $("#ultimas").innerHTML = movs.slice(0, 8).map(({ p, a }) => `<li><time>${br(a.data)}</time><div><a href="#" data-abrir="${esc(p.id)}">${esc(partes(p))}</a><span class="pill origem ${a.origem === "datajud" ? "bordo" : ""}">${esc(origemNome(a.origem))}</span><div class="sutil">${esc(a.texto)}</div></div></li>`).join("") || `<li class="vazio">Sem movimentações datadas.</li>`;
+    $("#ultimas").innerHTML = movs.slice(0, 8).map(({ p, a }) => `<li><time>${br(a.data)}</time><div><a href="#" data-abrir="${esc(p.id)}">${esc(partes(p))}</a><span class="pill origem ${/datajud|djen/.test(a.origem) ? "bordo" : ""}">${esc(origemNome(a.origem))}</span><div class="sutil">${esc(a.texto)}</div></div></li>`).join("") || `<li class="vazio">Sem movimentações datadas.</li>`;
   }
-  const origemNome = (o) => ({ planilha: "planilha", manual: "registrada", datajud: "robô DataJud" }[o] || o || "");
+  const origemNome = (o) => ({ planilha: "planilha", manual: "registrada", datajud: "robô DataJud", djen: "DJEN" }[o] || o || "");
   function renderVazioInicio() {
     $("#kpis").innerHTML = "";
     $("#pauta").innerHTML = `<div class="vazio"><p>Nenhum processo carregado ainda.</p><p>Importe a planilha <b>Controle de Processos Judiciais e Atividades</b> para montar a pauta, os prazos e os alertas automaticamente.</p><button class="btn primario" data-acao="importar-planilha">Importar planilha (.xlsx)</button></div>`;
@@ -479,7 +505,7 @@
       <section class="painel"><header><h3>Prazos e tarefas</h3><button class="btn mini" data-acao="nova-tarefa" data-processo="${esc(p.id)}">Nova tarefa</button></header>${tarefas.length ? tarefas.map(htmlTarefa).join("") : `<p class="vazio">Sem tarefas. Registre uma movimentação para gerar o prazo.</p>`}</section>
       ${p.resumo ? `<section class="painel"><header><h3>Resumo</h3></header><p style="margin:0;white-space:pre-line">${esc(p.resumo)}</p></section>` : ""}
       <section class="painel"><header><h3>Andamentos</h3><span class="sutil">${(p.andamentos || []).length} registros · atualizado em ${p.atualizadoEm ? br(p.atualizadoEm) : "—"}</span></header>
-        <ol class="timeline">${andamentos.map(({ a }) => `<li><time>${a.data ? br(a.data) : "sem data"}</time><div>${esc(a.texto)}${a.origem !== "planilha" ? `<span class="pill origem ${a.origem === "datajud" ? "bordo" : "latao"}">${esc(origemNome(a.origem))}</span>` : ""}</div></li>`).join("") || `<li class="vazio">Sem andamentos.</li>`}</ol></section>
+        <ol class="timeline">${andamentos.map(({ a }) => `<li><time>${a.data ? br(a.data) : "sem data"}</time><div>${esc(a.texto)}${a.origem !== "planilha" ? `<span class="pill origem ${/datajud|djen/.test(a.origem) ? "bordo" : "latao"}">${esc(origemNome(a.origem))}</span>` : ""}</div></li>`).join("") || `<li class="vazio">Sem andamentos.</li>`}</ol></section>
       <section class="painel"><header><h3>Dados</h3></header><dl class="dados">
         ${[["Edital / contrato", p.edital], ["Juízo", [p.juizo, p.vara].filter(Boolean).join("ª ")], ["Comarca / foro", [p.comarca, p.foro].filter(Boolean).join(" · ")], ["Valor da causa", moeda(p.valorCausa)], ["Valor P.E.", moeda(p.valorPE)], ["Horas", hhmm((p.minutos || 0) + minutosAtiv)], ["Referência", p.referencia]].filter(([, v]) => v).map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join("")}
       </dl></section>
@@ -907,7 +933,7 @@ Data de hoje: ${br(hoje())}`;
   // ---------- HORAS ----------
   let tick = null;
   function retomarCronometro() {
-    UI.cron = LS.get("gd:cron");
+    UI.cron = LS.get(P + "cron");
     if (UI.cron) {
       $("#cr-processo").value = UI.cron.processoId || ""; $("#cr-tipo").value = UI.cron.tipo; $("#cr-desc").value = UI.cron.desc;
       iniciarTick();
@@ -923,11 +949,11 @@ Data de hoje: ${br(hoje())}`;
   function alternarCronometro() {
     if (!UI.cron) {
       UI.cron = { inicio: Date.now(), processoId: $("#cr-processo").value, tipo: $("#cr-tipo").value, desc: $("#cr-desc").value.trim() };
-      LS.set("gd:cron", UI.cron); iniciarTick(); pintarCronometro(); toast("Cronômetro iniciado."); return;
+      LS.set(P + "cron", UI.cron); iniciarTick(); pintarCronometro(); toast("Cronômetro iniciado."); return;
     }
     const minutos = Math.max(1, Math.round((Date.now() - UI.cron.inicio) / 60000));
     salvar("atividades", { id: novoId("a"), data: hoje(), processoId: $("#cr-processo").value || null, tipo: $("#cr-tipo").value, desc: $("#cr-desc").value.trim() || $("#cr-tipo").value, minutos });
-    UI.cron = null; LS.del("gd:cron"); clearInterval(tick); pintarCronometro();
+    UI.cron = null; LS.del(P + "cron"); clearInterval(tick); pintarCronometro();
     renderHoras(); toast(hhmm(minutos) + " lançadas.");
   }
   function lancarManual() {
@@ -1022,7 +1048,7 @@ Data de hoje: ${br(hoje())}`;
   async function importarJson(arquivo) {
     let dados;
     try { dados = JSON.parse(await arquivo.text()); } catch (e) { toast("O arquivo não é um JSON válido."); return; }
-    if (dados && dados.processos && !Array.isArray(dados.processos) && dados.fonte === "datajud") return importarMovs(dados);
+    if (dados && dados.processos && !Array.isArray(dados.processos) && /^(datajud|djen)$/.test(dados.fonte)) return importarMovs(dados);
     if (dados && dados.processos && dados.tarefas) {
       COLS.forEach((c) => Object.values(dados[c] || {}).forEach((o) => salvar(c, o)));
       montarFiltros(); renderTudo(); toast("Backup restaurado.");
@@ -1031,10 +1057,11 @@ Data de hoje: ${br(hoje())}`;
     toast("Arquivo não reconhecido. Use um backup do painel ou o movimentacoes.json do robô.");
   }
   function importarMovs(dados) {
+    const origem = dados.fonte === "djen" ? "djen" : "datajud";
     let total = 0, procs = 0, tarefas = 0;
     lista().forEach((p) => {
       const movs = [];
-      (p.cnj || []).forEach((c) => (dados.processos[c.digitos] || []).forEach((m) => movs.push({ data: N.lerData(m.data), texto: m.texto + (p.cnj.length > 1 && c.rotulo ? " [" + c.rotulo + "]" : ""), origem: "datajud" })));
+      (p.cnj || []).forEach((c) => (dados.processos[c.digitos] || []).forEach((m) => movs.push({ data: N.lerData(m.data), texto: m.texto + (p.cnj.length > 1 && c.rotulo ? " [" + c.rotulo + "]" : ""), origem })));
       const novas = N.mesclarMovimentacoes(p, movs);
       if (!novas.length) return;
       p.andamentos = (p.andamentos || []).concat(novas);
@@ -1158,13 +1185,15 @@ ${resumo}`;
       "importar-movs": () => $("#arquivo-json").click(), restaurar: () => $("#arquivo-json").click(),
       "exportar-numeros": exportarNumeros, backup,
       "ideias-ia": ideiasIa,
-      tema: () => { const r = document.documentElement; const escuro = r.dataset.theme ? r.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; r.dataset.theme = escuro ? "light" : "dark"; LS.set("gd:tema", r.dataset.theme); },
+      "simular-djen": () => { if (DEMO) { importarMovs(DEMO.simulacao()); ir("inicio"); } },
+      "restaurar-exemplo": () => { if (DEMO) { carregarExemplo(); montarFiltros(); renderTudo(); toast("Exemplo restaurado."); } },
+      tema: () => { const r = document.documentElement; const escuro = r.dataset.theme ? r.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; r.dataset.theme = escuro ? "light" : "dark"; LS.set(P + "tema", r.dataset.theme); },
       "trocar-senha": async () => {
-        const conta = LS.get("gd:conta");
+        const conta = LS.get(P + "conta");
         if (!conta || (await hash(conta.sal + $("#conta-atual").value)) !== conta.hash) { toast("A senha atual não confere."); return; }
         const nova = $("#conta-nova").value;
         if (nova.length < 4) { toast("A nova senha precisa de pelo menos 4 caracteres."); return; }
-        conta.hash = await hash(conta.sal + nova); LS.set("gd:conta", conta);
+        conta.hash = await hash(conta.sal + nova); LS.set(P + "conta", conta);
         $("#conta-atual").value = ""; $("#conta-nova").value = ""; toast("Senha alterada.");
       },
     };
@@ -1189,9 +1218,9 @@ ${resumo}`;
   // =====================================================================
   // INÍCIO
   // =====================================================================
-  const tema = LS.get("gd:tema");
+  const tema = LS.get(P + "tema");
   if (tema) document.documentElement.dataset.theme = tema;
-  const salvo = LS.get("gd:dados");
+  const salvo = LS.get(P + "dados");
   if (salvo) COLS.forEach((c) => { E[c] = salvo[c] || {}; });
   prepararLogin();
   conectarClaude();
