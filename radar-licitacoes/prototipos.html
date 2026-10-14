@@ -258,7 +258,7 @@ main{display:flex;flex-direction:column;gap:22px;padding-block:24px 56px}
   const PORTAIS = [
     {id:"PNCP", nome:"PNCP", url:q => "https://pncp.gov.br/app/editais?" + (q ? "q=" + encodeURIComponent(q) + "&" : "") + "status=recebendo_proposta&pagina=1", obs:"Busca com o termo"},
     {id:"Compras.gov.br", nome:"Compras.gov.br", url:() => "https://www.gov.br/compras/pt-br", obs:"Portal federal"},
-    {id:"BLL", nome:"BLL Compras", url:() => "https://bllcompras.com/Process/ProcessSearchPublic", obs:"Busca pública"},
+    {id:"BLL", nome:"BLL Compras", url:() => "https://bllcompras.com/process/processsearchpublic?param1=0", obs:"Busca pública"},
     {id:"Licitações-e", nome:"Licitações-e (BB)", url:() => "https://www.licitacoes-e.com.br/aop/index.jsp", obs:"Banco do Brasil"},
     {id:"Portal de Compras Públicas", nome:"Portal de Compras Públicas", url:() => "https://www.portaldecompraspublicas.com.br/processos", obs:"Processos abertos"},
     {id:"BNC", nome:"BNC Compras", url:() => "https://bnccompras.com/Process/ProcessSearchPublic", obs:"Busca pública"},
