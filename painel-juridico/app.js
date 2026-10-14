@@ -32,12 +32,17 @@
   const UI = { visao: "inicio", advogado: "", modo: "lista", fichaId: null, mes: null, modelo: "ata", mostrarFeitas: false, cron: null, formMov: false };
 
   let timerLocal = null;
+  function gravarLocalAgora() {
+    clearTimeout(timerLocal); timerLocal = null;
+    if (!LS.set(P + "dados", E)) setSync("Sem armazenamento local: os dados valem só nesta aba");
+  }
   function salvarLocal() {
     clearTimeout(timerLocal);
-    timerLocal = setTimeout(() => {
-      if (!LS.set(P + "dados", E)) setSync("Sem armazenamento local: os dados valem só nesta aba");
-    }, 250);
+    timerLocal = setTimeout(gravarLocalAgora, 250);
   }
+  // Fechar ou recarregar a página logo após uma alteração não pode perdê-la.
+  addEventListener("pagehide", () => { if (timerLocal) gravarLocalAgora(); });
+  document.addEventListener("visibilitychange", () => { if (document.hidden && timerLocal) gravarLocalAgora(); });
 
   // ---------- sincronização pelo claude.ai (capability db) ----------
   let DB = null;
@@ -232,6 +237,7 @@
     montarFiltros();
     ir(location.hash.replace("#", "") || "inicio");
     retomarCronometro();
+    aplicarRobo();
   }
   function sair() {
     LS.del(P + "sessao"); SS.del(P + "sessao");
@@ -991,7 +997,7 @@ Data de hoje: ${br(hoje())}`;
       card("Gmail e Outlook", "por link", "", "Na ficha de cada processo, <b>Gmail</b> e <b>Outlook</b> abrem um e-mail de atualização ao cliente já escrito. No Ateliê, a minuta vai junto.", `<a class="btn mini" href="https://mail.google.com" target="_blank" rel="noopener">Abrir Gmail</a>`),
       card("WhatsApp", "por link", "", "Envie o resumo do processo ao cliente pelo WhatsApp Web ou celular, a partir da ficha.", `<a class="btn mini" href="https://web.whatsapp.com" target="_blank" rel="noopener">Abrir WhatsApp Web</a>`),
       card("DJEN · Comunica PJe", "consulta", "", "Diário de Justiça Eletrônico Nacional. Cada número CNJ na ficha tem o link direto para as comunicações daquele processo.", `<a class="btn mini" href="https://comunica.pje.jus.br/" target="_blank" rel="noopener">Abrir Comunica PJe</a>`),
-      card("Robô DataJud (CNJ)", "movimentações", "latao", "O script <span class=\"mono\">robo/sincronizar_datajud.py</span> consulta a API pública do CNJ para todos os processos e gera <span class=\"mono\">movimentacoes.json</span>. Importe aqui: o que for novo entra na linha do tempo e vira tarefa sugerida.", `<button class="btn mini primario" data-acao="importar-movs">Importar movimentações</button><button class="btn mini" data-acao="exportar-numeros">Exportar lista de números</button>`),
+      card("Robô DJEN + DataJud", LS.get(P + "robo") ? "rodou " + br(LS.get(P + "robo").slice(0, 10)) : "aguardando", LS.get(P + "robo") ? "ok" : "latao", "O robô <span class=\"mono\">robo/robo.py</span> roda todo dia no computador do escritório, lê as intimações do DJEN pela OAB e as movimentações do DataJud. Abrindo o painel pelo <span class=\"mono\">index.html</span>, as novidades entram sozinhas. Aqui você também pode importar o <span class=\"mono\">movimentacoes.json</span> à mão.", `<button class="btn mini primario" data-acao="importar-movs">Importar movimentações</button><button class="btn mini" data-acao="exportar-numeros">Exportar lista de números</button>`),
       card("Tribunais", "consulta", "", "Atalhos para os sistemas onde estão os processos da carteira.", `<a class="btn mini" href="https://www3.tjrj.jus.br/consultaprocessual/" target="_blank" rel="noopener">TJRJ</a><a class="btn mini" href="https://consultasaj.tjam.jus.br/cpopg/open.do" target="_blank" rel="noopener">TJAM</a><a class="btn mini" href="https://pje.trt1.jus.br/consultaprocessual/" target="_blank" rel="noopener">TRT1</a><a class="btn mini" href="https://esaj.tjms.jus.br/cpopg5/open.do" target="_blank" rel="noopener">TJMS</a><a class="btn mini" href="https://processo.stj.jus.br/processo/pesquisa/" target="_blank" rel="noopener">STJ</a>`),
       card("Google Drive", "por processo", "", "Cole o link da pasta de documentos na ficha do processo; o botão <b>Pasta</b> passa a abrir direto.", `<a class="btn mini" href="https://drive.google.com" target="_blank" rel="noopener">Abrir Drive</a>`),
     ].join("");
@@ -1022,6 +1028,7 @@ Data de hoje: ${br(hoje())}`;
       montarFiltros();
       renderTudo();
       toast(`Planilha importada: ${criados} novo(s), ${atualizados} atualizado(s).`);
+      setTimeout(aplicarRobo, 2500);
     } catch (e) { toast("Não consegui importar: " + (e.message || e)); }
   }
   async function exportarPlanilha() {
@@ -1048,7 +1055,7 @@ Data de hoje: ${br(hoje())}`;
   async function importarJson(arquivo) {
     let dados;
     try { dados = JSON.parse(await arquivo.text()); } catch (e) { toast("O arquivo não é um JSON válido."); return; }
-    if (dados && dados.processos && !Array.isArray(dados.processos) && /^(datajud|djen)$/.test(dados.fonte)) return importarMovs(dados);
+    if (dados && dados.processos && !Array.isArray(dados.processos) && /^(datajud|djen|robo)$/.test(dados.fonte)) return importarMovs(dados);
     if (dados && dados.processos && dados.tarefas) {
       COLS.forEach((c) => Object.values(dados[c] || {}).forEach((o) => salvar(c, o)));
       montarFiltros(); renderTudo(); toast("Backup restaurado.");
@@ -1056,12 +1063,29 @@ Data de hoje: ${br(hoje())}`;
     }
     toast("Arquivo não reconhecido. Use um backup do painel ou o movimentacoes.json do robô.");
   }
-  function importarMovs(dados) {
+  // O robô (robo/robo.py) grava movimentacoes.js ao lado do painel; entra sozinho uma vez por execução,
+  // e só depois que a carteira existe (senão as movimentações não teriam processo onde entrar).
+  function aplicarRobo() {
+    const robo = window.GD_MOVIMENTACOES;
+    if (DEMO || !robo || !robo.geradoEm || !lista().length || LS.get(P + "robo") === robo.geradoEm) return;
+    importarMovs(robo, true);
+    LS.set(P + "robo", robo.geradoEm);
+  }
+  function importarMovs(dados, automatico) {
     const origem = dados.fonte === "djen" ? "djen" : "datajud";
-    let total = 0, procs = 0, tarefas = 0;
+    let total = 0, procs = 0, tarefas = 0, criados = 0;
+    // Processos que o robô achou pela OAB e ainda não estão na carteira entram como novos.
+    Object.keys(dados.novos || {}).forEach((d) => {
+      if (lista().some((p) => (p.cnj || []).some((c) => c.digitos === d))) return;
+      const cnj = N.analisarCnj(d);
+      if (!cnj[0]) return;
+      const info = dados.novos[d] || {};
+      salvar("processos", { id: d, codigo: "", status: "Ativo", advogado: USUARIO, prioridade: "", referencia: "", acao: "Novo pelo DJEN", empresa: "", qualifEmpresa: "", outro: "", qualifOutro: "", numero: cnj[0].numero, cnj, edital: "", resumo: [info.tribunal, info.orgao].filter(Boolean).join(" · "), andamentos: [], proximosPassos: "Conferir partes e cadastrar o cliente", atualizadoEm: null, previsao: "", juizo: "", vara: "", comarca: "", foro: "", valorCausa: null, valorPE: null, link: "", pasta: "", minutos: 0, novidades: 0 });
+      criados++;
+    });
     lista().forEach((p) => {
       const movs = [];
-      (p.cnj || []).forEach((c) => (dados.processos[c.digitos] || []).forEach((m) => movs.push({ data: N.lerData(m.data), texto: m.texto + (p.cnj.length > 1 && c.rotulo ? " [" + c.rotulo + "]" : ""), origem })));
+      (p.cnj || []).forEach((c) => (dados.processos[c.digitos] || []).forEach((m) => movs.push({ data: N.lerData(m.data), texto: m.texto + (p.cnj.length > 1 && c.rotulo ? " [" + c.rotulo + "]" : ""), origem: m.origem || origem })));
       const novas = N.mesclarMovimentacoes(p, movs);
       if (!novas.length) return;
       p.andamentos = (p.andamentos || []).concat(novas);
@@ -1075,8 +1099,10 @@ Data de hoje: ${br(hoje())}`;
       const s = N.sugerirAposMovimentacao(recente.texto, recente.data || hoje(), p).find((x) => !x.encerrar);
       if (s && s.vencimento && s.vencimento >= hoje()) { salvar("tarefas", { id: novoId("t"), titulo: s.titulo, processoId: p.id, vencimento: s.vencimento, base: s.base + " · " + recente.texto.slice(0, 60), feita: false, criadaEm: hoje(), origem: "robo" }); tarefas++; }
     });
+    if (criados) montarFiltros();
     renderTudo();
-    toast(total ? `${total} movimentação(ões) nova(s) em ${procs} processo(s); ${tarefas} prazo(s) sugerido(s).` : "Nenhuma movimentação nova.");
+    const msg = (total ? `${total} movimentação(ões) nova(s) em ${procs} processo(s); ${tarefas} prazo(s) sugerido(s)` : "Nenhuma movimentação nova") + (criados ? `; ${criados} processo(s) novo(s) achado(s) pela OAB.` : ".");
+    if (!automatico || total || criados) toast((automatico ? "Robô: " : "") + msg);
   }
   function exportarNumeros() {
     const nums = [];

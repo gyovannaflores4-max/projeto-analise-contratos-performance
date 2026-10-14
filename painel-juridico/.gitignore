@@ -6,3 +6,6 @@ movimentacoes.json
 numeros-processos.txt
 gabinete-backup-*.json
 __pycache__/
+movimentacoes.js
+robo/config.json
+robo/robo.log

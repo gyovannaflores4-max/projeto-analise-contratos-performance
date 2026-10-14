@@ -27,7 +27,7 @@ prazo sendo criado na pauta. Os dados estão em `demo-dados.js`.
 Ao alterar `index.html`, recrie a cópia:
 
 ```bash
-sed 's#<script src="nucleo.js"></script>#&\n<script src="demo-dados.js"></script>#; s#<title>Gabinete Digital</title>#<title>Gabinete Digital Demo</title>#' index.html > demo.html
+sed 's#<script src="nucleo.js"></script>#&\n<script src="demo-dados.js"></script>#; /movimentacoes.js/d; s#<title>Gabinete Digital</title>#<title>Gabinete Digital Demo</title>#' index.html > demo.html
 ```
 
 ## O que o painel faz
@@ -42,19 +42,30 @@ sed 's#<script src="nucleo.js"></script>#&\n<script src="demo-dados.js"></script
 | **Horas** | Cronômetro por processo e lançamento manual, horas por cliente no mês (aba "Controle de atividades" da planilha). |
 | **Conexões** | Importar/exportar a planilha atualizada, backup, Google Agenda, Gmail, Outlook, WhatsApp, DJEN, tribunais, Google Drive e o robô DataJud. |
 
-## Robô de movimentações (DataJud/CNJ)
+## Robô de movimentações (DJEN + DataJud)
 
-O navegador não pode consultar a API do CNJ diretamente, então o robô roda à parte:
+O robô roda no computador do escritório (a API do DJEN só responde a acessos do Brasil) e
+grava `movimentacoes.js` ao lado do `index.html`. Ao abrir o painel, as novidades entram
+sozinhas: viram linha do tempo, ponto de novidade no processo e tarefa com prazo sugerido.
+Processos que aparecem no DJEN pela OAB e ainda não estão na carteira são cadastrados como
+"Novo pelo DJEN" para você completar.
 
-```bash
-# 1. No painel: Conexões › Exportar lista de números  → numeros-processos.txt
-python3 robo/sincronizar_datajud.py numeros-processos.txt
-# 2. No painel: Conexões › Importar movimentações     → movimentacoes.json
-```
+Instalação, uma vez:
 
-Movimentações novas entram na linha do tempo com a marca "robô DataJud", o
-processo ganha o ponto de novidade e a mais recente vira tarefa com prazo sugerido.
-Para rodar todo dia útil, agende o comando no Agendador de Tarefas ou no cron.
+1. Instale o Python 3 (python.org; no Windows marque "Add to PATH").
+2. Em `robo/`, copie `config.exemplo.json` para `config.json` e coloque a OAB e a UF.
+3. No painel, **Conexões › Exportar lista de números** e salve `numeros-processos.txt` em `robo/`
+   (ou aponte `"planilha"` no config para o `.xlsx`, com `pip install openpyxl`).
+4. Rode `python robo/robo.py` para testar.
+5. Agende: dois cliques em `robo/agendar-windows.bat` (todo dia útil às 7h10) ou
+   `sh robo/agendar-mac-linux.sh` no Mac/Linux.
+
+Depois disso, basta abrir `index.html` pela manhã. O arquivo `movimentacoes.json` também pode
+ser importado à mão em **Conexões › Importar movimentações** (útil na versão do claude.ai,
+que não lê arquivos da pasta).
+
+Fontes: Comunica PJe/DJEN (`comunicaapi.pje.jus.br`, por OAB e por processo) e API pública do
+DataJud (CNJ). O DataJud pode atrasar alguns dias; o DJEN traz a publicação do dia.
 
 ## Claude
 
@@ -81,5 +92,5 @@ node --test painel-juridico/testes/nucleo.test.js
 - `index.html` – telas e estilo
 - `nucleo.js` – regras puras: leitura da planilha, número CNJ, prazos, sugestões, ideias, links e `.ics`
 - `app.js` – login, telas, armazenamento e integrações
-- `robo/sincronizar_datajud.py` – consulta a API pública do DataJud
+- `robo/robo.py` – busca intimações no DJEN e movimentações no DataJud; `agendar-*.bat/.sh` agendam a execução diária
 - `testes/` – testes do núcleo com dados fictícios
