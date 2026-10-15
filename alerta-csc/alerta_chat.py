@@ -7,8 +7,8 @@ Também avisa quando a situação do pregão muda (ex.: "Suspensão Recursal" ->
 "Em Habilitação").
 
 Usa as mesmas variáveis de ambiente de alerta_resenhas.py (PROCESSOS, SMTP_*,
-EMAIL_TO, GITHUB_TOKEN). TESTE_CHAT=1 envia um e-mail de exemplo com as últimas
-mensagens do primeiro pregão, sem alterar o estado.
+EMAIL_TO, GITHUB_TOKEN). TESTE_CHAT=1 envia um e-mail de exemplo por pregão, com
+as últimas mensagens do chat, sem alterar o estado.
 """
 
 import hashlib
@@ -39,7 +39,7 @@ IMPORTANTE = re.compile(
     r"|sessao do chat aberta|recurso|contrarraz|habilit|vencedor|adjudic|homolog"
     r"|convoca|desclassific|diligencia|fracass|desert|revog|anula|cancel|prazo"
 )
-RETOMADA = re.compile(r"retom|reabert|reinici|prosseguimento|continuidade")
+RETOMADA = re.compile(r"retom|reabert|reinici|prosseguimento|continuidade|adiad|remarcad|nova data")
 
 
 def sem_acento(texto):
@@ -208,11 +208,13 @@ def main():
         log(f"{pregao['edital']} ({pregao['status']}): {len(mensagens)} mensagens, {len(novas)} novas.")
 
         mudou_status = status_antes != pregao["status"]
-        if mudou_status or any(eh_importante(m) for m in novas):
-            if not avisar(*montar_alerta(pregao, novas, status_antes)) and not teste:
-                continue  # nenhum canal funcionou: tenta de novo na próxima rodada
         if teste:
-            break
+            assunto, corpo, corpo_md = montar_alerta(pregao, novas, status_antes)
+            avisar("[TESTE] " + assunto, corpo, corpo_md)
+            continue
+        if mudou_status or any(eh_importante(m) for m in novas):
+            if not avisar(*montar_alerta(pregao, novas, status_antes)):
+                continue  # nenhum canal funcionou: tenta de novo na próxima rodada
 
         novo = {
             "edital": pregao["edital"],

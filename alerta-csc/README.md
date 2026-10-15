@@ -25,7 +25,7 @@ Mensagens sem importância ("Obrigada", "bom dia") não geram aviso, mas aparece
 
 Se o e-mail não estiver configurado ou falhar, o aviso do chat vai como issue no GitHub.
 
-Para testar: **Actions → Alerta de resenhas do CSC → Run workflow**, marque *Enviar um alerta de exemplo com as últimas mensagens do chat*.
+Para testar: **Actions → Alerta de resenhas do CSC → Run workflow**, marque *Enviar um alerta de exemplo com as últimas mensagens do chat*. Chega um e-mail de exemplo para cada pregão, com "[TESTE]" no assunto.
 
 ## Como ativar
 
