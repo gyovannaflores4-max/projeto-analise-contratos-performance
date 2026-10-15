@@ -1,0 +1,1178 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Gestão de Prazos</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Source+Sans+3:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Mesmo visual do Radar de Licitações: menu lateral, conteúdo em cartões e tabelas compactas. */
+:root{
+  --bg:#F4F6F9; --surface:#FFFFFF; --surface-2:#EDF1F6; --line:#DDE3EB; --line-2:#C9D2DE;
+  --ink:#101A2B; --ink-2:#4A586C; --ink-3:#738197;
+  --accent:#1C5FD4; --accent-hover:#174FB3; --accent-ink:#FFFFFF; --accent-soft:#E7EEFC;
+  --ok:#17804F; --ok-soft:#E2F4EA; --crit:#C0362C; --crit-soft:#FCE8E6; --warn:#9A5B00; --warn-soft:#FDF0D9;
+  --shade:rgb(16 26 43 / .42);
+  --f-display:"Manrope","Segoe UI",system-ui,sans-serif;
+  --f-body:"Source Sans 3","Segoe UI",system-ui,-apple-system,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D131D; --surface:#151D2A; --surface-2:#1C2636; --line:#273347; --line-2:#34435B;
+    --ink:#E8EDF4; --ink-2:#AEB9C9; --ink-3:#8593A8;
+    --accent:#6E9CF5; --accent-hover:#8BB0F8; --accent-ink:#0A1630; --accent-soft:#1B2B4A;
+    --ok:#62CE96; --ok-soft:#133224; --crit:#FF8C82; --crit-soft:#46201D; --warn:#F1B65C; --warn-soft:#3F2E12;
+    --shade:rgb(0 0 0 / .55);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D131D; --surface:#151D2A; --surface-2:#1C2636; --line:#273347; --line-2:#34435B;
+  --ink:#E8EDF4; --ink-2:#AEB9C9; --ink-3:#8593A8;
+  --accent:#6E9CF5; --accent-hover:#8BB0F8; --accent-ink:#0A1630; --accent-soft:#1B2B4A;
+  --ok:#62CE96; --ok-soft:#133224; --crit:#FF8C82; --crit-soft:#46201D; --warn:#F1B65C; --warn-soft:#3F2E12;
+  --shade:rgb(0 0 0 / .55);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{min-height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15.5px;line-height:1.5}
+h1,h2,h3,p{margin:0}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;letter-spacing:-.015em;text-wrap:balance}
+a{color:var(--accent)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-size:.86em}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--ink-3)}
+.small{font-size:13px}
+
+/* Estrutura */
+.app{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh}
+.side{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:22px;padding:22px 16px;background:var(--surface);border-right:1px solid var(--line)}
+.logo{display:flex;align-items:center;gap:10px;padding:0 8px;font-family:var(--f-display);font-weight:800;font-size:16.5px;letter-spacing:-.01em}
+.logo small{display:block;font-family:var(--f-body);font-weight:400;font-size:12.5px;color:var(--ink-3);letter-spacing:0}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border-radius:8px;color:var(--ink-2);text-decoration:none;font-weight:500}
+.nav a svg{flex:none;width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8}
+.nav a .c{margin-left:auto;font-size:12.5px;padding:0 7px;border-radius:99px;background:var(--surface-2);color:var(--ink-2)}
+.nav a .c.crit{background:var(--crit-soft);color:var(--crit);font-weight:700}
+.nav a:hover{background:var(--surface-2);color:var(--ink)}
+.nav a[aria-current="page"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.side-foot{margin-top:auto;display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--ink-2)}
+.side-foot a{font-weight:600;text-decoration:none}
+.side-foot button{appearance:none;border:0;background:none;padding:0;color:var(--ink-3);cursor:pointer;text-align:left;font-size:13px}
+.main{min-width:0;display:flex;flex-direction:column}
+.content{width:100%;max-width:1320px;margin-inline:auto;padding:28px clamp(16px,3vw,36px) 64px;display:flex;flex-direction:column;gap:20px}
+.page-h{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 16px}
+.page-h h1{font-size:clamp(22px,2.6vw,28px)}
+.page-h p{color:var(--ink-2);margin-top:4px;max-width:70ch}
+.acts{display:flex;flex-wrap:wrap;gap:8px}
+
+/* Botões e campos */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:40px;padding:0 16px;border:1px solid var(--line-2);border-radius:8px;background:var(--surface);color:var(--ink);font-weight:600;font-size:14.5px;text-decoration:none;cursor:pointer;white-space:nowrap}
+.btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn:disabled{opacity:.6;cursor:default}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn-primary:hover{background:var(--accent-hover);border-color:var(--accent-hover);color:var(--accent-ink)}
+.btn-sm{height:32px;padding:0 11px;font-size:13.5px}
+.btn-danger{color:var(--crit)}
+.btn-danger:hover{border-color:var(--crit);color:var(--crit)}
+.link{appearance:none;border:0;background:none;padding:0;color:var(--accent);font-weight:600;cursor:pointer;font-size:inherit}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field>span,.lbl{font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
+.field small{font-size:12.5px;color:var(--ink-3);line-height:1.35}
+.inp,.field input:not([type=checkbox]),.field select,.field textarea{width:100%;min-width:0;height:40px;padding:0 10px;border:1px solid var(--line-2);border-radius:8px;background:var(--surface);font-size:14.5px}
+.field textarea{height:auto;min-height:76px;padding:8px 10px;resize:vertical}
+.inp:focus,.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-soft)}
+.check{display:flex;gap:9px;align-items:center;font-size:14.5px;cursor:pointer}
+.check input{width:17px;height:17px;accent-color:var(--accent)}
+
+/* Cartões, indicadores e listas */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);min-width:0}
+.card-h{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.card-h h2{font-size:16px}
+.card-b{padding:16px 18px}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.kpi{padding:14px 16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);text-decoration:none;color:inherit}
+.kpi b{display:block;font-family:var(--f-display);font-size:28px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi span{font-size:13.5px;color:var(--ink-2)}
+.kpi.crit b{color:var(--crit)} .kpi.warn b{color:var(--warn)}
+@media (max-width:960px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chip{appearance:none;height:32px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);cursor:pointer;font-size:14px;color:var(--ink-2)}
+.chip:hover{border-color:var(--line-2);color:var(--ink)}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.toolbar .inp{max-width:320px}
+.banner{display:flex;gap:12px;align-items:flex-start;padding:12px 16px;border-radius:var(--r);background:var(--warn-soft);color:var(--ink);font-size:14.5px}
+.banner b{color:var(--warn)}
+.banner.info{background:var(--accent-soft)} .banner.info b{color:var(--accent)}
+
+.ev{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:6px 18px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}
+.ev:last-child{border-bottom:0}
+.due{display:flex;flex-direction:column;align-items:center;justify-content:center;height:62px;border-radius:8px;background:var(--surface-2);color:var(--ink-2)}
+.due b{font-family:var(--f-display);font-size:22px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.due span{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-top:3px}
+.n-vencido .due,.due.vencido{background:var(--crit);color:#fff}
+.n-urgente .due,.due.urgente{background:var(--crit-soft);color:var(--crit)}
+.n-atencao .due,.due.atencao{background:var(--warn-soft);color:var(--warn)}
+.ev-top{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12.5px;color:var(--ink-3)}
+.tag{display:inline-block;padding:0 7px;border-radius:4px;background:var(--surface-2);color:var(--ink-2);font-weight:700;font-size:11px;letter-spacing:.05em;text-transform:uppercase}
+.tag.contrato{background:var(--accent-soft);color:var(--accent)}
+.tag.documento{background:var(--ok-soft);color:var(--ok)}
+.tag.licitacao{background:var(--warn-soft);color:var(--warn)}
+.ev-t{font-weight:600;overflow-wrap:anywhere}
+.ev-d{color:var(--ink-2);font-size:14.5px;overflow-wrap:anywhere}
+.ev-a{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
+@media (max-width:720px){.ev{grid-template-columns:62px minmax(0,1fr)}.ev-a{grid-column:1/-1;justify-content:flex-start}}
+.empty{padding:40px 20px;text-align:center;color:var(--ink-2)}
+.empty b{display:block;font-family:var(--f-display);font-size:17px;color:var(--ink);margin-bottom:4px}
+
+/* Tabelas */
+.tbl-wrap{overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;font-size:14px;line-height:1.4}
+.tbl th{background:var(--surface);font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:middle;color:var(--ink-2)}
+.tbl tbody tr[data-abrir]{cursor:pointer}
+.tbl tbody tr:last-child td{border-bottom:0}
+.tbl tbody tr[data-abrir]:hover td{background:var(--surface-2)}
+.tbl .t1{font-weight:600;color:var(--ink);overflow-wrap:anywhere}
+.tbl .t2{font-size:12.5px;color:var(--ink-3);overflow-wrap:anywhere}
+.tbl .r{text-align:right}
+.pill{display:inline-block;white-space:nowrap;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:700;background:var(--surface-2);color:var(--ink-2)}
+.pill.vencido{background:var(--crit);color:#fff}
+.pill.urgente{background:var(--crit-soft);color:var(--crit)}
+.pill.atencao{background:var(--warn-soft);color:var(--warn)}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.off{background:none;color:var(--ink-3);font-weight:500}
+.dt b{display:block;color:var(--ink);font-weight:600;white-space:nowrap}
+@media (max-width:860px){
+  .tbl thead{display:none}
+  .tbl,.tbl tbody,.tbl tr,.tbl td{display:block}
+  .tbl tbody tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 14px;padding:14px;border-bottom:1px solid var(--line)}
+  .tbl td{padding:0;border:0;min-width:0}
+  .tbl td:first-child{grid-column:1/-1}
+  .tbl .r{text-align:left}
+  .tbl td[data-l]::before{content:attr(data-l);display:block;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin-bottom:2px}
+}
+
+/* Detalhe da licitação */
+.grid2{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:1100px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.dl{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px;margin:0}
+.dl div{min-width:0}
+.dl dt{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
+.dl dd{margin:2px 0 0;overflow-wrap:anywhere}
+.dl .wide{grid-column:1/-1}
+.lista{list-style:none;margin:0;padding:0}
+.lista>li{display:flex;gap:12px;align-items:flex-start;padding:11px 18px;border-bottom:1px solid var(--line)}
+.lista>li:last-child{border-bottom:0}
+.lista .grow{flex:1 1 auto;min-width:0}
+.lista .t{font-weight:600;overflow-wrap:anywhere}
+.lista .s{font-size:13px;color:var(--ink-3)}
+.lista input[type=checkbox]{width:18px;height:18px;margin-top:3px;accent-color:var(--accent)}
+.feito .t{text-decoration:line-through;color:var(--ink-3)}
+.msg{white-space:pre-wrap;font-size:14px;color:var(--ink-2);overflow-wrap:anywhere;max-height:220px;overflow:auto}
+.msg-nova .t::after{content:"nova";margin-left:8px;padding:0 6px;border-radius:4px;background:var(--accent);color:var(--accent-ink);font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;vertical-align:2px}
+.tl{list-style:none;margin:0;padding:6px 18px 14px;max-height:460px;overflow:auto}
+.tl li{position:relative;padding:8px 0 8px 22px;border-left:2px solid var(--line);font-size:14px}
+.tl li::before{content:"";position:absolute;left:-6px;top:13px;width:10px;height:10px;border-radius:50%;background:var(--line-2)}
+.tl li.pncp::before{background:var(--accent)} .tl li.mensagem::before{background:var(--warn)} .tl li.status::before{background:var(--ok)}
+.tl time{display:block;font-size:12px;color:var(--ink-3)}
+
+/* Lances */
+.lance-box{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:900px){.lance-box{grid-template-columns:minmax(0,1fr)}}
+.sug{display:flex;flex-direction:column;gap:6px;padding:20px;border-radius:var(--r);background:var(--surface-2)}
+.sug b{font-family:var(--f-display);font-size:34px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+.sug.cobrir{background:var(--accent-soft)} .sug.cobrir b{color:var(--accent)}
+.sug.manter{background:var(--ok-soft)} .sug.manter b{color:var(--ok)}
+.sug.parar{background:var(--crit-soft)} .sug.parar b{color:var(--crit)}
+.sug.intermediario{background:var(--warn-soft)} .sug.intermediario b{color:var(--warn)}
+.relogio{font-family:var(--f-display);font-size:30px;font-weight:800;font-variant-numeric:tabular-nums}
+.relogio.fim{color:var(--crit)}
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+
+/* Formulário em janela */
+dialog{width:min(760px,calc(100% - 24px));max-height:calc(100vh - 32px);padding:0;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);box-shadow:0 24px 64px rgb(0 0 0 / .25)}
+dialog::backdrop{background:var(--shade)}
+.dlg{display:flex;flex-direction:column;max-height:calc(100vh - 34px)}
+.dlg-h{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line)}
+.dlg-h h2{font-size:18px}
+.dlg-b{padding:16px 20px;overflow:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px}
+.dlg-b .wide,.dlg-b h3,.dlg-b .nota{grid-column:1/-1}
+.dlg-b h3{font-size:14px;margin-top:8px;padding-top:12px;border-top:1px solid var(--line)}
+.dlg-b h3:first-child{margin-top:0;padding-top:0;border-top:0}
+.nota{font-size:13.5px;color:var(--ink-2);background:var(--surface-2);border-radius:8px;padding:10px 12px}
+.dlg-f{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;padding:14px 20px;border-top:1px solid var(--line)}
+.dlg-f .esq{margin-right:auto}
+@media (max-width:640px){.dlg-b{grid-template-columns:minmax(0,1fr)}}
+.x{appearance:none;width:36px;height:36px;border:0;border-radius:8px;background:none;cursor:pointer;font-size:22px;color:var(--ink-3)}
+.x:hover{background:var(--surface-2)}
+
+/* Entrada */
+.login{min-height:100vh;display:grid;place-items:center;padding:24px}
+.login form{width:min(380px,100%);display:flex;flex-direction:column;gap:14px;padding:28px;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.login h1{font-size:22px}
+.err{color:var(--crit);font-size:14px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:60;max-width:min(560px,calc(100% - 32px));padding:12px 18px;border-radius:10px;background:var(--ink);color:var(--surface);font-size:14.5px;box-shadow:0 12px 32px rgb(0 0 0 / .25)}
+.toast.erro{background:var(--crit);color:#fff}
+
+@media (max-width:960px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .side{position:sticky;top:0;z-index:20;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:10px 16px;border-right:0;border-bottom:1px solid var(--line)}
+  .logo small,.side-foot{display:none}
+  .nav{flex-direction:row;overflow-x:auto;flex:1 1 auto;min-width:0}
+  .nav a{width:auto;white-space:nowrap}
+}
+</style>
+</head>
+<body>
+
+<div class="login" id="login" hidden>
+  <form id="formLogin">
+    <h1>Gestão de Prazos</h1>
+    <p class="muted">Contratos, certidões e licitações em um só lugar. Entre com a senha da equipe.</p>
+    <label class="field"><span>Senha</span><input type="password" id="senha" autocomplete="current-password" required></label>
+    <label class="check"><input type="checkbox" id="lembrar" checked> Lembrar neste computador</label>
+    <p class="err" id="loginErro" hidden></p>
+    <button class="btn btn-primary" type="submit">Entrar</button>
+    <a class="small" href="./">Ir para o Radar de Licitações</a>
+  </form>
+</div>
+
+<div class="app" id="app" hidden>
+  <aside class="side">
+    <div class="logo">
+      <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="8" fill="var(--accent)"/>
+        <rect x="8" y="9" width="16" height="15" rx="2.5" fill="none" stroke="var(--accent-ink)" stroke-width="1.8"/>
+        <path d="M8 13.5h16M12 7v4M20 7v4" stroke="var(--accent-ink)" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M12.5 18.5l2.3 2.2 4.7-4.6" fill="none" stroke="var(--accent-ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div>Gestão de Prazos<small>Contratos e licitações</small></div>
+    </div>
+    <nav class="nav" aria-label="Menu" id="nav">
+      <a href="#painel" data-v="painel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0-6 6v4l-2 3h16l-2-3V9a6 6 0 0 0-6-6zM10 19a2 2 0 0 0 4 0"/></svg>Alertas<span class="c num" id="cAlertas">0</span></a>
+      <a href="#contratos" data-v="contratos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg>Contratos<span class="c num" id="cContratos">0</span></a>
+      <a href="#documentos" data-v="documentos"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="9" r="5"/><path d="m9 13-2 8 5-3 5 3-2-8"/></svg>Documentos<span class="c num" id="cDocumentos">0</span></a>
+      <a href="#licitacoes" data-v="licitacoes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21h16M6 21V10M18 21V10M10 21V10M14 21V10M3 10l9-6 9 6z"/></svg>Licitações<span class="c num" id="cLicitacoes">0</span></a>
+      <a href="#lances" data-v="lances"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16M7 15l4-4 3 3 6-7"/></svg>Lances</a>
+      <a href="#config" data-v="config"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6a7 7 0 0 0 0 2.4l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z"/></svg>Configurações</a>
+    </nav>
+    <div class="side-foot">
+      <a href="./">← Radar de Licitações</a>
+      <span id="sideStatus" class="muted"></span>
+      <button type="button" id="btnSair">Sair</button>
+    </div>
+  </aside>
+  <div class="main"><main class="content" id="conteudo" tabindex="-1"></main></div>
+</div>
+
+<dialog id="dlg"><form class="dlg" id="dlgForm" method="dialog" novalidate></form></dialog>
+<div class="toast" id="toast" role="status" hidden></div>
+<input type="file" id="arquivo" accept=".csv,.xlsx,.xls,.ods,text/csv" hidden>
+
+<script src="regras.js"></script>
+<script>
+"use strict";
+const R = window.Regras;
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const S = { dados: null, senha: "", filtro: { grupo: "todos", horizonte: 120, busca: "", situacao: "ativas" }, lance: {} };
+
+/* ---------- Armazenamento local (só conveniências) ---------- */
+function local(k, v) {
+  try {
+    if (v === undefined) return JSON.parse(localStorage.getItem("gp-" + k) || "null");
+    if (v === null) localStorage.removeItem("gp-" + k); else localStorage.setItem("gp-" + k, JSON.stringify(v));
+  } catch { return null; }
+}
+function lerSenha() { try { return localStorage.getItem("gp-senha-v") || sessionStorage.getItem("gp-senha-v") || ""; } catch { return S.senha; } }
+function guardarSenha(s, lembrar) {
+  S.senha = s;
+  try { localStorage.removeItem("gp-senha-v"); sessionStorage.removeItem("gp-senha-v"); (lembrar ? localStorage : sessionStorage).setItem("gp-senha-v", s); } catch {}
+}
+
+/* ---------- Comunicação com o servidor ---------- */
+async function api(caminho, corpo) {
+  const r = await fetch(caminho, {
+    method: corpo ? "POST" : "GET",
+    headers: { "x-senha": S.senha, "content-type": "application/json" },
+    body: corpo ? JSON.stringify(corpo) : undefined
+  });
+  const j = await r.json().catch(() => ({}));
+  if (r.status === 401 || r.status === 503) { mostrarLogin(j.erro); throw new Error(j.erro || "Acesso negado."); }
+  if (!r.ok) throw new Error(j.erro || "O servidor respondeu " + r.status + ".");
+  return j;
+}
+async function carregar() {
+  S.dados = await api("api/dados");
+  $("#login").hidden = true; $("#app").hidden = false;
+  render();
+}
+async function salvar(colecao, item, msg) {
+  const { item: salvo } = await api("api/dados", { acao: "salvar", colecao, item });
+  const lista = S.dados[colecao], i = lista.findIndex(x => x.id === salvo.id);
+  if (i >= 0) lista[i] = salvo; else lista.push(salvo);
+  if (msg) aviso(msg);
+  render();
+  return salvo;
+}
+async function remover(colecao, id) {
+  await api("api/dados", { acao: "remover", colecao, id });
+  S.dados[colecao] = S.dados[colecao].filter(x => x.id !== id);
+  aviso("Excluído.");
+  render();
+}
+
+let tToast;
+function aviso(texto, erro) {
+  const t = $("#toast"); t.textContent = texto; t.className = "toast" + (erro ? " erro" : ""); t.hidden = false;
+  clearTimeout(tToast); tToast = setTimeout(() => (t.hidden = true), erro ? 7000 : 3500);
+}
+const tentar = fn => async (...a) => { try { return await fn(...a); } catch (e) { aviso(e.message || String(e), true); } };
+
+function mostrarLogin(msg) {
+  $("#app").hidden = true; $("#login").hidden = false;
+  const e = $("#loginErro"); e.hidden = !msg; e.textContent = msg || "";
+  $("#senha").focus();
+}
+
+/* ---------- Formatação ---------- */
+const fData = s => (s ? R.formatarData(s) : "—");
+const pct = n => String(n).replace(".", ",") + "%";
+const hoje = () => R.hojeBrasilia();
+function pillDias(data, unidade = "dias", sem = "—") {
+  if (!data) return '<span class="pill off">' + sem + "</span>";
+  const ev = { data, unidade, avisos: [] }, a = R.avaliar(ev, Date.now());
+  return '<span class="pill ' + a.nivel + '">' + esc(R.textoFalta(ev, a)) + "</span>";
+}
+function caixaPrazo(ev, a) {
+  if (ev.unidade === "horas") {
+    if (a.vencido) return '<div class="due"><b>!</b><span>venceu</span></div>';
+    return a.falta < 48 ? '<div class="due"><b>' + Math.max(0, Math.floor(a.falta)) + '</b><span>horas</span></div>' : '<div class="due"><b>' + Math.floor(a.falta / 24) + "</b><span>dias</span></div>";
+  }
+  if (a.falta === 0) return '<div class="due"><b>0</b><span>hoje</span></div>';
+  if (a.vencido) return '<div class="due"><b>' + -a.falta + '</b><span>atraso</span></div>';
+  return '<div class="due"><b>' + a.falta + "</b><span>" + (a.falta === 1 ? "dia" : "dias") + "</span></div>";
+}
+const NOME_GRUPO = { contrato: "Contrato", documento: "Documento", licitacao: "Licitação" };
+
+/* ---------- Navegação ---------- */
+function rota() { const h = location.hash.replace(/^#/, "") || "painel"; const [v, id] = h.split("/"); return { v, id }; }
+window.addEventListener("hashchange", () => { render(); $("#conteudo").focus({ preventScroll: true }); window.scrollTo(0, 0); });
+
+function render() {
+  if (!S.dados) return;
+  const { v, id } = rota();
+  const ativo = v === "licitacao" ? "licitacoes" : v;
+  for (const a of document.querySelectorAll("#nav a")) { if (a.dataset.v === ativo) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); }
+  contadores();
+  const telas = { painel: telaPainel, contratos: telaContratos, documentos: telaDocumentos, licitacoes: telaLicitacoes, licitacao: () => telaLicitacao(id), lances: telaLances, config: telaConfig };
+  (telas[v] || telaPainel)();
+}
+function contadores() {
+  const agora = Date.now(), evs = R.eventos(S.dados, hoje()).map(ev => R.avaliar(ev, agora));
+  const urg = evs.filter(a => a.nivel === "vencido" || a.nivel === "urgente").length;
+  const c = $("#cAlertas"); c.textContent = urg; c.classList.toggle("crit", urg > 0);
+  $("#cContratos").textContent = S.dados.contratos.filter(c => c.situacao !== "encerrado").length;
+  $("#cDocumentos").textContent = S.dados.documentos.filter(d => d.situacao !== "substituido").length;
+  $("#cLicitacoes").textContent = S.dados.licitacoes.filter(l => R.statusLicitacao(l.status).ativa).length;
+  const srv = S.dados.servidor || {};
+  $("#sideStatus").textContent = srv.armazenamento === "memoria" ? "⚠ Dados temporários (configure o Upstash)" : "Dados salvos no servidor";
+}
+
+/* ---------- Tela: alertas ---------- */
+function telaPainel() {
+  const agora = Date.now(), f = S.filtro;
+  const todos = R.eventos(S.dados, hoje()).map(ev => ({ ev, a: R.avaliar(ev, agora) }));
+  const dias = x => (x.ev.unidade === "horas" ? x.a.falta / 24 : x.a.falta);
+  const lista = todos
+    .filter(x => (x.a.vencido ? dias(x) >= -120 : dias(x) <= f.horizonte))
+    .filter(x => f.grupo === "todos" || x.ev.grupo === f.grupo)
+    .sort((x, y) => dias(x) - dias(y));
+  const k = {
+    vencidos: todos.filter(x => x.a.vencido).length,
+    d7: todos.filter(x => !x.a.vencido && dias(x) <= 7).length,
+    d30: todos.filter(x => !x.a.vencido && dias(x) <= 30).length,
+    lic: S.dados.licitacoes.filter(l => R.statusLicitacao(l.status).ativa).length,
+    msgs: S.dados.licitacoes.reduce((n, l) => n + (l.mensagens || []).filter(m => !m.lida).length, 0) + S.dados.caixa.length
+  };
+  const srv = S.dados.servidor || {}, canais = srv.canais || {};
+  const avisosLigados = (canais.email && S.dados.config.emails) || (canais.telegram && S.dados.config.telegramChatId);
+  const vazio = !S.dados.contratos.length && !S.dados.documentos.length && !S.dados.licitacoes.length;
+  $("#conteudo").innerHTML = `
+    <header class="page-h">
+      <div><h1>Alertas e prazos</h1><p>Vencimentos de contratos, renovação, reajuste, certidões e prazos das licitações, do mais urgente para o mais distante.</p></div>
+      <div class="acts">
+        <button class="btn" data-acao="agenda"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Baixar agenda</button>
+        <button class="btn btn-primary" data-acao="rotina"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>Verificar agora</button>
+      </div>
+    </header>
+    ${srv.armazenamento === "memoria" ? '<div class="banner"><div><b>Os dados ainda não estão sendo guardados.</b> Ligue o banco gratuito do Upstash na Vercel (passo 2 do guia em Configurações). Até lá, tudo some quando o servidor reinicia.</div></div>' : ""}
+    ${!avisosLigados ? '<div class="banner info"><div><b>Os avisos automáticos ainda não estão ligados.</b> Cadastre os e-mails da equipe ou o Telegram em <a href="#config">Configurações</a>. Enquanto isso, os prazos aparecem aqui e na agenda.</div></div>' : ""}
+    <section class="kpis">
+      <a class="kpi ${k.vencidos ? "crit" : ""}" href="#painel"><b>${k.vencidos}</b><span>vencidos</span></a>
+      <a class="kpi ${k.d7 ? "crit" : ""}" href="#painel"><b>${k.d7}</b><span>nos próximos 7 dias</span></a>
+      <a class="kpi ${k.d30 ? "warn" : ""}" href="#painel"><b>${k.d30}</b><span>nos próximos 30 dias</span></a>
+      <a class="kpi" href="#licitacoes"><b>${k.lic}</b><span>licitações em andamento</span></a>
+      <a class="kpi ${k.msgs ? "warn" : ""}" href="#licitacoes"><b>${k.msgs}</b><span>mensagens não lidas</span></a>
+    </section>
+    ${S.dados.caixa.length ? caixaEntrada() : ""}
+    <section class="card">
+      <div class="card-h">
+        <div class="chips" role="group" aria-label="Filtrar">
+          ${[["todos", "Todos"], ["contrato", "Contratos"], ["documento", "Documentos"], ["licitacao", "Licitações"]].map(([v, n]) => `<button class="chip" data-grupo="${v}" aria-pressed="${f.grupo === v}">${n}</button>`).join("")}
+        </div>
+        <label class="small muted">Mostrar até <select class="inp" style="width:auto;height:32px;display:inline-block" id="horizonte">${[30, 60, 120, 365].map(d => `<option value="${d}" ${f.horizonte === d ? "selected" : ""}>${d} dias</option>`).join("")}</select></label>
+      </div>
+      <div>${lista.length ? lista.map(linhaEvento).join("") : vazio
+        ? '<div class="empty"><b>Nada cadastrado ainda</b>Comece importando suas planilhas em <a href="#contratos">Contratos</a>, <a href="#documentos">Documentos</a> e <a href="#licitacoes">Licitações</a>.</div>'
+        : '<div class="empty"><b>Nenhum prazo neste período</b>Aumente o período ou troque o filtro.</div>'}</div>
+    </section>`;
+}
+function linhaEvento({ ev, a }) {
+  const acoes = [];
+  if (ev.tipo === "renovacao") acoes.push(`<button class="btn btn-sm" data-acao="feito-renov" data-id="${ev.refId}">Renovação pedida</button>`);
+  if (ev.tipo === "reajuste") acoes.push(`<button class="btn btn-sm" data-acao="feito-reaj" data-id="${ev.refId}" data-aniv="${ev.aniversario}">Reajuste pedido</button>`);
+  if (ev.tipo === "documento") acoes.push(`<button class="btn btn-sm" data-acao="renovar-doc" data-id="${ev.refId}">Renovar</button>`);
+  if (ev.tipo === "prazo") acoes.push(`<button class="btn btn-sm" data-acao="feito-prazo" data-id="${ev.refId}" data-p="${ev.chave.split(":p:")[1]}">Feito</button>`);
+  const destino = ev.grupo === "contrato" ? "contratos" : ev.grupo === "documento" ? "documentos" : "licitacao";
+  acoes.push(`<button class="btn btn-sm" data-acao="abrir" data-col="${destino}" data-id="${ev.refId}">Abrir</button>`);
+  return `<div class="ev n-${a.nivel}">
+    ${caixaPrazo(ev, a)}
+    <div style="min-width:0">
+      <div class="ev-top"><span class="tag ${ev.grupo}">${NOME_GRUPO[ev.grupo]}</span><span>${esc(R.dataDoEvento(ev))} (${R.diaSemana(ev.data.slice(0, 10))})</span>${ev.responsavel ? `<span>Resp.: ${esc(ev.responsavel)}</span>` : ""}</div>
+      <div class="ev-t">${esc(ev.descricao)}</div>
+      <div class="ev-d">${esc(ev.titulo)}${ev.nota ? " · " + esc(ev.nota) : ""}</div>
+    </div>
+    <div class="ev-a">${acoes.join("")}</div>
+  </div>`;
+}
+function caixaEntrada() {
+  const ativas = S.dados.licitacoes.filter(l => R.statusLicitacao(l.status).ativa);
+  const opcoes = ativas.map(l => `<option value="${l.id}">${esc(R.rotuloLicitacao(l).slice(0, 90))}</option>`).join("");
+  return `<section class="card">
+    <div class="card-h"><h2>Mensagens sem licitação ligada (${S.dados.caixa.length})</h2><span class="small muted">Chegaram dos portais, mas não reconheci de qual licitação são.</span></div>
+    <ul class="lista">${S.dados.caixa.map(m => `<li>
+      <div class="grow"><div class="t">${esc(m.assunto || m.nomeClasse)}</div><div class="s">${esc(fData(m.em))} · ${esc(m.de || m.fonte)} · ${esc(m.nomeClasse)}</div><div class="msg">${esc(m.texto.slice(0, 600))}</div></div>
+      <div class="acts" style="flex-direction:column;align-items:stretch;min-width:200px">
+        <select class="inp" data-ligar-sel="${m.id}"><option value="">Escolha a licitação…</option>${opcoes}</select>
+        <div class="acts"><button class="btn btn-sm" data-acao="caixa-ligar" data-id="${m.id}">Ligar</button><button class="btn btn-sm btn-danger" data-acao="caixa-descartar" data-id="${m.id}">Descartar</button></div>
+      </div></li>`).join("")}</ul></section>`;
+}
+
+/* ---------- Tela: contratos ---------- */
+const CAMPOS_CONTRATO = [
+  { secao: "Contrato" },
+  { k: "numero", r: "Nº do contrato", req: true },
+  { k: "cliente", r: "Cliente / órgão", req: true },
+  { k: "objeto", r: "Objeto", t: "textarea", wide: true },
+  { k: "inicio", r: "Início da vigência", t: "date" },
+  { k: "fim", r: "Vencimento (fim da vigência)", t: "date", req: true },
+  { k: "valor", r: "Valor (R$)", t: "number" },
+  { k: "situacao", r: "Situação", t: "select", ops: [["vigente", "Vigente"], ["encerrado", "Encerrado (para de avisar)"]] },
+  { k: "responsavel", r: "Responsável" },
+  { k: "emails", r: "E-mails que recebem os avisos deste contrato", dica: "Além da lista geral da equipe. Separe por vírgula." },
+  { k: "avisosVencimento", r: "Avisar quantos dias antes do vencimento", dica: () => "Padrão: " + avisosPadrao("vencimento") },
+  { secao: "Renovação (prorrogação)" },
+  { k: "renovacaoDiasAntes", r: "Pedir a renovação quantos dias antes do vencimento", t: "number", dica: "Ex.: 90. Confira a cláusula de prorrogação do contrato." },
+  { k: "renovacaoData", r: "…ou data exata para pedir", t: "date", dica: "Se preenchida, vale esta data." },
+  { k: "naoRenovavel", r: "Este contrato não pode ser renovado", t: "check", wide: true },
+  { k: "avisosRenovacao", r: "Avisar quantos dias antes do prazo de renovação", dica: () => "Padrão: " + avisosPadrao("renovacao") },
+  { k: "renovacaoSolicitadaPara", t: "hidden" },
+  { secao: "Reajuste" },
+  { k: "reajusteDataBase", r: "Data-base do reajuste", t: "date", dica: "Data do orçamento/proposta ou do último reajuste. O pedido é anual a partir dela." },
+  { k: "reajustePeriodicidade", r: "Periodicidade (meses)", t: "number", ph: "12" },
+  { k: "reajusteDiasApos", r: "Prazo para pedir: dias depois do aniversário", t: "number", ph: "0", dica: "0 = no próprio aniversário. Atenção: o pedido costuma precisar ser feito antes da assinatura da prorrogação." },
+  { k: "reajusteIndice", r: "Índice", ph: "IPCA, IGP-M, INPC, convenção coletiva…" },
+  { k: "reajusteData", r: "…ou data exata para pedir", t: "date", dica: "Se preenchida, vale esta data." },
+  { k: "avisosReajuste", r: "Avisar quantos dias antes do prazo de reajuste", dica: () => "Padrão: " + avisosPadrao("reajuste") },
+  { k: "reajusteSolicitadoPara", t: "hidden" },
+  { secao: "Outros" },
+  { k: "obs", r: "Observações", t: "textarea", wide: true }
+];
+function avisosPadrao(k) { return R.lerAvisos((S.dados.config.avisos || {})[k], R.AVISOS_PADRAO[k]).join(", "); }
+function previaContrato(v) {
+  const partes = [];
+  if (v.fim) partes.push("Vencimento " + fData(v.fim));
+  const ren = R.prazoRenovacao(v); if (ren) partes.push("pedir renovação até " + fData(ren));
+  const rea = R.prazoReajuste({ ...v, reajusteSolicitadoPara: "" }, hoje()); if (rea) partes.push("pedir reajuste até " + fData(rea.prazo));
+  return partes.length ? "Prazos calculados: " + partes.join(" · ") + "." : "Preencha o vencimento para calcular os prazos.";
+}
+function abrirContrato(c) {
+  formulario({
+    titulo: c ? "Contrato " + (c.numero || "") : "Novo contrato", campos: CAMPOS_CONTRATO, valores: c || { situacao: "vigente" }, previa: previaContrato,
+    salvar: v => salvar("contratos", { ...c, ...v }, "Contrato salvo."),
+    excluir: c && (() => remover("contratos", c.id))
+  });
+}
+function telaContratos() {
+  const b = R.semAcento(S.filtro.busca), agora = Date.now(), h = hoje();
+  const lista = S.dados.contratos
+    .filter(c => S.filtro.situacao === "todas" || (S.filtro.situacao === "ativas" ? c.situacao !== "encerrado" : c.situacao === "encerrado"))
+    .filter(c => !b || R.semAcento([c.numero, c.cliente, c.objeto, c.responsavel].join(" ")).includes(b))
+    .sort((x, y) => String(x.fim || "9").localeCompare(String(y.fim || "9")));
+  $("#conteudo").innerHTML = `
+    <header class="page-h">
+      <div><h1>Contratos</h1><p>Vencimento, prazo para pedir a renovação e prazo para pedir o reajuste de cada contrato.</p></div>
+      <div class="acts">
+        <button class="btn" data-acao="importar" data-col="contratos">Importar planilha</button>
+        <button class="btn" data-acao="exportar" data-col="contratos">Exportar</button>
+        <button class="btn btn-primary" data-acao="novo" data-col="contratos">Novo contrato</button>
+      </div>
+    </header>
+    ${filtrosLista([["ativas", "Vigentes"], ["encerradas", "Encerrados"], ["todas", "Todos"]], "Buscar contrato, cliente, objeto…")}
+    <section class="card tbl-wrap">${lista.length ? `<table class="tbl"><thead><tr><th>Contrato</th><th>Vencimento</th><th>Pedir renovação até</th><th>Pedir reajuste até</th><th class="r">Valor</th><th>Responsável</th></tr></thead><tbody>
+      ${lista.map(c => {
+        const ren = c.renovacaoSolicitadaPara === c.fim ? null : R.prazoRenovacao(c), rea = R.prazoReajuste(c, h);
+        return `<tr data-abrir="contratos" data-id="${c.id}">
+          <td><div class="t1">${esc(c.numero || "—")} · ${esc(c.cliente || "")}</div><div class="t2">${esc((c.objeto || "").slice(0, 110))}</div></td>
+          <td data-l="Vencimento" class="dt"><b>${fData(c.fim)}</b>${c.situacao === "encerrado" ? '<span class="pill off">encerrado</span>' : pillDias(c.fim)}</td>
+          <td data-l="Renovação" class="dt">${c.naoRenovavel ? '<span class="pill off">não renovável</span>' : c.renovacaoSolicitadaPara === c.fim ? '<span class="pill ok">pedida</span>' : ren ? "<b>" + fData(ren) + "</b>" + pillDias(ren) : '<span class="pill off">não informado</span>'}</td>
+          <td data-l="Reajuste" class="dt">${rea ? "<b>" + fData(rea.prazo) + "</b>" + pillDias(rea.prazo) + (c.reajusteIndice ? ' <span class="t2">' + esc(c.reajusteIndice) + "</span>" : "") : '<span class="pill off">não informado</span>'}</td>
+          <td data-l="Valor" class="r num">${c.valor ? R.moeda(c.valor) : "—"}</td>
+          <td data-l="Responsável">${esc(c.responsavel || "—")}</td></tr>`;
+      }).join("")}</tbody></table>` : vazioLista("contrato", "contratos")}</section>`;
+}
+function filtrosLista(ops, ph) {
+  return `<div class="toolbar">
+    <div class="chips">${ops.map(([v, n]) => `<button class="chip" data-situacao="${v}" aria-pressed="${S.filtro.situacao === v}">${n}</button>`).join("")}</div>
+    <input class="inp" type="search" id="busca" placeholder="${ph}" value="${esc(S.filtro.busca)}">
+  </div>`;
+}
+const vazioLista = (nome, col) => `<div class="empty"><b>Nenhum ${nome} aqui</b>Use <button class="link" data-acao="importar" data-col="${col}">Importar planilha</button> para trazer o controle que vocês já têm, ou cadastre um novo.</div>`;
+
+/* ---------- Tela: documentos ---------- */
+const CAMPOS_DOCUMENTO = [
+  { k: "tipo", r: "Tipo", t: "select", ops: () => R.TIPOS_DOCUMENTO.map(t => [t.id, t.nome]) },
+  { k: "nome", r: "Nome do documento", req: true, ph: "Ex.: CND Federal" },
+  { k: "emissor", r: "Emissor", ph: "Receita Federal, Caixa, TST, prefeitura…" },
+  { k: "numero", r: "Número / código de controle" },
+  { k: "emissao", r: "Emitido em", t: "date" },
+  { k: "validade", r: "Válido até", t: "date", req: true, dica: "Use a data impressa no documento." },
+  { k: "situacao", r: "Situação", t: "select", ops: [["valido", "Em uso"], ["substituido", "Substituído (para de avisar)"]] },
+  { k: "responsavel", r: "Responsável" },
+  { k: "avisos", r: "Avisar quantos dias antes", dica: v => "Padrão para este tipo: " + R.tipoDocumento(v.tipo).avisos.join(", ") },
+  { k: "emails", r: "E-mails que recebem os avisos deste documento", dica: "Além da lista geral." },
+  { k: "link", r: "Onde emitir (link)", wide: true },
+  { k: "obs", r: "Observações", t: "textarea", wide: true }
+];
+function previaDocumento(v, ultimo, form) {
+  const t = R.tipoDocumento(v.tipo);
+  if (ultimo === "tipo" && form) { const nome = form.elements.nome; if (!nome.value || R.TIPOS_DOCUMENTO.some(x => x.nome === nome.value)) nome.value = t.nome; }
+  if ((ultimo === "emissao" || ultimo === "tipo") && form && v.emissao && t.validadeDias && !form.elements.validade.dataset.mexido) form.elements.validade.value = R.somaDias(v.emissao, t.validadeDias);
+  return (t.validadeDias ? "Validade típica de " + t.nome + ": " + t.validadeDias + " dias (preenchida ao informar a emissão; confira no documento). " : "") +
+    (v.validade ? "Avisos em: " + R.lerAvisos(v.avisos, t.avisos).map(d => d ? fData(R.somaDias(v.validade, -d)) : "no dia").join(", ") + "." : "");
+}
+function abrirDocumento(d, renovar) {
+  const valores = d ? { ...d } : { tipo: "cnd_federal", nome: R.tipoDocumento("cnd_federal").nome, situacao: "valido" };
+  if (renovar) { valores.emissao = hoje(); const t = R.tipoDocumento(d.tipo); valores.validade = t.validadeDias ? R.somaDias(hoje(), t.validadeDias) : ""; valores.numero = ""; }
+  formulario({
+    titulo: renovar ? "Renovar: " + d.nome : d ? d.nome : "Novo documento", campos: CAMPOS_DOCUMENTO, valores, previa: previaDocumento,
+    nota: renovar ? "Informe os dados da nova certidão. A validade foi sugerida pelo prazo típico; confira a data impressa." : "",
+    salvar: v => salvar("documentos", { ...d, ...v }, renovar ? "Documento renovado." : "Documento salvo."),
+    excluir: d && !renovar && (() => remover("documentos", d.id))
+  });
+}
+function telaDocumentos() {
+  const b = R.semAcento(S.filtro.busca);
+  const lista = S.dados.documentos
+    .filter(d => S.filtro.situacao === "todas" || (S.filtro.situacao === "ativas" ? d.situacao !== "substituido" : d.situacao === "substituido"))
+    .filter(d => !b || R.semAcento([d.nome, d.emissor, d.numero, d.responsavel].join(" ")).includes(b))
+    .sort((x, y) => String(x.validade || "9").localeCompare(String(y.validade || "9")));
+  $("#conteudo").innerHTML = `
+    <header class="page-h">
+      <div><h1>Documentos e certidões</h1><p>Certidões de regularidade, alvarás, registros e garantias, com aviso antes de cada vencimento.</p></div>
+      <div class="acts">
+        <button class="btn" data-acao="importar" data-col="documentos">Importar planilha</button>
+        <button class="btn" data-acao="exportar" data-col="documentos">Exportar</button>
+        <button class="btn btn-primary" data-acao="novo" data-col="documentos">Novo documento</button>
+      </div>
+    </header>
+    ${filtrosLista([["ativas", "Em uso"], ["encerradas", "Substituídos"], ["todas", "Todos"]], "Buscar documento, emissor…")}
+    <section class="card tbl-wrap">${lista.length ? `<table class="tbl"><thead><tr><th>Documento</th><th>Válido até</th><th>Avisos (dias antes)</th><th>Responsável</th><th></th></tr></thead><tbody>
+      ${lista.map(d => `<tr data-abrir="documentos" data-id="${d.id}">
+        <td><div class="t1">${esc(d.nome)}</div><div class="t2">${esc([R.tipoDocumento(d.tipo).nome, d.emissor, d.numero].filter(Boolean).join(" · "))}</div></td>
+        <td data-l="Válido até" class="dt"><b>${fData(d.validade)}</b>${d.situacao === "substituido" ? '<span class="pill off">substituído</span>' : pillDias(d.validade)}</td>
+        <td data-l="Avisos" class="num">${R.lerAvisos(d.avisos, R.tipoDocumento(d.tipo).avisos).join(", ")}</td>
+        <td data-l="Responsável">${esc(d.responsavel || "—")}</td>
+        <td><div class="acts">${d.link ? `<a class="btn btn-sm" href="${esc(d.link)}" target="_blank" rel="noopener" data-parar>Emitir</a>` : ""}${d.situacao !== "substituido" ? `<button class="btn btn-sm" data-acao="renovar-doc" data-id="${d.id}">Renovar</button>` : ""}</div></td></tr>`).join("")}
+    </tbody></table>` : vazioLista("documento", "documentos")}</section>
+    <p class="small muted">Validades típicas usadas como sugestão: ${R.TIPOS_DOCUMENTO.filter(t => t.validadeDias).map(t => esc(t.nome) + " " + t.validadeDias + " dias").join(" · ")}. A validade que vale é a impressa em cada documento.</p>`;
+}
+
+/* ---------- Tela: licitações ---------- */
+const CAMPOS_LICITACAO = [
+  { secao: "Identificação" },
+  { k: "orgao", r: "Órgão", req: true },
+  { k: "numero", r: "Número (pregão / edital)", req: true, ph: "Pregão Eletrônico 90012/2026" },
+  { k: "processo", r: "Processo" },
+  { k: "portal", r: "Portal", t: "select", ops: () => R.PORTAIS.map(p => [p, p]) },
+  { k: "link", r: "Link no portal", wide: true },
+  { k: "objeto", r: "Objeto", t: "textarea", wide: true },
+  { k: "valorEstimado", r: "Valor estimado (R$)", t: "number" },
+  { k: "sessao", r: "Data e hora da sessão", t: "datetime-local" },
+  { k: "status", r: "Status", t: "select", ops: () => R.STATUS_LICITACAO.map(s => [s.id, s.nome]) },
+  { k: "responsavel", r: "Responsável" },
+  { k: "emails", r: "E-mails que recebem os avisos desta licitação", wide: true, dica: "Além da lista geral. Separe por vírgula." },
+  { secao: "Acompanhamento automático" },
+  { k: "pncpId", r: "Link do edital no PNCP", wide: true, ph: "https://pncp.gov.br/app/editais/…", dica: "Com ele, o sistema confere a situação e os documentos publicados a cada 30 minutos e avisa o que mudar." },
+  { k: "compraId", r: "Nº da compra no Compras.gov.br", ph: "17 dígitos", dica: "Aparece no link do acompanhamento (…?compra=). Ajuda a reconhecer os e-mails do portal." },
+  { k: "uasg", r: "UASG / código da unidade" },
+  { k: "identificadores", r: "Outros textos que identificam a licitação nos e-mails", t: "textarea", wide: true, dica: "Um por linha. Ex.: número do processo em outro formato, código da BLL." },
+  { k: "obs", r: "Observações", t: "textarea", wide: true }
+];
+function abrirLicitacao(l, prefill) {
+  formulario({
+    titulo: l ? "Editar licitação" : "Nova licitação", campos: CAMPOS_LICITACAO, valores: l || { status: "analise", portal: "Compras.gov.br", ...prefill },
+    salvar: async v => { const s = await salvar("licitacoes", { prazos: [], itens: [], mensagens: [], historico: [], ...l, ...v }, "Licitação salva."); location.hash = "licitacao/" + s.id; },
+    excluir: l && (() => remover("licitacoes", l.id).then(() => (location.hash = "licitacoes")))
+  });
+}
+function proximoPrazo(l) {
+  const ps = (l.prazos || []).filter(p => !p.feito && p.limite).sort((a, b) => a.limite.localeCompare(b.limite));
+  return ps[0] || null;
+}
+function telaLicitacoes() {
+  const b = R.semAcento(S.filtro.busca), umAno = R.somaDias(hoje(), -365);
+  const lista = S.dados.licitacoes
+    .filter(l => { const at = R.statusLicitacao(l.status).ativa; return S.filtro.situacao === "todas" || (S.filtro.situacao === "ativas" ? at : !at); })
+    .filter(l => !b || R.semAcento([l.numero, l.orgao, l.objeto, l.portal, l.processo].join(" ")).includes(b))
+    .sort((x, y) => { const a = R.statusLicitacao(x.status).ativa, c = R.statusLicitacao(y.status).ativa; return a !== c ? (a ? -1 : 1) : String(y.sessao || y.criadoEm || "").localeCompare(String(x.sessao || x.criadoEm || "")); });
+  const encerradasAno = S.dados.licitacoes.filter(l => !R.statusLicitacao(l.status).ativa && String(l.sessao || l.criadoEm || "").slice(0, 10) >= umAno);
+  $("#conteudo").innerHTML = `
+    <header class="page-h">
+      <div><h1>Licitações</h1><p>Registro das licitações em que participamos, com prazos de recurso e contrarrazões, mensagens dos portais e histórico. Nos últimos 12 meses: ${encerradasAno.filter(l => l.status === "ganha").length} ganhas, ${encerradasAno.filter(l => l.status === "perdida").length} perdidas.</p></div>
+      <div class="acts">
+        <button class="btn" data-acao="importar" data-col="licitacoes">Importar planilha</button>
+        <button class="btn" data-acao="exportar" data-col="licitacoes">Exportar</button>
+        <button class="btn" data-acao="pncp-nova">Adicionar pelo PNCP</button>
+        <button class="btn btn-primary" data-acao="novo" data-col="licitacoes">Nova licitação</button>
+      </div>
+    </header>
+    ${filtrosLista([["ativas", "Em andamento"], ["encerradas", "Encerradas"], ["todas", "Todas"]], "Buscar órgão, número, objeto…")}
+    <section class="card tbl-wrap">${lista.length ? `<table class="tbl"><thead><tr><th>Licitação</th><th>Sessão</th><th>Status</th><th>Próximo prazo</th><th>Mensagens</th><th>PNCP</th></tr></thead><tbody>
+      ${lista.map(l => {
+        const p = proximoPrazo(l), novas = (l.mensagens || []).filter(m => !m.lida).length, mon = l.monitor;
+        return `<tr data-abrir="licitacao" data-id="${l.id}">
+          <td><div class="t1">${esc(l.numero || "—")} · ${esc(l.orgao || "")}</div><div class="t2">${esc([l.portal, (l.objeto || "").slice(0, 100)].filter(Boolean).join(" · "))}</div></td>
+          <td data-l="Sessão" class="dt"><b>${l.sessao ? fData(l.sessao.slice(0, 10)) : "—"}</b><span class="t2">${l.sessao && R.ehDataHora(l.sessao) ? l.sessao.slice(11, 16) : ""}</span></td>
+          <td data-l="Status"><span class="pill ${R.statusLicitacao(l.status).ativa ? "" : l.status === "ganha" ? "ok" : "off"}">${esc(R.statusLicitacao(l.status).nome)}</span></td>
+          <td data-l="Próximo prazo" class="dt">${p ? "<b>" + esc(p.descricao || R.tipoPrazo(p.tipo).nome) + "</b>" + pillDias(p.limite, "horas") : '<span class="pill off">nenhum</span>'}</td>
+          <td data-l="Mensagens">${novas ? '<span class="pill atencao">' + novas + (novas > 1 ? " novas" : " nova") + "</span>" : '<span class="t2">' + (l.mensagens || []).length + "</span>"}</td>
+          <td data-l="PNCP">${l.pncpId ? (mon && mon.erro ? '<span class="pill urgente" title="' + esc(mon.erro) + '">erro</span>' : '<span class="pill ok">acompanhando</span>') : '<span class="pill off">sem link</span>'}</td></tr>`;
+      }).join("")}</tbody></table>` : vazioLista("registro", "licitacoes")}</section>`;
+}
+
+/* ---------- Tela: detalhe da licitação ---------- */
+function telaLicitacao(id) {
+  const l = S.dados.licitacoes.find(x => x.id === id);
+  if (!l) { $("#conteudo").innerHTML = '<div class="empty"><b>Licitação não encontrada</b><a href="#licitacoes">Voltar para a lista</a></div>'; return; }
+  const prazos = (l.prazos || []).slice().sort((a, b) => Number(!!a.feito) - Number(!!b.feito) || String(a.limite).localeCompare(String(b.limite)));
+  const msgs = (l.mensagens || []).slice().reverse(), hist = (l.historico || []).slice().reverse();
+  const mon = l.monitor, ret = mon && mon.retrato;
+  const linkPNCP = l.pncpId ? "https://pncp.gov.br/app/editais/" + l.pncpId.replace(/-/g, "/") : "";
+  $("#conteudo").innerHTML = `
+    <header class="page-h">
+      <div><p class="small"><a href="#licitacoes">← Licitações</a></p><h1>${esc(l.numero || "Licitação")}</h1><p>${esc(l.orgao || "")}${l.portal ? " · " + esc(l.portal) : ""}</p></div>
+      <div class="acts">
+        <select class="inp" style="width:auto" id="statusLic" aria-label="Status">${R.STATUS_LICITACAO.map(s => `<option value="${s.id}" ${s.id === (l.status || "analise") ? "selected" : ""}>${esc(s.nome)}</option>`).join("")}</select>
+        ${l.link ? `<a class="btn" href="${esc(l.link)}" target="_blank" rel="noopener">Abrir no portal</a>` : ""}
+        <button class="btn" data-acao="editar-lic" data-id="${l.id}">Editar dados</button>
+      </div>
+    </header>
+    <div class="grid2">
+      <div class="col">
+        <section class="card">
+          <div class="card-h"><h2>Prazos</h2><button class="btn btn-sm btn-primary" data-acao="novo-prazo" data-id="${l.id}">Adicionar prazo</button></div>
+          ${prazos.length ? `<ul class="lista">${prazos.map(p => `<li class="${p.feito ? "feito" : ""}">
+            <input type="checkbox" data-acao="marcar-prazo" data-id="${l.id}" data-p="${p.id}" ${p.feito ? "checked" : ""} aria-label="Marcar como feito">
+            <div class="grow"><div class="t">${esc(p.descricao || R.tipoPrazo(p.tipo).nome)}</div><div class="s">${esc(fData(p.limite))} (${R.diaSemana(p.limite.slice(0, 10))})${p.origem === "mensagem" ? " · criado a partir de mensagem, confira" : ""}</div></div>
+            ${p.feito ? "" : pillDias(p.limite, "horas")}
+            <button class="btn btn-sm" data-acao="editar-prazo" data-id="${l.id}" data-p="${p.id}">Editar</button></li>`).join("")}</ul>`
+            : '<div class="empty small">Nenhum prazo. Cadastre intenção de recurso, razões, contrarrazões, envio de documentos e assinatura.</div>'}
+        </section>
+        <section class="card">
+          <div class="card-h"><h2>Mensagens dos portais</h2>${msgs.some(m => !m.lida) ? `<button class="btn btn-sm" data-acao="ler-todas" data-id="${l.id}">Marcar todas como lidas</button>` : ""}</div>
+          <div class="card-b" style="display:flex;flex-direction:column;gap:8px;border-bottom:1px solid var(--line)">
+            <label class="field"><span>Colar mensagens do chat</span><textarea id="colarChat" placeholder="Copie as mensagens do chat do pregão e cole aqui. Eu registro no histórico, classifico (recurso, convocação, retorno de fase…) e crio os prazos citados para você conferir."></textarea></label>
+            <div><button class="btn btn-sm" data-acao="colar-chat" data-id="${l.id}">Registrar mensagens</button></div>
+          </div>
+          ${msgs.length ? `<ul class="lista">${msgs.slice(0, 60).map(m => `<li class="${m.lida ? "" : "msg-nova"}"><div class="grow">
+            <div class="t">${esc(m.nomeClasse || "Mensagem")}${m.assunto ? " · " + esc(m.assunto) : ""}</div><div class="s">${esc(fData(m.em))} · ${esc(m.de || m.fonte || "")}</div>
+            <div class="msg">${esc(m.texto)}</div></div>${m.lida ? "" : `<button class="btn btn-sm" data-acao="ler-msg" data-id="${l.id}" data-m="${m.id}">Lida</button>`}</li>`).join("")}</ul>`
+            : '<div class="empty small">Nenhuma mensagem ainda. Elas chegam sozinhas pelos e-mails dos portais (veja Configurações) ou colando o chat acima.</div>'}
+        </section>
+      </div>
+      <div class="col">
+        <section class="card"><div class="card-h"><h2>Dados</h2></div><div class="card-b"><dl class="dl">
+          <div><dt>Sessão</dt><dd>${esc(fData(l.sessao))}</dd></div>
+          <div><dt>Valor estimado</dt><dd>${l.valorEstimado ? R.moeda(l.valorEstimado) : "—"}</dd></div>
+          <div><dt>Processo</dt><dd>${esc(l.processo || "—")}</dd></div>
+          <div><dt>Responsável</dt><dd>${esc(l.responsavel || "—")}</dd></div>
+          <div class="wide"><dt>Objeto</dt><dd>${esc(l.objeto || "—")}</dd></div>
+          ${l.obs ? `<div class="wide"><dt>Observações</dt><dd>${esc(l.obs)}</dd></div>` : ""}
+        </dl></div></section>
+        <section class="card">
+          <div class="card-h"><h2>Acompanhamento no PNCP</h2>${l.pncpId ? `<button class="btn btn-sm" data-acao="verificar-pncp" data-id="${l.id}">Verificar agora</button>` : ""}</div>
+          <div class="card-b small">${l.pncpId
+            ? `<p>Situação: <b>${esc(ret ? ret.situacao : "aguardando a primeira verificação")}</b>${ret && ret.homologado ? " · homologado " + R.moeda(ret.homologado) : ""}</p>
+               <p class="muted">${mon && mon.verificadoEm ? "Última verificação: " + new Date(mon.verificadoEm).toLocaleString("pt-BR") : "A verificação automática roda a cada 30 minutos em horário comercial."}${mon && mon.erro ? ' · <span class="err">' + esc(mon.erro) + "</span>" : ""}</p>
+               <p><a href="${esc(linkPNCP)}" target="_blank" rel="noopener">Abrir no PNCP</a>${ret && ret.arquivos ? " · " + ret.arquivos.length + " documentos publicados" : ""}</p>`
+            : `<p>Sem link do PNCP. <button class="link" data-acao="editar-lic" data-id="${l.id}">Informe o link</button> para receber aviso quando a situação mudar ou sair ata, resultado ou novo documento.</p>`}</div>
+        </section>
+        <section class="card">
+          <div class="card-h"><h2>Itens e estratégia de lances</h2><button class="btn btn-sm" data-acao="novo-item" data-id="${l.id}">Adicionar item</button></div>
+          ${(l.itens || []).length ? `<ul class="lista">${l.itens.map(it => `<li><div class="grow"><div class="t">Item ${esc(it.numero || "")} ${esc(it.descricao || "")}</div>
+            <div class="s">Mínimo ${it.minimo ? R.moeda(it.minimo) : "não definido"} · redução ${it.decremento ? (it.decrementoTipo === "pct" ? pct(it.decremento) : R.moeda(it.decremento)) : "—"} por lance${it.valorEstimado ? " · estimado " + R.moeda(it.valorEstimado) : ""}</div></div>
+            <a class="btn btn-sm" href="#lances" data-acao="ir-lance" data-id="${l.id}" data-i="${it.id}">Disputa</a><button class="btn btn-sm" data-acao="editar-item" data-id="${l.id}" data-i="${it.id}">Editar</button></li>`).join("")}</ul>`
+            : '<div class="empty small">Defina por item o valor mínimo aceitável e a redução por lance antes da sessão.</div>'}
+        </section>
+        <section class="card">
+          <div class="card-h"><h2>Histórico</h2><button class="btn btn-sm" data-acao="nota" data-id="${l.id}">Anotar</button></div>
+          ${hist.length ? `<ul class="tl">${hist.map(h => `<li class="${esc(h.tipo)}"><time>${esc(fData(h.em))}${h.auto ? " · automático" : ""}</time>${esc(h.texto)}${h.link ? ` <a href="${esc(h.link)}" target="_blank" rel="noopener">abrir</a>` : ""}</li>`).join("")}</ul>` : '<div class="empty small">Sem registros.</div>'}
+        </section>
+        <div><button class="btn btn-danger btn-sm" data-acao="excluir-lic" data-id="${l.id}">Excluir licitação</button></div>
+      </div>
+    </div>`;
+}
+
+function abrirPrazo(l, p) {
+  const campos = [
+    { k: "tipo", r: "Tipo de prazo", t: "select", ops: () => R.TIPOS_PRAZO.map(t => [t.id, t.nome]) },
+    { k: "descricao", r: "Descrição", ph: "Opcional" },
+    { k: "base", r: "Data do ato / intimação", t: "date", dica: "Para recurso e contrarrazões: dia da intimação ou da ata. O prazo é calculado em dias úteis." },
+    { k: "limite", r: "Prazo final", t: "datetime-local", req: true },
+    { k: "feito", r: "Já cumprido", t: "check" }
+  ];
+  const calc = (v, ultimo, form) => {
+    const t = R.tipoPrazo(v.tipo);
+    if (form && ["tipo", "base"].includes(ultimo) && !form.elements.limite.dataset.mexido) {
+      let lim = "";
+      if (t.diasUteis && v.base) lim = R.somaDiasUteis(v.base, t.diasUteis) + "T23:59";
+      if (t.diasUteisAntes && l.sessao) lim = R.somaDiasUteis(l.sessao.slice(0, 10), -t.diasUteisAntes) + "T23:59";
+      if (lim) form.elements.limite.value = lim;
+    }
+    return t.regra + (t.diasUteis || t.diasUteisAntes ? " Cálculo: só feriados nacionais são descontados, então o prazo calculado nunca fica depois do real. Confira o horário limite no portal e no edital." : "");
+  };
+  formulario({
+    titulo: p ? "Editar prazo" : "Novo prazo", campos, valores: p || { tipo: l.status === "recurso" ? "recurso" : "outro" }, previa: calc,
+    salvar: v => {
+      const prazos = (l.prazos || []).filter(x => !p || x.id !== p.id);
+      prazos.push({ ...p, ...v, id: (p && p.id) || R.novoId(), descricao: v.descricao || "" });
+      const historico = (l.historico || []).concat(p ? [] : [{ id: R.novoId(), em: R.agoraBrasilia(), tipo: "prazo", texto: "Prazo cadastrado: " + (v.descricao || R.tipoPrazo(v.tipo).nome) + " até " + fData(v.limite) }]);
+      return salvar("licitacoes", { ...l, prazos, historico }, "Prazo salvo.");
+    },
+    excluir: p && (() => salvar("licitacoes", { ...l, prazos: l.prazos.filter(x => x.id !== p.id) }, "Prazo excluído."))
+  });
+}
+const CAMPOS_ITEM = [
+  { k: "numero", r: "Nº do item" },
+  { k: "descricao", r: "Descrição" },
+  { k: "quantidade", r: "Quantidade", t: "number" },
+  { k: "valorEstimado", r: "Valor estimado / referência (R$)", t: "number", dica: "Valor total do item, na mesma base dos lances." },
+  { k: "minimo", r: "Valor mínimo aceitável (R$)", t: "number", req: true, dica: "Abaixo dele não damos lance. Considere custos, impostos e margem." },
+  { k: "decremento", r: "Redução por lance", t: "number", dica: "Quanto baixar em relação ao melhor lance. Respeite o intervalo mínimo do edital." },
+  { k: "decrementoTipo", r: "Redução em", t: "select", ops: [["valor", "Reais (R$)"], ["pct", "Percentual (%)"]] },
+  { k: "decrementoMax", r: "Redução máxima por lance (mesma unidade)", t: "number", dica: "Opcional. Evita um lance muito abaixo do anterior por engano." },
+  { k: "obs", r: "Observações", t: "textarea", wide: true }
+];
+function abrirItem(l, it) {
+  formulario({
+    titulo: it ? "Item " + (it.numero || "") : "Novo item", campos: CAMPOS_ITEM, valores: it || { decrementoTipo: "valor" },
+    previa: v => { const m = R.lerNumero(v.minimo), e = R.lerNumero(v.valorEstimado); return m && e ? "Desconto máximo sobre o estimado: " + ((1 - m / e) * 100).toFixed(1).replace(".", ",") + "%." : ""; },
+    salvar: v => { const itens = (l.itens || []).filter(x => !it || x.id !== it.id); itens.push({ ...it, ...v, id: (it && it.id) || R.novoId() }); itens.sort((a, b) => String(a.numero).localeCompare(String(b.numero), "pt", { numeric: true })); return salvar("licitacoes", { ...l, itens }, "Item salvo."); },
+    excluir: it && (() => salvar("licitacoes", { ...l, itens: l.itens.filter(x => x.id !== it.id) }, "Item excluído."))
+  });
+}
+
+/* ---------- Tela: lances ---------- */
+function telaLances() {
+  const ativas = S.dados.licitacoes.filter(l => R.statusLicitacao(l.status).ativa && (l.itens || []).length);
+  const st = S.lance;
+  if (!ativas.some(l => l.id === st.lic)) { st.lic = ativas[0] && ativas[0].id; st.item = null; }
+  const l = ativas.find(x => x.id === st.lic);
+  if (l && !(l.itens || []).some(i => i.id === st.item)) st.item = l.itens[0].id;
+  const it = l && l.itens.find(i => i.id === st.item);
+  const chave = l && it ? "lance-" + l.id + "-" + it.id : null;
+  const reg = (chave && local(chave)) || { log: [], melhor: "", meu: "", inicio: null };
+  $("#conteudo").innerHTML = `
+    <header class="page-h"><div><h1>Assistente de lances</h1><p>Calcula o próximo lance dentro dos limites que vocês definiram para cada item, acompanha a posição e o tempo da etapa aberta. O lance é sempre enviado por uma pessoa, no portal.</p></div></header>
+    <div class="banner info"><div><b>Por que não enviar lances sozinho?</b> Os portais exigem login com certificado ou gov.br, não oferecem interface oficial para robôs e o lance enviado não pode ser desfeito. Veja a avaliação completa no arquivo <span class="mono">AVALIACAO-LANCES.md</span> do projeto.</div></div>
+    ${!ativas.length ? `<div class="card"><div class="empty"><b>Nenhum item com estratégia definida</b>Abra uma licitação em andamento e use “Adicionar item” para definir o valor mínimo e a redução por lance.</div></div>` : `
+    <section class="card"><div class="card-b fields">
+      <label class="field" style="grid-column:span 2"><span>Licitação</span><select id="lLic">${ativas.map(x => `<option value="${x.id}" ${x.id === st.lic ? "selected" : ""}>${esc(R.rotuloLicitacao(x).slice(0, 90))}</option>`).join("")}</select></label>
+      <label class="field" style="grid-column:span 2"><span>Item</span><select id="lItem">${l.itens.map(x => `<option value="${x.id}" ${x.id === st.item ? "selected" : ""}>Item ${esc(x.numero || "")} ${esc((x.descricao || "").slice(0, 60))}</option>`).join("")}</select></label>
+    </div><div class="card-b small muted" style="border-top:1px solid var(--line)">Mínimo aceitável <b>${it.minimo ? R.moeda(it.minimo) : "não definido"}</b> · redução por lance <b>${it.decremento ? (it.decrementoTipo === "pct" ? pct(it.decremento) : R.moeda(it.decremento)) : "não definida (R$ 0,01)"}</b>${it.decrementoMax ? " · máxima " + (it.decrementoTipo === "pct" ? pct(it.decrementoMax) : R.moeda(it.decrementoMax)) : ""}${it.valorEstimado ? " · estimado " + R.moeda(it.valorEstimado) : ""} · <button class="link" data-acao="editar-item" data-id="${l.id}" data-i="${it.id}">alterar</button></div></section>
+    <div class="lance-box">
+      <section class="card"><div class="card-h"><h2>Disputa</h2></div><div class="card-b" style="display:flex;flex-direction:column;gap:14px">
+        <div class="fields">
+          <label class="field"><span>Melhor lance agora (R$)</span><input id="lMelhor" inputmode="decimal" value="${esc(reg.melhor)}" autocomplete="off"></label>
+          <label class="field"><span>Nosso último lance (R$)</span><input id="lMeu" inputmode="decimal" value="${esc(reg.meu)}" autocomplete="off"></label>
+        </div>
+        <div id="lSug"></div>
+        <div class="acts">
+          <button class="btn btn-primary" data-acao="lance-meu">Registrar nosso lance</button>
+          <button class="btn" data-acao="lance-outro">Registrar lance de concorrente</button>
+          <button class="btn" data-acao="copiar-lance">Copiar valor</button>
+        </div>
+      </div></section>
+      <section class="card"><div class="card-h"><h2>Etapa aberta</h2><span class="small muted">10 min + 2 min a cada lance nos 2 minutos finais</span></div><div class="card-b" style="display:flex;flex-direction:column;gap:12px">
+        <div class="relogio" id="lRelogio">--:--</div>
+        <p class="small muted" id="lRelogioTxt">Inicie quando o pregoeiro abrir a disputa do item. Confira o modo de disputa no edital (aberto, aberto e fechado).</p>
+        <div class="acts"><button class="btn" data-acao="etapa-iniciar">${reg.inicio ? "Reiniciar" : "Iniciar"} contagem</button><button class="btn" data-acao="etapa-mais">+2 min</button><label class="check small"><input type="checkbox" id="lSom" ${local("som") ? "checked" : ""}> Som nos 2 minutos finais</label></div>
+        <h3 style="font-size:14px;margin-top:6px">Lances registrados</h3>
+        <ul class="lista" id="lLog" style="max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:8px">${reg.log.length ? reg.log.slice().reverse().map(x => `<li><div class="grow"><span class="t">${R.moeda(x.valor)}</span> <span class="s">${x.quem === "nos" ? "nosso" : "concorrente"} · ${new Date(x.t).toLocaleTimeString("pt-BR")}</span></div></li>`).join("") : '<li class="small muted">Nenhum lance registrado.</li>'}</ul>
+        ${reg.log.length ? '<div><button class="btn btn-sm btn-danger" data-acao="lance-limpar">Limpar registro do item</button></div>' : ""}
+      </div></section>
+    </div>`}`;
+  if (it) { atualizarSugestao(it, reg, chave); relogio(reg); }
+}
+function atualizarSugestao(it, reg, chave) {
+  const melhor = $("#lMelhor").value, meu = $("#lMeu").value;
+  reg.melhor = melhor; reg.meu = meu; local(chave, reg);
+  const s = R.sugerirLance({ ...it, melhorLance: melhor, meuLance: meu });
+  const pos = R.lerNumero(meu) !== null && R.lerNumero(melhor) !== null ? (R.lerNumero(meu) <= R.lerNumero(melhor) ? "Estamos em 1º lugar." : "Não estamos em 1º lugar.") : "";
+  const titulo = { cobrir: "Próximo lance", manter: "Manter", parar: "Parar", intermediario: "Lance intermediário", aguardar: "Aguardando" }[s.acao];
+  $("#lSug").innerHTML = `<div class="sug ${s.acao}"><span class="lbl">${titulo}</span><b>${s.valor !== undefined ? R.moeda(s.valor) : "—"}</b><span>${esc(s.motivo)}${s.desconto ? " Desconto de " + (s.desconto * 100).toFixed(2).replace(".", ",") + "% sobre o estimado." : ""}</span>${pos ? `<span class="small">${pos}</span>` : ""}</div>`;
+  S.lance.sugestao = s;
+}
+let tRelogio, bipou = false;
+function relogio(reg) {
+  clearInterval(tRelogio);
+  const el = $("#lRelogio"); if (!el) return;
+  const tick = () => {
+    if (!document.body.contains(el)) return clearInterval(tRelogio);
+    if (!reg.inicio) { el.textContent = "--:--"; return; }
+    const fim = R.fimEtapaAberta(reg.inicio, reg.log.map(x => x.t)) + (reg.extra || 0);
+    const resta = fim - Date.now();
+    el.classList.toggle("fim", resta < 120000);
+    if (resta <= 0) { el.textContent = "00:00"; $("#lRelogioTxt").textContent = "Tempo previsto encerrado. Confira no portal se a etapa terminou ou se houve prorrogação."; return; }
+    const m = Math.floor(resta / 60000), s = Math.floor((resta % 60000) / 1000);
+    el.textContent = R.pad(m) + ":" + R.pad(s);
+    $("#lRelogioTxt").textContent = "Fim previsto às " + new Date(fim).toLocaleTimeString("pt-BR") + (resta < 120000 ? ". Últimos 2 minutos: cada lance prorroga a etapa." : ".");
+    if (resta < 120000 && !bipou && $("#lSom") && $("#lSom").checked) { bipou = true; bip(); }
+    if (resta >= 120000) bipou = false;
+  };
+  tick(); tRelogio = setInterval(tick, 500);
+}
+function bip() {
+  try { const c = new AudioContext(), o = c.createOscillator(), g = c.createGain(); o.frequency.value = 880; o.connect(g); g.connect(c.destination); g.gain.value = .15; o.start(); o.stop(c.currentTime + .35); } catch {}
+}
+function regLance() {
+  const l = S.dados.licitacoes.find(x => x.id === S.lance.lic), chave = "lance-" + S.lance.lic + "-" + S.lance.item;
+  return { l, it: l && l.itens.find(i => i.id === S.lance.item), chave, reg: local(chave) || { log: [], melhor: "", meu: "", inicio: null } };
+}
+
+/* ---------- Tela: configurações ---------- */
+function telaConfig() {
+  const c = S.dados.config, srv = S.dados.servidor || {}, can = srv.canais || {}, av = c.avisos || {};
+  const st = (ok, sim, nao) => `<span class="pill ${ok ? "ok" : "atencao"}">${ok ? sim : nao}</span>`;
+  $("#conteudo").innerHTML = `
+    <header class="page-h"><div><h1>Configurações</h1><p>Quem recebe os avisos, com quanta antecedência e o estado das integrações.</p></div></header>
+    <div class="grid2">
+      <div class="col">
+        <form class="card" id="formConfig">
+          <div class="card-h"><h2>Avisos</h2></div>
+          <div class="card-b" style="display:flex;flex-direction:column;gap:14px">
+            <label class="field"><span>E-mails da equipe</span><input name="emails" value="${esc(c.emails || "")}" placeholder="contratos@empresa.com.br, licitacoes@empresa.com.br"><small>Recebem todos os avisos. Cada contrato, documento ou licitação pode ter e-mails extras.</small></label>
+            <label class="field"><span>Chat do Telegram</span><input name="telegramChatId" value="${esc(c.telegramChatId || "")}" placeholder="-1001234567890"><small>Número do grupo ou da conversa com o robô. Veja como pegar no guia.</small></label>
+            <label class="field"><span>Endereço do painel</span><input name="urlPainel" value="${esc(c.urlPainel || location.origin + location.pathname)}"><small>Usado nos links dos avisos.</small></label>
+            <h3 style="font-size:14px">Antecedência padrão (dias antes)</h3>
+            <div class="fields">
+              ${[["vencimento", "Vencimento de contrato"], ["renovacao", "Prazo de renovação"], ["reajuste", "Prazo de reajuste"], ["sessao", "Sessão da licitação"]].map(([k, n]) => `<label class="field"><span>${n}</span><input name="av-${k}" value="${esc(av[k] || "")}" placeholder="${R.AVISOS_PADRAO[k].join(", ")}"></label>`).join("")}
+              <label class="field"><span>Prazos de licitação (horas antes)</span><input name="av-prazoHoras" value="${esc(av.prazoHoras || "")}" placeholder="${R.AVISOS_PADRAO.prazoHoras.join(", ")}"></label>
+            </div>
+            <p class="small muted">Certidões usam a antecedência do tipo de documento (ex.: FGTS 7, 3, 1 e 0 dias) ou a definida em cada documento.</p>
+            <div class="acts"><button class="btn btn-primary" type="submit">Salvar</button><button class="btn" type="button" data-acao="teste">Enviar aviso de teste</button></div>
+          </div>
+        </form>
+      </div>
+      <div class="col">
+        <section class="card"><div class="card-h"><h2>Integrações</h2></div><div class="card-b"><dl class="dl">
+          <div><dt>Banco de dados</dt><dd>${st(srv.armazenamento === "upstash", "Upstash ligado", "temporário")}</dd></div>
+          <div><dt>E-mail (Resend)</dt><dd>${st(can.email, "ligado", "não configurado")}</dd></div>
+          <div><dt>Telegram</dt><dd>${st(can.telegram, "ligado", "não configurado")}</dd></div>
+          <div><dt>Robôs (cron, Gmail)</dt><dd>${st(srv.robo, "CRON_SECRET definido", "falta CRON_SECRET")}</dd></div>
+        </dl><p class="small muted" style="margin-top:12px">As chaves ficam nas variáveis de ambiente da Vercel, nunca nesta página. O passo a passo está no guia <span class="mono">GESTAO-PRAZOS.md</span>.</p></div></section>
+        <section class="card"><div class="card-h"><h2>Últimas verificações automáticas</h2></div>
+          ${S.dados.log.length ? `<ul class="lista">${S.dados.log.slice(0, 15).map(g => `<li><div class="grow"><div class="t small">${new Date(g.em).toLocaleString("pt-BR")} · ${esc(g.quem || "")}</div><div class="s">${g.novos || 0} avisos novos · ${g.novidades || 0} novidades${g.pncp ? " · PNCP: " + g.pncp.verificadas + " verificadas" + (g.pncp.erros ? ", " + g.pncp.erros + " com erro" : "") : ""}${(g.canais || []).length ? " · " + esc(g.canais.join(", ")) : ""}</div></div></li>`).join("")}</ul>`
+            : '<div class="empty small">Nenhuma verificação registrada ainda.</div>'}
+        </section>
+      </div>
+    </div>`;
+}
+
+/* ---------- Formulário genérico ---------- */
+function formulario({ titulo, campos, valores, salvar: aoSalvar, excluir, previa, nota }) {
+  const dlg = $("#dlg"), f = $("#dlgForm");
+  const val = k => valores[k] ?? "";
+  const ops = c => (typeof c.ops === "function" ? c.ops() : c.ops);
+  const dica = c => (typeof c.dica === "function" ? c.dica(valores) : c.dica || "");
+  f.innerHTML = `<div class="dlg-h"><h2>${esc(titulo)}</h2><button type="button" class="x" data-fechar aria-label="Fechar">×</button></div>
+    <div class="dlg-b">
+      ${nota ? `<p class="nota">${esc(nota)}</p>` : ""}
+      ${campos.map(c => {
+        if (c.secao) return `<h3>${esc(c.secao)}</h3>`;
+        if (c.t === "hidden") return "";
+        if (c.t === "check") return `<label class="check ${c.wide ? "wide" : ""}"><input type="checkbox" name="${c.k}" ${val(c.k) ? "checked" : ""}> ${esc(c.r)}</label>`;
+        let inp;
+        if (c.t === "select") inp = `<select name="${c.k}">${ops(c).map(([v, n]) => `<option value="${esc(v)}" ${String(val(c.k)) === String(v) ? "selected" : ""}>${esc(n)}</option>`).join("")}</select>`;
+        else if (c.t === "textarea") inp = `<textarea name="${c.k}" placeholder="${esc(c.ph || "")}">${esc(val(c.k))}</textarea>`;
+        else inp = `<input name="${c.k}" type="${c.t === "number" ? "text" : c.t || "text"}" ${c.t === "number" ? 'inputmode="decimal"' : ""} value="${esc(c.t === "datetime-local" ? String(val(c.k)).slice(0, 16) : val(c.k))}" placeholder="${esc(c.ph || "")}" ${c.req ? "required" : ""}>`;
+        return `<label class="field ${c.wide ? "wide" : ""}"><span>${esc(c.r)}${c.req ? " *" : ""}</span>${inp}${dica(c) ? `<small data-dica="${c.k}">${esc(dica(c))}</small>` : ""}</label>`;
+      }).join("")}
+      ${previa ? '<p class="nota" id="previa"></p>' : ""}
+      <p class="err wide" id="dlgErro" hidden></p>
+    </div>
+    <div class="dlg-f">${excluir ? '<button type="button" class="btn btn-danger esq" data-excluir>Excluir</button>' : ""}<button type="button" class="btn" data-fechar>Cancelar</button><button type="submit" class="btn btn-primary">Salvar</button></div>`;
+  const ler = () => {
+    const v = {};
+    for (const c of campos) {
+      if (!c.k) continue;
+      if (c.t === "hidden") { v[c.k] = valores[c.k] ?? ""; continue; }
+      const el = f.elements[c.k];
+      if (c.t === "check") v[c.k] = el.checked;
+      else if (c.t === "number") { const t = el.value.trim(); v[c.k] = t === "" ? "" : R.lerNumero(t); }
+      else v[c.k] = el.value.trim();
+    }
+    return v;
+  };
+  const atualizar = ultimo => {
+    const v = ler();
+    if (previa) $("#previa", f).textContent = previa(v, ultimo, f) || "";
+    for (const c of campos) if (typeof c.dica === "function" && c.k) { const d = $(`[data-dica="${c.k}"]`, f); if (d) d.textContent = c.dica(v); }
+  };
+  f.oninput = e => { if (e.target.name) { if (e.isTrusted && ["validade", "limite"].includes(e.target.name)) e.target.dataset.mexido = "1"; atualizar(e.target.name); } };
+  f.onchange = f.oninput;
+  atualizar();
+  f.onclick = async e => {
+    if (e.target.closest("[data-fechar]")) dlg.close();
+    if (e.target.closest("[data-excluir]") && confirm("Excluir definitivamente?")) { try { await excluir(); dlg.close(); } catch (err) { aviso(err.message, true); } }
+  };
+  f.onsubmit = async e => {
+    e.preventDefault();
+    const v = ler(), falta = campos.filter(c => c.req && (v[c.k] === "" || v[c.k] === null)).map(c => c.r);
+    const erro = $("#dlgErro", f);
+    if (falta.length) { erro.hidden = false; erro.textContent = "Preencha: " + falta.join(", ") + "."; return; }
+    const btn = f.querySelector("[type=submit]"); btn.disabled = true;
+    try { await aoSalvar(v); dlg.close(); }
+    catch (err) { erro.hidden = false; erro.textContent = err.message; }
+    finally { btn.disabled = false; }
+  };
+  dlg.showModal();
+  const primeiro = f.querySelector(".dlg-b input, .dlg-b select, .dlg-b textarea"); if (primeiro) primeiro.focus();
+}
+
+/* ---------- Importar e exportar planilhas ---------- */
+const OBRIGATORIOS = { contratos: ["fim"], documentos: ["validade"], licitacoes: ["orgao", "numero"] };
+const NOMES_CAMPO = { numero: "Número", cliente: "Cliente", objeto: "Objeto", inicio: "Início", fim: "Vencimento", valor: "Valor", responsavel: "Responsável", emails: "E-mails", renovacaoDiasAntes: "Dias p/ renovação", renovacaoData: "Prazo renovação", reajusteDataBase: "Data-base reajuste", reajusteData: "Prazo reajuste", reajusteIndice: "Índice", obs: "Observações", nome: "Documento", tipo: "Tipo", emissor: "Emissor", emissao: "Emissão", validade: "Validade", avisos: "Avisos", link: "Link", orgao: "Órgão", processo: "Processo", portal: "Portal", valorEstimado: "Valor estimado", sessao: "Sessão", status: "Status", uasg: "UASG" };
+let colecaoImportar = null;
+// Mesmo registro em uma nova importação: atualiza em vez de duplicar
+function chaveImport(col, r) {
+  const k = { contratos: ["numero", "cliente"], documentos: ["nome", "emissor"], licitacoes: ["numero", "orgao"] }[col];
+  return k.map(c => R.semAcento(r[c]).replace(/[^a-z0-9]/g, "")).join("|");
+}
+function escolherArquivo(col) { colecaoImportar = col; const a = $("#arquivo"); a.value = ""; a.click(); }
+let carregandoXLSX;
+function xlsx() {
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  return (carregandoXLSX = carregandoXLSX || new Promise((ok, falha) => {
+    const s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    s.onload = () => ok(window.XLSX); s.onerror = () => falha(new Error("Não consegui carregar o leitor de Excel. Salve a planilha como CSV e tente de novo."));
+    document.head.appendChild(s);
+  }));
+}
+// Lê a planilha e acha a linha de cabeçalho (às vezes há título acima dela) e a aba com mais colunas reconhecidas.
+async function lerPlanilha(arquivo, col) {
+  const tabelas = [];
+  if (/\.csv$/i.test(arquivo.name) || arquivo.type === "text/csv") {
+    const linhas = R.lerCSV(await arquivo.text());
+    tabelas.push({ aba: "", cab: Object.keys(linhas[0] || {}), linhas });
+  } else {
+    const X = await xlsx(), wb = X.read(await arquivo.arrayBuffer(), { cellDates: true });
+    for (const aba of wb.SheetNames) {
+      const m = X.utils.sheet_to_json(wb.Sheets[aba], { header: 1, defval: "", raw: true, blankrows: false });
+      let melhor = -1, nota = 0;
+      for (let i = 0; i < Math.min(m.length, 15); i++) { const n = Object.keys(R.mapearColunas(m[i].map(String), col)).length; if (n > nota) { nota = n; melhor = i; } }
+      if (melhor < 0) continue;
+      const cab = m[melhor].map((h, i) => String(h).trim() || "Coluna " + (i + 1));
+      tabelas.push({ aba, cab, linhas: m.slice(melhor + 1).filter(l => l.some(c => String(c).trim())).map(l => Object.fromEntries(cab.map((h, i) => [h, l[i] ?? ""]))) });
+    }
+  }
+  tabelas.forEach(t => (t.mapa = R.mapearColunas(t.cab, col)));
+  tabelas.sort((a, b) => Object.keys(b.mapa).length - Object.keys(a.mapa).length);
+  return tabelas[0] || null;
+}
+$("#arquivo").addEventListener("change", tentar(async e => {
+  const arq = e.target.files[0], col = colecaoImportar; if (!arq || !col) return;
+  const t = await lerPlanilha(arq, col);
+  if (!t || !Object.keys(t.mapa).length) throw new Error("Não reconheci as colunas desta planilha. Use nomes como " + Object.values(R.COLUNAS[col]).slice(0, 5).map(n => "“" + n[0] + "”").join(", ") + ".");
+  const registros = t.linhas.map(l => R.linhaParaRegistro(l, col, t.mapa));
+  const ok = registros.filter(r => OBRIGATORIOS[col].every(k => r[k]));
+  const ignoradas = t.cab.filter(h => !Object.values(t.mapa).includes(h));
+  const nomesCol = { contratos: "contratos", documentos: "documentos", licitacoes: "licitações" }[col];
+  const campos = Object.keys(t.mapa);
+  const existentes = new Map(S.dados[col].map(x => [chaveImport(col, x), x]));
+  const atualizados = ok.filter(r => existentes.has(chaveImport(col, r))).length;
+  const dlg = $("#dlg"), f = $("#dlgForm");
+  f.innerHTML = `<div class="dlg-h"><h2>Importar ${nomesCol}</h2><button type="button" class="x" data-fechar aria-label="Fechar">×</button></div>
+    <div class="dlg-b" style="display:block">
+      <p>${t.aba ? "Aba “" + esc(t.aba) + "”: " : ""}<b>${ok.length}</b> de ${registros.length} linhas prontas para importar.${registros.length - ok.length ? " As outras não têm " + OBRIGATORIOS[col].map(k => NOMES_CAMPO[k].toLowerCase()).join(" e ") + " e ficam de fora." : ""}</p>
+      <p class="small" style="margin-top:8px">Colunas usadas: ${campos.map(k => esc(t.mapa[k]) + " → <b>" + esc(NOMES_CAMPO[k] || k) + "</b>").join(" · ")}</p>
+      ${ignoradas.length ? `<p class="small muted" style="margin-top:4px">Colunas ignoradas: ${esc(ignoradas.join(", "))}</p>` : ""}
+      <div class="tbl-wrap" style="margin-top:12px;border:1px solid var(--line);border-radius:8px"><table class="tbl"><thead><tr>${campos.map(k => `<th>${esc(NOMES_CAMPO[k] || k)}</th>`).join("")}</tr></thead>
+      <tbody>${ok.slice(0, 8).map(r => `<tr>${campos.map(k => `<td>${esc(/^(fim|inicio|validade|emissao|renovacaoData|reajusteDataBase|reajusteData|sessao)$/.test(k) ? fData(r[k]) : k === "tipo" ? R.tipoDocumento(r[k]).nome : k === "status" ? R.statusLicitacao(r[k]).nome : r[k] ?? "")}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
+      <p class="small muted" style="margin-top:10px">${atualizados ? atualizados + " já estão cadastrados e serão atualizados com os dados da planilha; os demais entram como novos." : "Todos entram como novos."} A comparação usa ${{ contratos: "número e cliente", documentos: "nome e emissor", licitacoes: "número e órgão" }[col]}.</p>
+    </div>
+    <div class="dlg-f"><button type="button" class="btn" data-fechar>Cancelar</button><button type="submit" class="btn btn-primary" ${ok.length ? "" : "disabled"}>Importar ${ok.length}</button></div>`;
+  f.onclick = ev => { if (ev.target.closest("[data-fechar]")) dlg.close(); };
+  f.oninput = f.onchange = null;
+  f.onsubmit = tentar(async ev => {
+    ev.preventDefault();
+    const extras = col === "licitacoes" ? { prazos: [], itens: [], mensagens: [] } : col === "contratos" ? { situacao: "vigente" } : { situacao: "valido" };
+    const itens = ok.map(r => { const e = existentes.get(chaveImport(col, r)); return e ? { ...e, ...r } : { ...extras, ...r }; });
+    for (let i = 0; i < itens.length; i += 500) await api("api/dados", { acao: "importar", colecao: col, itens: itens.slice(i, i + 500) });
+    dlg.close(); aviso(ok.length + " registros importados" + (atualizados ? " (" + atualizados + " já existiam e foram atualizados)" : "") + "."); await carregar();
+  });
+  dlg.showModal();
+}));
+const COLUNAS_EXPORTAR = {
+  contratos: [["numero", "Contrato"], ["cliente", "Cliente"], ["objeto", "Objeto"], [c => fData(c.inicio), "Início"], [c => fData(c.fim), "Vencimento"], ["valor", "Valor"], [c => fData(R.prazoRenovacao(c)), "Pedir renovação até"], [c => { const r = R.prazoReajuste(c, hoje()); return r ? fData(r.prazo) : ""; }, "Pedir reajuste até"], [c => fData(c.reajusteDataBase), "Data-base reajuste"], ["reajusteIndice", "Índice"], ["situacao", "Situação"], ["responsavel", "Responsável"], ["emails", "E-mails"], ["obs", "Observações"]],
+  documentos: [["nome", "Documento"], [d => R.tipoDocumento(d.tipo).nome, "Tipo"], ["emissor", "Emissor"], ["numero", "Número"], [d => fData(d.emissao), "Emissão"], [d => fData(d.validade), "Validade"], ["situacao", "Situação"], ["responsavel", "Responsável"], ["avisos", "Avisos"], ["link", "Link"], ["obs", "Observações"]],
+  licitacoes: [["orgao", "Órgão"], ["numero", "Número"], ["processo", "Processo"], ["portal", "Portal"], [l => fData(l.sessao), "Sessão"], [l => R.statusLicitacao(l.status).nome, "Status"], ["valorEstimado", "Valor estimado"], ["objeto", "Objeto"], ["responsavel", "Responsável"], [l => { const p = proximoPrazo(l); return p ? (p.descricao || R.tipoPrazo(p.tipo).nome) + " até " + fData(p.limite) : ""; }, "Próximo prazo"], ["link", "Link"], [l => (l.historico || []).map(h => fData(h.em) + " " + h.texto).join(" | "), "Histórico"]]
+};
+function baixar(nome, conteudo, tipo) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([conteudo], { type: tipo }));
+  a.download = nome; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+/* ---------- Ações ---------- */
+const achar = (col, id) => S.dados[col].find(x => x.id === id);
+const ACOES = {
+  "novo": b => ({ contratos: () => abrirContrato(), documentos: () => abrirDocumento(), licitacoes: () => abrirLicitacao() })[b.dataset.col](),
+  "importar": b => escolherArquivo(b.dataset.col),
+  "exportar": b => baixar(b.dataset.col + "-" + hoje() + ".csv", R.gerarCSV(S.dados[b.dataset.col], COLUNAS_EXPORTAR[b.dataset.col]), "text/csv;charset=utf-8"),
+  "agenda": () => { baixar("prazos-" + hoje() + ".ics", R.gerarICS(R.eventos(S.dados, hoje())), "text/calendar;charset=utf-8"); aviso("Agenda baixada. Abra o arquivo para importar no Google Agenda ou Outlook."); },
+  "rotina": async b => {
+    b.disabled = true;
+    try {
+      const r = await api("api/rotina?forcar=1");
+      const env = (r.alertas && r.alertas.envios) || [], entregues = [...new Set(env.filter(e => e.ok).map(e => e.canal))];
+      aviso((r.alertas ? r.alertas.novos + " avisos novos" : "Sem avisos novos") + (r.pncp ? " · PNCP: " + r.pncp.verificadas + " licitações verificadas, " + r.pncp.mudancas + " novidades" : "") + (env.length ? (entregues.length ? " · enviado por " + entregues.join(", ") : " · nenhum canal entregou (veja Configurações)") : ""));
+      await carregar();
+    } finally { b.disabled = false; }
+  },
+  "teste": async () => { const r = await api("api/rotina?tarefa=teste"); const ok = r.envios.filter(e => e.ok).map(e => e.canal); aviso(ok.length ? "Teste enviado por: " + [...new Set(ok)].join(", ") + "." : "Nada foi enviado: " + r.envios.map(e => e.pulado || e.erro).join("; "), !ok.length); },
+  "abrir": b => (b.dataset.col === "licitacao" ? (location.hash = "licitacao/" + b.dataset.id) : b.dataset.col === "contratos" ? abrirContrato(achar("contratos", b.dataset.id)) : abrirDocumento(achar("documentos", b.dataset.id))),
+  "feito-renov": b => { const c = achar("contratos", b.dataset.id); return salvar("contratos", { ...c, renovacaoSolicitadaPara: c.fim }, "Renovação marcada como pedida. Ao registrar o novo vencimento, os avisos voltam."); },
+  "feito-reaj": b => { const c = achar("contratos", b.dataset.id); return salvar("contratos", { ...c, reajusteSolicitadoPara: b.dataset.aniv }, "Reajuste marcado como pedido. O próximo ciclo já está programado."); },
+  "renovar-doc": b => abrirDocumento(achar("documentos", b.dataset.id), true),
+  "feito-prazo": b => { const l = achar("licitacoes", b.dataset.id); return salvar("licitacoes", { ...l, prazos: l.prazos.map(p => (p.id === b.dataset.p ? { ...p, feito: true } : p)) }, "Prazo marcado como cumprido."); },
+  "marcar-prazo": b => { const l = achar("licitacoes", b.dataset.id); return salvar("licitacoes", { ...l, prazos: l.prazos.map(p => (p.id === b.dataset.p ? { ...p, feito: b.checked } : p)) }); },
+  "caixa-ligar": async b => {
+    const lic = $(`[data-ligar-sel="${b.dataset.id}"]`).value; if (!lic) throw new Error("Escolha a licitação.");
+    await api("api/dados", { acao: "caixa-ligar", id: b.dataset.id, licitacaoId: lic }); aviso("Mensagem ligada à licitação."); await carregar();
+  },
+  "caixa-descartar": async b => { await api("api/dados", { acao: "caixa-descartar", id: b.dataset.id }); S.dados.caixa = S.dados.caixa.filter(m => m.id !== b.dataset.id); render(); },
+  "pncp-nova": async b => {
+    const link = prompt("Cole o link do edital no PNCP (pncp.gov.br/app/editais/…):"); if (!link) return;
+    b.disabled = true;
+    try { const { licitacao } = await api("api/dados?acao=pncp&id=" + encodeURIComponent(link)); abrirLicitacao(null, { ...licitacao, status: "analise" }); }
+    finally { b.disabled = false; }
+  },
+  "editar-lic": b => abrirLicitacao(achar("licitacoes", b.dataset.id)),
+  "excluir-lic": b => confirm("Excluir esta licitação e todo o histórico?") && remover("licitacoes", b.dataset.id).then(() => (location.hash = "licitacoes")),
+  "novo-prazo": b => abrirPrazo(achar("licitacoes", b.dataset.id)),
+  "editar-prazo": b => { const l = achar("licitacoes", b.dataset.id); abrirPrazo(l, l.prazos.find(p => p.id === b.dataset.p)); },
+  "novo-item": b => abrirItem(achar("licitacoes", b.dataset.id)),
+  "editar-item": b => { const l = achar("licitacoes", b.dataset.id); abrirItem(l, l.itens.find(i => i.id === b.dataset.i)); },
+  "ir-lance": b => { S.lance.lic = b.dataset.id; S.lance.item = b.dataset.i; },
+  "verificar-pncp": async b => {
+    b.disabled = true;
+    try {
+      const r = await api("api/dados", { acao: "verificar-pncp", id: b.dataset.id });
+      const i = S.dados.licitacoes.findIndex(x => x.id === r.item.id); S.dados.licitacoes[i] = r.item;
+      aviso(r.mudancas.length ? r.mudancas.length + " novidades registradas no histórico." : "Nada mudou no PNCP desde a última verificação."); render();
+    } finally { b.disabled = false; }
+  },
+  "ler-msg": b => { const l = achar("licitacoes", b.dataset.id); return salvar("licitacoes", { ...l, mensagens: l.mensagens.map(m => (m.id === b.dataset.m ? { ...m, lida: true } : m)) }); },
+  "ler-todas": b => { const l = achar("licitacoes", b.dataset.id); return salvar("licitacoes", { ...l, mensagens: l.mensagens.map(m => ({ ...m, lida: true })) }); },
+  "colar-chat": async b => {
+    const texto = $("#colarChat").value.trim(); if (!texto) throw new Error("Cole as mensagens primeiro.");
+    // Cada bloco separado por linha em branco vira uma mensagem
+    const blocos = texto.split(/\n\s*\n/).map(s => s.trim()).filter(Boolean).slice(0, 100);
+    const r = await api("api/dados", { acao: "mensagens", mensagens: blocos.map(t => ({ texto: t, licitacaoId: b.dataset.id })) });
+    aviso(blocos.length - r.duplicadas + " mensagens registradas" + (r.duplicadas ? " (" + r.duplicadas + " já estavam)" : "") + ".");
+    await carregar();
+  },
+  "nota": b => {
+    const l = achar("licitacoes", b.dataset.id);
+    formulario({ titulo: "Anotar no histórico", campos: [{ k: "texto", r: "Anotação", t: "textarea", wide: true, req: true }], valores: {},
+      salvar: v => salvar("licitacoes", { ...l, historico: (l.historico || []).concat({ id: R.novoId(), em: R.agoraBrasilia(), tipo: "nota", texto: v.texto }) }, "Anotação salva.") });
+  },
+  "lance-meu": () => { const { chave, reg, it } = regLance(), s = S.lance.sugestao; const v = R.lerNumero(prompt("Valor do lance que enviamos no portal (R$):", s && s.valor ? String(s.valor).replace(".", ",") : "")); if (v === null) return; reg.log.push({ t: Date.now(), valor: v, quem: "nos" }); reg.meu = String(v).replace(".", ","); if (!R.lerNumero(reg.melhor) || v < R.lerNumero(reg.melhor)) reg.melhor = reg.meu; local(chave, reg); render(); if (it && it.minimo && v < R.lerNumero(it.minimo)) aviso("Atenção: este lance está abaixo do mínimo definido para o item.", true); },
+  "lance-outro": () => { const { chave, reg } = regLance(); const v = R.lerNumero(prompt("Valor do lance do concorrente (R$):")); if (v === null) return; reg.log.push({ t: Date.now(), valor: v, quem: "outro" }); if (!R.lerNumero(reg.melhor) || v < R.lerNumero(reg.melhor)) reg.melhor = String(v).replace(".", ","); local(chave, reg); render(); },
+  "copiar-lance": async () => { const s = S.lance.sugestao; if (!s || s.valor === undefined) throw new Error("Ainda não há lance sugerido."); await navigator.clipboard.writeText(s.valor.toFixed(2).replace(".", ",")); aviso("Valor copiado: " + R.moeda(s.valor)); },
+  "etapa-iniciar": () => { const { chave, reg } = regLance(); reg.inicio = Date.now(); reg.extra = 0; reg.log = reg.log.filter(x => x.t >= reg.inicio); local(chave, reg); render(); },
+  "etapa-mais": () => { const { chave, reg } = regLance(); if (!reg.inicio) reg.inicio = Date.now(); reg.extra = (reg.extra || 0) + 120000; local(chave, reg); render(); },
+  "lance-limpar": () => { if (!confirm("Limpar os lances registrados deste item?")) return; const { chave } = regLance(); local(chave, null); render(); }
+};
+document.addEventListener("click", tentar(async e => {
+  const b = e.target.closest("[data-acao]");
+  if (b && ACOES[b.dataset.acao]) { if (b.type === "checkbox") return; if (b.tagName !== "A" || b.dataset.acao !== "ir-lance") e.preventDefault(); await ACOES[b.dataset.acao](b); return; }
+  if (e.target.closest("[data-parar]")) return;
+  const g = e.target.closest("[data-grupo]"); if (g) { S.filtro.grupo = g.dataset.grupo; render(); return; }
+  const s = e.target.closest("[data-situacao]"); if (s) { S.filtro.situacao = s.dataset.situacao; render(); return; }
+  const tr = e.target.closest("tr[data-abrir]");
+  if (tr) { const col = tr.dataset.abrir; if (col === "licitacao") location.hash = "licitacao/" + tr.dataset.id; else ACOES.abrir({ dataset: { col, id: tr.dataset.id } }); }
+}));
+document.addEventListener("change", tentar(async e => {
+  const t = e.target;
+  if (t.matches("[data-acao=marcar-prazo]")) return ACOES["marcar-prazo"](t);
+  if (t.id === "horizonte") { S.filtro.horizonte = Number(t.value); render(); }
+  if (t.id === "statusLic") { const l = achar("licitacoes", rota().id); await salvar("licitacoes", { ...l, status: t.value }, "Status atualizado."); }
+  if (t.id === "lLic") { S.lance.lic = t.value; S.lance.item = null; render(); }
+  if (t.id === "lItem") { S.lance.item = t.value; render(); }
+  if (t.id === "lSom") local("som", t.checked);
+}));
+document.addEventListener("input", e => {
+  const t = e.target;
+  if (t.id === "busca") { S.filtro.busca = t.value; const pos = t.selectionStart; render(); const n = $("#busca"); n.focus(); n.setSelectionRange(pos, pos); }
+  if (t.id === "lMelhor" || t.id === "lMeu") { const { it, reg, chave } = regLance(); if (it) atualizarSugestao(it, reg, chave); }
+});
+document.addEventListener("submit", tentar(async e => {
+  if (e.target.id === "formConfig") {
+    e.preventDefault();
+    const f = e.target, avisos = {};
+    for (const k of Object.keys(R.AVISOS_PADRAO)) if (f.elements["av-" + k]) avisos[k] = f.elements["av-" + k].value;
+    const { config } = await api("api/dados", { acao: "config", config: { emails: f.elements.emails.value, telegramChatId: f.elements.telegramChatId.value, urlPainel: f.elements.urlPainel.value, avisos } });
+    S.dados.config = config; aviso("Configurações salvas."); render();
+  }
+}));
+$("#formLogin").addEventListener("submit", tentar(async e => {
+  e.preventDefault();
+  guardarSenha($("#senha").value, $("#lembrar").checked);
+  await carregar();
+}));
+$("#btnSair").addEventListener("click", () => { guardarSenha("", false); try { localStorage.removeItem("gp-senha-v"); sessionStorage.removeItem("gp-senha-v"); } catch {} S.dados = null; mostrarLogin(); });
+// Atualiza sozinho a cada 5 minutos enquanto a página estiver aberta (sem atrapalhar quem está digitando)
+setInterval(() => { if (document.visibilityState === "visible" && S.dados && !$("#dlg").open && !["lances"].includes(rota().v) && !(document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))) carregar().catch(() => {}); }, 300000);
+
+S.senha = lerSenha();
+if (S.senha) carregar().catch(() => {}); else mostrarLogin();
+</script>
+</body>
+</html>

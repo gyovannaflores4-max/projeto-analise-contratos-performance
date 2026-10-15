@@ -8,6 +8,21 @@
     },
     "api/arquivos.js": {
       "maxDuration": 30
+    },
+    "api/dados.js": {
+      "maxDuration": 30
+    },
+    "api/rotina.js": {
+      "maxDuration": 60
+    },
+    "api/mensagens.js": {
+      "maxDuration": 30
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/rotina",
+      "schedule": "0 11 * * *"
+    }
+  ]
 }

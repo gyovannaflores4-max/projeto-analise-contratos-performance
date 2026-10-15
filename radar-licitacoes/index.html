@@ -63,6 +63,9 @@ button,input,select{font:inherit;color:inherit}
 .nav button .c{margin-left:auto;font-size:12.5px;padding:0 7px;border-radius:99px;background:var(--surface-2);color:var(--ink-2)}
 .nav button:hover{background:var(--surface-2);color:var(--ink)}
 .nav button[aria-current="page"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.side-link{margin-top:auto;padding:9px 10px;border-radius:8px;font-weight:600;font-size:14px;text-decoration:none}
+.side-link:hover{background:var(--surface-2)}
+.side-link + .side-foot{margin-top:0}
 .side-foot{margin-top:auto;padding:12px;border-radius:8px;background:var(--surface-2);font-size:13px;color:var(--ink-2)}
 .side-foot b{color:var(--ink)}
 
@@ -299,6 +302,7 @@ body{margin:0}
       <button type="button" data-view="portais">
         <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 20V9"/></svg>Portais<span class="c num" id="cPortais">0</span></button>
     </nav>
+    <a class="side-link" href="gestao.html">Gestão de Prazos →</a>
     <p class="side-foot" id="sideFoot"><b>Fonte: PNCP.</b> Confira prazos e anexos no portal antes de participar.</p>
   </aside>
 

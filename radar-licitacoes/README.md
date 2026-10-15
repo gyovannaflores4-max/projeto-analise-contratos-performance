@@ -3,6 +3,7 @@
 Site para buscar editais de serviços médicos com prazo aberto no PNCP. Qualquer pessoa com o link entra, atualiza e confere os editais, sem precisar de login.
 
 - `index.html`: o site.
+- `gestao.html`: **Gestão de Prazos** (contratos, certidões, licitações e alertas automáticos), protegida por senha. Guia em [GESTAO-PRAZOS.md](GESTAO-PRAZOS.md); avaliação dos lances automáticos em [AVALIACAO-LANCES.md](AVALIACAO-LANCES.md).
 - `api/editais.js`: servidor que consulta o PNCP (busca pública + detalhe de cada compra) e devolve os editais.
 - `editais-base.json`: última lista salva, mostrada na hora em que o site abre e quando o PNCP não responde.
 - `versao-claude.html`: versão publicada como artifact no Claude (não é usada pela Vercel).

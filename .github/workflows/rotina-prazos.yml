@@ -1,0 +1,31 @@
+# Chama a rotina da Gestão de Prazos a cada 30 minutos em horário comercial (8h às 20h30, segunda a sexta,
+# horário de Brasília): acompanha as licitações no PNCP e envia os avisos de prazo que ainda não foram enviados.
+# O cron da Vercel (plano gratuito) roda só uma vez por dia; este agendamento cobre o resto do dia.
+#
+# Configure em Settings > Secrets and variables > Actions:
+#   GESTAO_URL   endereço do site na Vercel, ex.: https://radar-licitacoes.vercel.app
+#   CRON_SECRET  o mesmo valor da variável CRON_SECRET da Vercel
+name: Rotina da Gestão de Prazos
+
+on:
+  schedule:
+    - cron: "*/30 11-23 * * 1-5"
+  workflow_dispatch:
+
+jobs:
+  rotina:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Chamar a rotina
+        env:
+          GESTAO_URL: ${{ secrets.GESTAO_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$GESTAO_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "Defina os segredos GESTAO_URL e CRON_SECRET para ligar a rotina."
+            exit 0
+          fi
+          curl -sS --fail-with-body --max-time 90 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "${GESTAO_URL%/}/api/rotina"
