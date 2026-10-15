@@ -10,7 +10,7 @@ on:
         type: boolean
         default: false
       teste_chat:
-        description: "Enviar um alerta de exemplo por pregão com as últimas mensagens do chat (para testar)"
+        description: "Enviar um alerta de exemplo com as últimas mensagens do chat de todos os pregões (para testar)"
         type: boolean
         default: false
 

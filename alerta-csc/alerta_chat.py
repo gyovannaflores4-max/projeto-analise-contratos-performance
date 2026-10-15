@@ -1,14 +1,14 @@
 """Alerta do chat dos pregões no e-compras.AM.
 
 Lê o chat público de acompanhamento de cada pregão monitorado e avisa por
-e-mail quando o pregoeiro ou o sistema publica algo importante: data e hora de
-retomada, suspensão, reabertura da sessão, recurso, habilitação, resultado etc.
-Também avisa quando a situação do pregão muda (ex.: "Suspensão Recursal" ->
-"Em Habilitação").
+e-mail sempre que aparece mensagem nova ou a situação do pregão muda (ex.:
+"Suspensão Recursal" -> "Em Habilitação"). Todos os pregões com movimentação vão
+num e-mail só; as mensagens importantes (retomada, suspensão, prazos, resultado)
+vêm destacadas e a data/hora de retomada vai no assunto.
 
 Usa as mesmas variáveis de ambiente de alerta_resenhas.py (PROCESSOS, SMTP_*,
-EMAIL_TO, GITHUB_TOKEN). TESTE_CHAT=1 envia um e-mail de exemplo por pregão, com
-as últimas mensagens do chat, sem alterar o estado.
+EMAIL_TO, GITHUB_TOKEN). TESTE_CHAT=1 envia um e-mail de exemplo com as últimas
+mensagens de todos os pregões, sem alterar o estado.
 """
 
 import hashlib
@@ -32,7 +32,7 @@ COLUNAS = [
     "null", "edital", "cod_ug", "objeto", "status", "processo", "rp",
     "tipo_edital", "id_edital", "id_modalidade", "id_status", "modalidade",
 ]
-# Mensagens que disparam o alerta (comparadas sem acento e em minúsculas).
+# Mensagens destacadas no alerta (comparadas sem acento e em minúsculas).
 IMPORTANTE = re.compile(
     r"retom|reabert|reinici|prosseguimento|suspen|adia|prorrog|nova data|remarc"
     r"|a partir das|\d{1,2} ?h ?\d{0,2}|\d{1,2}:\d{2}|\d{2}/\d{2}/\d{4}"
@@ -102,6 +102,8 @@ def ler_chat(ident):
         hora, autor = cabecalho.groups()
         texto = celulas[1]
         chave = hashlib.sha1(f"{hora}|{autor}|{texto}".encode()).hexdigest()[:12]
+        if any(m["chave"] == chave for m in mensagens):
+            continue  # o e-compras às vezes repete a mesma linha no mesmo segundo
         mensagens.append({"hora": hora, "autor": autor, "texto": texto, "chave": chave})
     return mensagens
 
@@ -130,41 +132,77 @@ def resumo_retomada(mensagens):
     return ""
 
 
-def montar_alerta(pregao, novas, status_antes):
-    eventos = []
-    if status_antes and status_antes != pregao["status"]:
-        eventos.append(f"situação mudou para {pregao['status']}")
+def eventos(pregao, novas, status_antes):
+    """Resumo curto do que aconteceu, para o assunto do e-mail."""
+    saida = []
+    if status_antes != pregao["status"]:
+        saida.append(f"situação mudou para {pregao['status']}")
     if any(sem_acento(m["texto"]) == "sessao do chat aberta" for m in novas):
-        eventos.append("sessão reaberta agora")
+        saida.append("sessão reaberta")
     retomada = resumo_retomada([m for m in novas if eh_importante(m)])
     if retomada:
-        eventos.append(retomada)
-    titulo = "; ".join(eventos) or "novas mensagens no chat"
-    assunto = f"[Alerta e-compras] {pregao['edital']}: {titulo}"
+        saida.append(retomada)
+    if not saida and novas:
+        saida.append(f"{len(novas)} mensage{'m nova' if len(novas) == 1 else 'ns novas'}")
+    return saida
 
+
+def secao(pregao, novas, status_antes):
     link = BASE + f"licitacoes_acompanhamento.asp?ident={pregao['id']}"
+    situacao = pregao["status"] + (
+        f" (antes: {status_antes})" if status_antes != pregao["status"] else ""
+    )
     texto = [
+        "=" * 70,
         f"{pregao['edital']} - {pregao['objeto']}",
-        f"Situação: {pregao['status']}"
-        + (f" (antes: {status_antes})" if status_antes and status_antes != pregao["status"] else ""),
+        f"Situação: {situacao}",
         f"Acompanhamento: {link}",
-        "",
-        "Mensagens novas no chat (horário do e-compras, da mais recente para a mais antiga):",
         "",
     ]
     md = [
-        f"**{pregao['edital']}** - {pregao['objeto']}",
+        f"### {pregao['edital']} - {pregao['objeto']}",
         "",
-        f"- **Situação:** {pregao['status']}",
+        f"- **Situação:** {situacao}",
         f"- **Acompanhamento:** {link}",
         "",
-        "Mensagens novas no chat (horário do e-compras):",
-        "",
     ]
+    if not novas:
+        texto.append("Sem mensagens novas no chat.")
+        md.append("Sem mensagens novas no chat.")
     for msg in novas:
         marca = ">> " if eh_importante(msg) else "   "
         texto.append(f"{marca}{msg['hora']} - {msg['autor']}: {msg['texto']}")
         md.append(f"- `{msg['hora']}` **{msg['autor']}:** {msg['texto']}")
+    texto.append("")
+    md.append("")
+    return texto, md
+
+
+def montar_alerta(movimentos, parados, teste=False):
+    """Um e-mail só, com todos os pregões que tiveram movimentação."""
+    resumo = []
+    for pregao, novas, status_antes in movimentos:
+        detalhes = eventos(pregao, novas, status_antes)
+        resumo.append(pregao["edital"] + (f" ({'; '.join(detalhes)})" if detalhes else ""))
+    assunto = ("[TESTE] " if teste else "") + "[Alerta e-compras] Movimentação no chat: " + ", ".join(resumo)
+
+    texto = [
+        "Movimentação no chat dos pregões monitorados no e-compras.AM.",
+        "Mensagens da mais recente para a mais antiga, no horário do e-compras.",
+        "As marcadas com >> são as mais importantes (retomada, suspensão, prazos, resultado...).",
+        "",
+    ]
+    md = ["Movimentação no chat dos pregões monitorados no e-compras.AM.", ""]
+    for pregao, novas, status_antes in movimentos:
+        t, m = secao(pregao, novas, status_antes)
+        texto += t
+        md += m
+    if parados:
+        texto += ["=" * 70, "Sem movimentação desde o último aviso:"]
+        md += ["### Sem movimentação desde o último aviso", ""]
+        for pregao in parados:
+            texto.append(f"- {pregao['edital']}: {pregao['status']}")
+            md.append(f"- {pregao['edital']}: {pregao['status']}")
     return assunto, "\n".join(texto), "\n".join(md)
 
 
@@ -186,8 +224,8 @@ def main():
     processos = [p for p in (os.environ.get("PROCESSOS") or PROCESSOS_PADRAO).split(",") if p.strip()]
     teste = os.environ.get("TESTE_CHAT", "").strip() == "1"
     estado = json.loads(ESTADO.read_text()) if ESTADO.exists() else {"pregoes": {}}
-    alterado = False
 
+    movimentos, parados, atualizacoes = [], [], {}
     for processo in processos:
         try:
             pregao = buscar_pregao(processo)
@@ -207,24 +245,30 @@ def main():
             novas, status_antes = mensagens[:10], pregao["status"]
         log(f"{pregao['edital']} ({pregao['status']}): {len(mensagens)} mensagens, {len(novas)} novas.")
 
-        mudou_status = status_antes != pregao["status"]
-        if teste:
-            assunto, corpo, corpo_md = montar_alerta(pregao, novas, status_antes)
-            avisar("[TESTE] " + assunto, corpo, corpo_md)
-            continue
-        if mudou_status or any(eh_importante(m) for m in novas):
-            if not avisar(*montar_alerta(pregao, novas, status_antes)):
-                continue  # nenhum canal funcionou: tenta de novo na próxima rodada
-
-        novo = {
+        if novas or status_antes != pregao["status"]:
+            movimentos.append((pregao, novas, status_antes))
+        else:
+            parados.append(pregao)
+        atualizacoes[pregao["id"]] = {
             "edital": pregao["edital"],
             "status": pregao["status"],
             "vistas": sorted(vistas | {m["chave"] for m in mensagens}),
         }
-        if novo != salvo:
-            estado["pregoes"][pregao["id"]] = novo
-            alterado = True
 
+    if movimentos:
+        enviado = avisar(*montar_alerta(movimentos, parados, teste))
+        if teste:
+            return 0
+        if not enviado:
+            # Nenhum canal funcionou: não marca como visto, para avisar na próxima rodada.
+            for pregao, _, _ in movimentos:
+                atualizacoes.pop(pregao["id"], None)
+
+    alterado = False
+    for ident, novo in atualizacoes.items():
+        if estado["pregoes"].get(ident) != novo:
+            estado["pregoes"][ident] = novo
+            alterado = True
     if alterado and not teste:
         estado["atualizado_em"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
         ESTADO.write_text(json.dumps(estado, ensure_ascii=False, indent=2) + "\n")
