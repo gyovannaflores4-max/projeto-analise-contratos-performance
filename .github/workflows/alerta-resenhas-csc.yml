@@ -9,6 +9,10 @@ on:
         description: "Reenviar o alerta da resenha mais recente que cita os processos (para testar o e-mail)"
         type: boolean
         default: false
+      teste_chat:
+        description: "Enviar um alerta de exemplo com as últimas mensagens do chat do pregão (para testar)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -45,9 +49,23 @@ jobs:
           TESTE: ${{ inputs.teste && '1' || '' }}
         run: python alerta-csc/alerta_resenhas.py
 
-      - name: Salvar resenhas já verificadas
+      - name: Verificar chat dos pregões (e-compras.AM)
+        if: always()
+        env:
+          PROCESSOS: ${{ vars.PROCESSOS || '328/26,400/26,408/26' }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          GITHUB_TOKEN: ${{ github.token }}
+          TESTE_CHAT: ${{ inputs.teste_chat && '1' || '' }}
+        run: python alerta-csc/alerta_chat.py
+
+      - name: Salvar o que já foi verificado
+        if: always()
         run: |
-          git add alerta-csc/estado.json
+          git add alerta-csc/estado.json alerta-csc/estado_chat.json
           if git diff --cached --quiet; then exit 0; fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
