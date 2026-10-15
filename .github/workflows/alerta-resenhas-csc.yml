@@ -1,0 +1,56 @@
+name: Alerta de resenhas do CSC
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+    inputs:
+      teste:
+        description: "Reenviar o alerta da resenha mais recente que cita os processos (para testar o e-mail)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: alerta-resenhas-csc
+  cancel-in-progress: false
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: alerta-csc/requirements.txt
+
+      - run: pip install -r alerta-csc/requirements.txt
+
+      - name: Verificar resenhas
+        env:
+          PROCESSOS: ${{ vars.PROCESSOS || '328/26,400/26,408/26' }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          GITHUB_TOKEN: ${{ github.token }}
+          TESTE: ${{ inputs.teste && '1' || '' }}
+        run: python alerta-csc/alerta_resenhas.py
+
+      - name: Salvar resenhas já verificadas
+        run: |
+          git add alerta-csc/estado.json
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Alerta CSC: registra resenhas verificadas"
+          git pull --rebase
+          git push
