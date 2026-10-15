@@ -8,8 +8,24 @@ Verifica a página de [resenhas do CSC/AM](https://www.csc.am.gov.br/site/resenh
 Processos monitorados hoje: **PE 328/2026, PE 400/2026 e PE 408/2026**.
 
 - `alerta_resenhas.py`: lê a página, baixa o PDF de cada resenha nova e procura os processos.
-- `estado.json`: resenhas já verificadas (o robô atualiza sozinho).
+- `alerta_chat.py`: lê o chat público de cada pregão no e-compras.AM (veja abaixo).
+- `estado.json` e `estado_chat.json`: o que já foi verificado (o robô atualiza sozinho).
 - `../.github/workflows/alerta-resenhas-csc.yml`: agenda a verificação no GitHub Actions.
+
+## Alerta do chat do pregão (e-compras.AM)
+
+Na mesma verificação de 5 em 5 minutos, o robô abre o chat público de acompanhamento de cada pregão (`licitacoes_acompanhamento.asp`, o mesmo que aparece em "Acompanhe os Lances") e manda e-mail quando:
+
+- o pregoeiro ou o sistema informa **quando a sessão volta** (ex.: "retomada a partir das 14h30min do dia 15/10/2026"). O assunto do e-mail já traz a data e a hora: `PE 408/26: retomada 15/10/2026 às 14h30`;
+- a **sessão é reaberta** ("Sessão do Chat Aberta");
+- aparece suspensão, prazo de recurso e contrarrazões, convocação, habilitação, vencedor, adjudicação, homologação, diligência etc.;
+- a **situação do pregão muda** (ex.: de "Suspensão Recursal" para "Em Habilitação").
+
+Mensagens sem importância ("Obrigada", "bom dia") não geram aviso, mas aparecem no e-mail junto das importantes, para dar contexto. Os horários são os que o e-compras mostra no chat.
+
+Se o e-mail não estiver configurado ou falhar, o aviso do chat vai como issue no GitHub.
+
+Para testar: **Actions → Alerta de resenhas do CSC → Run workflow**, marque *Enviar um alerta de exemplo com as últimas mensagens do chat*.
 
 ## Como ativar
 
