@@ -22,9 +22,6 @@ Painel interno que substitui as planilhas de controle de **contratos**, **docume
 - **Prazos** de intenção de recurso, razões, contrarrazões, impugnação, esclarecimento, proposta ajustada, habilitação, assinatura etc. Recurso e contrarrazões são calculados em **3 dias úteis** (Lei 14.133, art. 165), impugnação e esclarecimento em **3 dias úteis antes da sessão** (art. 164). Só feriados nacionais são descontados, então o prazo calculado nunca fica depois do real. Avisos 72, 24, 4 e 1 hora antes.
 - **Mensagens dos portais:** os e-mails que os portais mandam quando o pregoeiro escreve no chat chegam ao painel pelo script do Gmail, são ligados à licitação certa, classificados (recurso, convocação/anexo, retorno de fase, suspensão, lances, resultado) e avisados na hora. Datas citadas na mensagem ("envie até 16/10 às 17h", "prazo de 2 horas") viram prazos "a conferir". Também dá para **colar o chat** na tela da licitação.
 
-### Lances
-Assistente que calcula o próximo lance dentro do valor mínimo e das reduções definidas por item, mostra a posição e conta o tempo da etapa aberta. Veja [AVALIACAO-LANCES.md](AVALIACAO-LANCES.md) sobre a automação completa.
-
 ### Avisos
 - **E-mail** (Resend) para a lista da equipe e para os e-mails extras de cada registro, e **Telegram** (grupo da equipe).
 - Cada aviso é enviado **uma vez por antecedência** (ex.: aos 30 dias, depois aos 15…). Itens vencidos são lembrados uma vez por semana até serem resolvidos.
@@ -78,7 +75,7 @@ O agendamento está em `.github/workflows/rotina-prazos.yml`.
 Upstash, Resend (até 3.000 e-mails/mês), Telegram, GitHub Actions e Google Apps Script têm planos gratuitos suficientes para este uso. **Atenção:** os termos da Vercel limitam o plano gratuito (Hobby) a uso pessoal e não comercial; para uso da empresa, o plano adequado é o Pro.
 
 ## Para desenvolver
-- `regras.js`: datas, dias úteis, alertas, leitura de planilhas, mensagens e lances (usado pela página e pelo servidor).
+- `regras.js`: datas, dias úteis, alertas, leitura de planilhas e mensagens (usado pela página e pelo servidor).
 - `gestao.html`: o painel.
 - `api/dados.js` (cadastros), `api/rotina.js` (alertas e PNCP), `api/mensagens.js` (e-mails dos portais) e `api/_lib/`.
 - Testes: `node --test testes/*.test.js`.

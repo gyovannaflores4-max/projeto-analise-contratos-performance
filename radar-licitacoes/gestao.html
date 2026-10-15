@@ -187,17 +187,6 @@ button,input,select,textarea{font:inherit;color:inherit}
 .tl li.pncp::before{background:var(--accent)} .tl li.mensagem::before{background:var(--warn)} .tl li.status::before{background:var(--ok)}
 .tl time{display:block;font-size:12px;color:var(--ink-3)}
 
-/* Lances */
-.lance-box{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
-@media (max-width:900px){.lance-box{grid-template-columns:minmax(0,1fr)}}
-.sug{display:flex;flex-direction:column;gap:6px;padding:20px;border-radius:var(--r);background:var(--surface-2)}
-.sug b{font-family:var(--f-display);font-size:34px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
-.sug.cobrir{background:var(--accent-soft)} .sug.cobrir b{color:var(--accent)}
-.sug.manter{background:var(--ok-soft)} .sug.manter b{color:var(--ok)}
-.sug.parar{background:var(--crit-soft)} .sug.parar b{color:var(--crit)}
-.sug.intermediario{background:var(--warn-soft)} .sug.intermediario b{color:var(--warn)}
-.relogio{font-family:var(--f-display);font-size:30px;font-weight:800;font-variant-numeric:tabular-nums}
-.relogio.fim{color:var(--crit)}
 .fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
 
 /* Formulário em janela */
@@ -264,7 +253,6 @@ dialog::backdrop{background:var(--shade)}
       <a href="#contratos" data-v="contratos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg>Contratos<span class="c num" id="cContratos">0</span></a>
       <a href="#documentos" data-v="documentos"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="9" r="5"/><path d="m9 13-2 8 5-3 5 3-2-8"/></svg>Documentos<span class="c num" id="cDocumentos">0</span></a>
       <a href="#licitacoes" data-v="licitacoes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21h16M6 21V10M18 21V10M10 21V10M14 21V10M3 10l9-6 9 6z"/></svg>Licitações<span class="c num" id="cLicitacoes">0</span></a>
-      <a href="#lances" data-v="lances"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16M7 15l4-4 3 3 6-7"/></svg>Lances</a>
       <a href="#config" data-v="config"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6a7 7 0 0 0 0 2.4l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z"/></svg>Configurações</a>
     </nav>
     <div class="side-foot">
@@ -286,7 +274,7 @@ dialog::backdrop{background:var(--shade)}
 const R = window.Regras;
 const $ = (s, el = document) => el.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-const S = { dados: null, senha: "", filtro: { grupo: "todos", horizonte: 120, busca: "", situacao: "ativas" }, lance: {} };
+const S = { dados: null, senha: "", filtro: { grupo: "todos", horizonte: 120, busca: "", situacao: "ativas" } };
 
 /* ---------- Armazenamento local (só conveniências) ---------- */
 function local(k, v) {
@@ -348,7 +336,6 @@ function mostrarLogin(msg) {
 
 /* ---------- Formatação ---------- */
 const fData = s => (s ? R.formatarData(s) : "—");
-const pct = n => String(n).replace(".", ",") + "%";
 const hoje = () => R.hojeBrasilia();
 function pillDias(data, unidade = "dias", sem = "—") {
   if (!data) return '<span class="pill off">' + sem + "</span>";
@@ -376,7 +363,7 @@ function render() {
   const ativo = v === "licitacao" ? "licitacoes" : v;
   for (const a of document.querySelectorAll("#nav a")) { if (a.dataset.v === ativo) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); }
   contadores();
-  const telas = { painel: telaPainel, contratos: telaContratos, documentos: telaDocumentos, licitacoes: telaLicitacoes, licitacao: () => telaLicitacao(id), lances: telaLances, config: telaConfig };
+  const telas = { painel: telaPainel, contratos: telaContratos, documentos: telaDocumentos, licitacoes: telaLicitacoes, licitacao: () => telaLicitacao(id), config: telaConfig };
   (telas[v] || telaPainel)();
 }
 function contadores() {
@@ -634,7 +621,7 @@ const CAMPOS_LICITACAO = [
 function abrirLicitacao(l, prefill) {
   formulario({
     titulo: l ? "Editar licitação" : "Nova licitação", campos: CAMPOS_LICITACAO, valores: l || { status: "analise", portal: "Compras.gov.br", ...prefill },
-    salvar: async v => { const s = await salvar("licitacoes", { prazos: [], itens: [], mensagens: [], historico: [], ...l, ...v }, "Licitação salva."); location.hash = "licitacao/" + s.id; },
+    salvar: async v => { const s = await salvar("licitacoes", { prazos: [], mensagens: [], historico: [], ...l, ...v }, "Licitação salva."); location.hash = "licitacao/" + s.id; },
     excluir: l && (() => remover("licitacoes", l.id).then(() => (location.hash = "licitacoes")))
   });
 }
@@ -731,13 +718,6 @@ function telaLicitacao(id) {
             : `<p>Sem link do PNCP. <button class="link" data-acao="editar-lic" data-id="${l.id}">Informe o link</button> para receber aviso quando a situação mudar ou sair ata, resultado ou novo documento.</p>`}</div>
         </section>
         <section class="card">
-          <div class="card-h"><h2>Itens e estratégia de lances</h2><button class="btn btn-sm" data-acao="novo-item" data-id="${l.id}">Adicionar item</button></div>
-          ${(l.itens || []).length ? `<ul class="lista">${l.itens.map(it => `<li><div class="grow"><div class="t">Item ${esc(it.numero || "")} ${esc(it.descricao || "")}</div>
-            <div class="s">Mínimo ${it.minimo ? R.moeda(it.minimo) : "não definido"} · redução ${it.decremento ? (it.decrementoTipo === "pct" ? pct(it.decremento) : R.moeda(it.decremento)) : "—"} por lance${it.valorEstimado ? " · estimado " + R.moeda(it.valorEstimado) : ""}</div></div>
-            <a class="btn btn-sm" href="#lances" data-acao="ir-lance" data-id="${l.id}" data-i="${it.id}">Disputa</a><button class="btn btn-sm" data-acao="editar-item" data-id="${l.id}" data-i="${it.id}">Editar</button></li>`).join("")}</ul>`
-            : '<div class="empty small">Defina por item o valor mínimo aceitável e a redução por lance antes da sessão.</div>'}
-        </section>
-        <section class="card">
           <div class="card-h"><h2>Histórico</h2><button class="btn btn-sm" data-acao="nota" data-id="${l.id}">Anotar</button></div>
           ${hist.length ? `<ul class="tl">${hist.map(h => `<li class="${esc(h.tipo)}"><time>${esc(fData(h.em))}${h.auto ? " · automático" : ""}</time>${esc(h.texto)}${h.link ? ` <a href="${esc(h.link)}" target="_blank" rel="noopener">abrir</a>` : ""}</li>`).join("")}</ul>` : '<div class="empty small">Sem registros.</div>'}
         </section>
@@ -775,104 +755,6 @@ function abrirPrazo(l, p) {
     excluir: p && (() => salvar("licitacoes", { ...l, prazos: l.prazos.filter(x => x.id !== p.id) }, "Prazo excluído."))
   });
 }
-const CAMPOS_ITEM = [
-  { k: "numero", r: "Nº do item" },
-  { k: "descricao", r: "Descrição" },
-  { k: "quantidade", r: "Quantidade", t: "number" },
-  { k: "valorEstimado", r: "Valor estimado / referência (R$)", t: "number", dica: "Valor total do item, na mesma base dos lances." },
-  { k: "minimo", r: "Valor mínimo aceitável (R$)", t: "number", req: true, dica: "Abaixo dele não damos lance. Considere custos, impostos e margem." },
-  { k: "decremento", r: "Redução por lance", t: "number", dica: "Quanto baixar em relação ao melhor lance. Respeite o intervalo mínimo do edital." },
-  { k: "decrementoTipo", r: "Redução em", t: "select", ops: [["valor", "Reais (R$)"], ["pct", "Percentual (%)"]] },
-  { k: "decrementoMax", r: "Redução máxima por lance (mesma unidade)", t: "number", dica: "Opcional. Evita um lance muito abaixo do anterior por engano." },
-  { k: "obs", r: "Observações", t: "textarea", wide: true }
-];
-function abrirItem(l, it) {
-  formulario({
-    titulo: it ? "Item " + (it.numero || "") : "Novo item", campos: CAMPOS_ITEM, valores: it || { decrementoTipo: "valor" },
-    previa: v => { const m = R.lerNumero(v.minimo), e = R.lerNumero(v.valorEstimado); return m && e ? "Desconto máximo sobre o estimado: " + ((1 - m / e) * 100).toFixed(1).replace(".", ",") + "%." : ""; },
-    salvar: v => { const itens = (l.itens || []).filter(x => !it || x.id !== it.id); itens.push({ ...it, ...v, id: (it && it.id) || R.novoId() }); itens.sort((a, b) => String(a.numero).localeCompare(String(b.numero), "pt", { numeric: true })); return salvar("licitacoes", { ...l, itens }, "Item salvo."); },
-    excluir: it && (() => salvar("licitacoes", { ...l, itens: l.itens.filter(x => x.id !== it.id) }, "Item excluído."))
-  });
-}
-
-/* ---------- Tela: lances ---------- */
-function telaLances() {
-  const ativas = S.dados.licitacoes.filter(l => R.statusLicitacao(l.status).ativa && (l.itens || []).length);
-  const st = S.lance;
-  if (!ativas.some(l => l.id === st.lic)) { st.lic = ativas[0] && ativas[0].id; st.item = null; }
-  const l = ativas.find(x => x.id === st.lic);
-  if (l && !(l.itens || []).some(i => i.id === st.item)) st.item = l.itens[0].id;
-  const it = l && l.itens.find(i => i.id === st.item);
-  const chave = l && it ? "lance-" + l.id + "-" + it.id : null;
-  const reg = (chave && local(chave)) || { log: [], melhor: "", meu: "", inicio: null };
-  $("#conteudo").innerHTML = `
-    <header class="page-h"><div><h1>Assistente de lances</h1><p>Calcula o próximo lance dentro dos limites que vocês definiram para cada item, acompanha a posição e o tempo da etapa aberta. O lance é sempre enviado por uma pessoa, no portal.</p></div></header>
-    <div class="banner info"><div><b>Por que não enviar lances sozinho?</b> Os portais exigem login com certificado ou gov.br, não oferecem interface oficial para robôs e o lance enviado não pode ser desfeito. Veja a avaliação completa no arquivo <span class="mono">AVALIACAO-LANCES.md</span> do projeto.</div></div>
-    ${!ativas.length ? `<div class="card"><div class="empty"><b>Nenhum item com estratégia definida</b>Abra uma licitação em andamento e use “Adicionar item” para definir o valor mínimo e a redução por lance.</div></div>` : `
-    <section class="card"><div class="card-b fields">
-      <label class="field" style="grid-column:span 2"><span>Licitação</span><select id="lLic">${ativas.map(x => `<option value="${x.id}" ${x.id === st.lic ? "selected" : ""}>${esc(R.rotuloLicitacao(x).slice(0, 90))}</option>`).join("")}</select></label>
-      <label class="field" style="grid-column:span 2"><span>Item</span><select id="lItem">${l.itens.map(x => `<option value="${x.id}" ${x.id === st.item ? "selected" : ""}>Item ${esc(x.numero || "")} ${esc((x.descricao || "").slice(0, 60))}</option>`).join("")}</select></label>
-    </div><div class="card-b small muted" style="border-top:1px solid var(--line)">Mínimo aceitável <b>${it.minimo ? R.moeda(it.minimo) : "não definido"}</b> · redução por lance <b>${it.decremento ? (it.decrementoTipo === "pct" ? pct(it.decremento) : R.moeda(it.decremento)) : "não definida (R$ 0,01)"}</b>${it.decrementoMax ? " · máxima " + (it.decrementoTipo === "pct" ? pct(it.decrementoMax) : R.moeda(it.decrementoMax)) : ""}${it.valorEstimado ? " · estimado " + R.moeda(it.valorEstimado) : ""} · <button class="link" data-acao="editar-item" data-id="${l.id}" data-i="${it.id}">alterar</button></div></section>
-    <div class="lance-box">
-      <section class="card"><div class="card-h"><h2>Disputa</h2></div><div class="card-b" style="display:flex;flex-direction:column;gap:14px">
-        <div class="fields">
-          <label class="field"><span>Melhor lance agora (R$)</span><input id="lMelhor" inputmode="decimal" value="${esc(reg.melhor)}" autocomplete="off"></label>
-          <label class="field"><span>Nosso último lance (R$)</span><input id="lMeu" inputmode="decimal" value="${esc(reg.meu)}" autocomplete="off"></label>
-        </div>
-        <div id="lSug"></div>
-        <div class="acts">
-          <button class="btn btn-primary" data-acao="lance-meu">Registrar nosso lance</button>
-          <button class="btn" data-acao="lance-outro">Registrar lance de concorrente</button>
-          <button class="btn" data-acao="copiar-lance">Copiar valor</button>
-        </div>
-      </div></section>
-      <section class="card"><div class="card-h"><h2>Etapa aberta</h2><span class="small muted">10 min + 2 min a cada lance nos 2 minutos finais</span></div><div class="card-b" style="display:flex;flex-direction:column;gap:12px">
-        <div class="relogio" id="lRelogio">--:--</div>
-        <p class="small muted" id="lRelogioTxt">Inicie quando o pregoeiro abrir a disputa do item. Confira o modo de disputa no edital (aberto, aberto e fechado).</p>
-        <div class="acts"><button class="btn" data-acao="etapa-iniciar">${reg.inicio ? "Reiniciar" : "Iniciar"} contagem</button><button class="btn" data-acao="etapa-mais">+2 min</button><label class="check small"><input type="checkbox" id="lSom" ${local("som") ? "checked" : ""}> Som nos 2 minutos finais</label></div>
-        <h3 style="font-size:14px;margin-top:6px">Lances registrados</h3>
-        <ul class="lista" id="lLog" style="max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:8px">${reg.log.length ? reg.log.slice().reverse().map(x => `<li><div class="grow"><span class="t">${R.moeda(x.valor)}</span> <span class="s">${x.quem === "nos" ? "nosso" : "concorrente"} · ${new Date(x.t).toLocaleTimeString("pt-BR")}</span></div></li>`).join("") : '<li class="small muted">Nenhum lance registrado.</li>'}</ul>
-        ${reg.log.length ? '<div><button class="btn btn-sm btn-danger" data-acao="lance-limpar">Limpar registro do item</button></div>' : ""}
-      </div></section>
-    </div>`}`;
-  if (it) { atualizarSugestao(it, reg, chave); relogio(reg); }
-}
-function atualizarSugestao(it, reg, chave) {
-  const melhor = $("#lMelhor").value, meu = $("#lMeu").value;
-  reg.melhor = melhor; reg.meu = meu; local(chave, reg);
-  const s = R.sugerirLance({ ...it, melhorLance: melhor, meuLance: meu });
-  const pos = R.lerNumero(meu) !== null && R.lerNumero(melhor) !== null ? (R.lerNumero(meu) <= R.lerNumero(melhor) ? "Estamos em 1º lugar." : "Não estamos em 1º lugar.") : "";
-  const titulo = { cobrir: "Próximo lance", manter: "Manter", parar: "Parar", intermediario: "Lance intermediário", aguardar: "Aguardando" }[s.acao];
-  $("#lSug").innerHTML = `<div class="sug ${s.acao}"><span class="lbl">${titulo}</span><b>${s.valor !== undefined ? R.moeda(s.valor) : "—"}</b><span>${esc(s.motivo)}${s.desconto ? " Desconto de " + (s.desconto * 100).toFixed(2).replace(".", ",") + "% sobre o estimado." : ""}</span>${pos ? `<span class="small">${pos}</span>` : ""}</div>`;
-  S.lance.sugestao = s;
-}
-let tRelogio, bipou = false;
-function relogio(reg) {
-  clearInterval(tRelogio);
-  const el = $("#lRelogio"); if (!el) return;
-  const tick = () => {
-    if (!document.body.contains(el)) return clearInterval(tRelogio);
-    if (!reg.inicio) { el.textContent = "--:--"; return; }
-    const fim = R.fimEtapaAberta(reg.inicio, reg.log.map(x => x.t)) + (reg.extra || 0);
-    const resta = fim - Date.now();
-    el.classList.toggle("fim", resta < 120000);
-    if (resta <= 0) { el.textContent = "00:00"; $("#lRelogioTxt").textContent = "Tempo previsto encerrado. Confira no portal se a etapa terminou ou se houve prorrogação."; return; }
-    const m = Math.floor(resta / 60000), s = Math.floor((resta % 60000) / 1000);
-    el.textContent = R.pad(m) + ":" + R.pad(s);
-    $("#lRelogioTxt").textContent = "Fim previsto às " + new Date(fim).toLocaleTimeString("pt-BR") + (resta < 120000 ? ". Últimos 2 minutos: cada lance prorroga a etapa." : ".");
-    if (resta < 120000 && !bipou && $("#lSom") && $("#lSom").checked) { bipou = true; bip(); }
-    if (resta >= 120000) bipou = false;
-  };
-  tick(); tRelogio = setInterval(tick, 500);
-}
-function bip() {
-  try { const c = new AudioContext(), o = c.createOscillator(), g = c.createGain(); o.frequency.value = 880; o.connect(g); g.connect(c.destination); g.gain.value = .15; o.start(); o.stop(c.currentTime + .35); } catch {}
-}
-function regLance() {
-  const l = S.dados.licitacoes.find(x => x.id === S.lance.lic), chave = "lance-" + S.lance.lic + "-" + S.lance.item;
-  return { l, it: l && l.itens.find(i => i.id === S.lance.item), chave, reg: local(chave) || { log: [], melhor: "", meu: "", inicio: null } };
-}
-
 /* ---------- Tela: configurações ---------- */
 function telaConfig() {
   const c = S.dados.config, srv = S.dados.servidor || {}, can = srv.canais || {}, av = c.avisos || {};
@@ -1040,7 +922,7 @@ $("#arquivo").addEventListener("change", tentar(async e => {
   f.oninput = f.onchange = null;
   f.onsubmit = tentar(async ev => {
     ev.preventDefault();
-    const extras = col === "licitacoes" ? { prazos: [], itens: [], mensagens: [] } : col === "contratos" ? { situacao: "vigente" } : { situacao: "valido" };
+    const extras = col === "licitacoes" ? { prazos: [], mensagens: [] } : col === "contratos" ? { situacao: "vigente" } : { situacao: "valido" };
     const itens = ok.map(r => { const e = existentes.get(chaveImport(col, r)); return e ? { ...e, ...r } : { ...extras, ...r }; });
     for (let i = 0; i < itens.length; i += 500) await api("api/dados", { acao: "importar", colecao: col, itens: itens.slice(i, i + 500) });
     dlg.close(); aviso(ok.length + " registros importados" + (atualizados ? " (" + atualizados + " já existiam e foram atualizados)" : "") + "."); await carregar();
@@ -1097,9 +979,6 @@ const ACOES = {
   "excluir-lic": b => confirm("Excluir esta licitação e todo o histórico?") && remover("licitacoes", b.dataset.id).then(() => (location.hash = "licitacoes")),
   "novo-prazo": b => abrirPrazo(achar("licitacoes", b.dataset.id)),
   "editar-prazo": b => { const l = achar("licitacoes", b.dataset.id); abrirPrazo(l, l.prazos.find(p => p.id === b.dataset.p)); },
-  "novo-item": b => abrirItem(achar("licitacoes", b.dataset.id)),
-  "editar-item": b => { const l = achar("licitacoes", b.dataset.id); abrirItem(l, l.itens.find(i => i.id === b.dataset.i)); },
-  "ir-lance": b => { S.lance.lic = b.dataset.id; S.lance.item = b.dataset.i; },
   "verificar-pncp": async b => {
     b.disabled = true;
     try {
@@ -1123,16 +1002,10 @@ const ACOES = {
     formulario({ titulo: "Anotar no histórico", campos: [{ k: "texto", r: "Anotação", t: "textarea", wide: true, req: true }], valores: {},
       salvar: v => salvar("licitacoes", { ...l, historico: (l.historico || []).concat({ id: R.novoId(), em: R.agoraBrasilia(), tipo: "nota", texto: v.texto }) }, "Anotação salva.") });
   },
-  "lance-meu": () => { const { chave, reg, it } = regLance(), s = S.lance.sugestao; const v = R.lerNumero(prompt("Valor do lance que enviamos no portal (R$):", s && s.valor ? String(s.valor).replace(".", ",") : "")); if (v === null) return; reg.log.push({ t: Date.now(), valor: v, quem: "nos" }); reg.meu = String(v).replace(".", ","); if (!R.lerNumero(reg.melhor) || v < R.lerNumero(reg.melhor)) reg.melhor = reg.meu; local(chave, reg); render(); if (it && it.minimo && v < R.lerNumero(it.minimo)) aviso("Atenção: este lance está abaixo do mínimo definido para o item.", true); },
-  "lance-outro": () => { const { chave, reg } = regLance(); const v = R.lerNumero(prompt("Valor do lance do concorrente (R$):")); if (v === null) return; reg.log.push({ t: Date.now(), valor: v, quem: "outro" }); if (!R.lerNumero(reg.melhor) || v < R.lerNumero(reg.melhor)) reg.melhor = String(v).replace(".", ","); local(chave, reg); render(); },
-  "copiar-lance": async () => { const s = S.lance.sugestao; if (!s || s.valor === undefined) throw new Error("Ainda não há lance sugerido."); await navigator.clipboard.writeText(s.valor.toFixed(2).replace(".", ",")); aviso("Valor copiado: " + R.moeda(s.valor)); },
-  "etapa-iniciar": () => { const { chave, reg } = regLance(); reg.inicio = Date.now(); reg.extra = 0; reg.log = reg.log.filter(x => x.t >= reg.inicio); local(chave, reg); render(); },
-  "etapa-mais": () => { const { chave, reg } = regLance(); if (!reg.inicio) reg.inicio = Date.now(); reg.extra = (reg.extra || 0) + 120000; local(chave, reg); render(); },
-  "lance-limpar": () => { if (!confirm("Limpar os lances registrados deste item?")) return; const { chave } = regLance(); local(chave, null); render(); }
 };
 document.addEventListener("click", tentar(async e => {
   const b = e.target.closest("[data-acao]");
-  if (b && ACOES[b.dataset.acao]) { if (b.type === "checkbox") return; if (b.tagName !== "A" || b.dataset.acao !== "ir-lance") e.preventDefault(); await ACOES[b.dataset.acao](b); return; }
+  if (b && ACOES[b.dataset.acao]) { if (b.type === "checkbox") return; if (b.tagName !== "A") e.preventDefault(); await ACOES[b.dataset.acao](b); return; }
   if (e.target.closest("[data-parar]")) return;
   const g = e.target.closest("[data-grupo]"); if (g) { S.filtro.grupo = g.dataset.grupo; render(); return; }
   const s = e.target.closest("[data-situacao]"); if (s) { S.filtro.situacao = s.dataset.situacao; render(); return; }
@@ -1144,14 +1017,10 @@ document.addEventListener("change", tentar(async e => {
   if (t.matches("[data-acao=marcar-prazo]")) return ACOES["marcar-prazo"](t);
   if (t.id === "horizonte") { S.filtro.horizonte = Number(t.value); render(); }
   if (t.id === "statusLic") { const l = achar("licitacoes", rota().id); await salvar("licitacoes", { ...l, status: t.value }, "Status atualizado."); }
-  if (t.id === "lLic") { S.lance.lic = t.value; S.lance.item = null; render(); }
-  if (t.id === "lItem") { S.lance.item = t.value; render(); }
-  if (t.id === "lSom") local("som", t.checked);
 }));
 document.addEventListener("input", e => {
   const t = e.target;
   if (t.id === "busca") { S.filtro.busca = t.value; const pos = t.selectionStart; render(); const n = $("#busca"); n.focus(); n.setSelectionRange(pos, pos); }
-  if (t.id === "lMelhor" || t.id === "lMeu") { const { it, reg, chave } = regLance(); if (it) atualizarSugestao(it, reg, chave); }
 });
 document.addEventListener("submit", tentar(async e => {
   if (e.target.id === "formConfig") {
@@ -1169,7 +1038,7 @@ $("#formLogin").addEventListener("submit", tentar(async e => {
 }));
 $("#btnSair").addEventListener("click", () => { guardarSenha("", false); try { localStorage.removeItem("gp-senha-v"); sessionStorage.removeItem("gp-senha-v"); } catch {} S.dados = null; mostrarLogin(); });
 // Atualiza sozinho a cada 5 minutos enquanto a página estiver aberta (sem atrapalhar quem está digitando)
-setInterval(() => { if (document.visibilityState === "visible" && S.dados && !$("#dlg").open && !["lances"].includes(rota().v) && !(document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))) carregar().catch(() => {}); }, 300000);
+setInterval(() => { if (document.visibilityState === "visible" && S.dados && !$("#dlg").open && !(document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))) carregar().catch(() => {}); }, 300000);
 
 S.senha = lerSenha();
 if (S.senha) carregar().catch(() => {}); else mostrarLogin();

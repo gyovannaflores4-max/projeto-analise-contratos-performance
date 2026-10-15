@@ -1,4 +1,4 @@
-// Regras da Gestão de Prazos: datas, dias úteis, alertas, leitura de planilhas, mensagens dos portais e lances.
+// Regras da Gestão de Prazos: datas, dias úteis, alertas, leitura de planilhas e mensagens dos portais.
 // O mesmo arquivo roda na página (gestao.html, como window.Regras) e no servidor (require("../regras.js")).
 // Todas as datas são do horário de Brasília. Datas simples usam "AAAA-MM-DD"; data e hora usam "AAAA-MM-DDTHH:MM".
 (function (raiz, fabrica) {
@@ -530,35 +530,7 @@
     return melhor;
   }
 
-  /* ---------- Lances ---------- */
-  // Sugere o próximo lance (critério menor preço) dentro dos limites definidos para o item.
-  function sugerirLance(o) {
-    const melhor = lerNumero(o.melhorLance), meu = lerNumero(o.meuLance), minimo = lerNumero(o.minimo);
-    const dec = lerNumero(o.decremento) || 0, decMax = lerNumero(o.decrementoMax);
-    const emValor = (x, base) => o.decrementoTipo === "pct" ? base * x / 100 : x;
-    const cent = v => Math.round(v * 100) / 100;
-    if (melhor === null || melhor <= 0) return { acao: "aguardar", motivo: "Informe o melhor lance da disputa." };
-    if (minimo === null) return { acao: "aguardar", motivo: "Defina o valor mínimo aceitável do item antes da disputa." };
-    if (meu !== null && meu <= melhor) return { acao: "manter", valor: meu, motivo: "Seu lance é o melhor da disputa. Aguarde." };
-    if (minimo >= melhor) return { acao: "parar", valor: minimo, motivo: "O melhor lance (" + moeda(melhor) + ") já está abaixo do seu mínimo (" + moeda(minimo) + "). Não cubra." };
-    const passo = Math.max(0.01, emValor(dec, melhor));
-    let alvo = Math.floor((melhor - passo) * 100) / 100;
-    let aviso = "";
-    if (decMax !== null && decMax > 0 && meu !== null) {
-      const limite = cent(meu - emValor(decMax, meu));
-      if (alvo < limite) { alvo = Math.max(limite, alvo); aviso = " Limitado pela redução máxima por lance; pode ser preciso mais de um lance."; }
-    }
-    if (alvo < minimo) { alvo = minimo; aviso = " É o seu valor mínimo: último lance possível neste item."; }
-    alvo = cent(alvo);
-    if (alvo >= melhor) return { acao: "intermediario", valor: alvo, motivo: "A redução máxima por lance não deixa cobrir o melhor lance de uma vez. Lance intermediário de " + moeda(alvo) + " e repita." };
-    return { acao: "cobrir", valor: alvo, desconto: o.valorEstimado ? 1 - alvo / lerNumero(o.valorEstimado) : null, motivo: "Lance sugerido para ficar em 1º lugar." + aviso };
-  }
-  // Modo aberto (IN SEGES/ME 73/2022): 10 minutos, prorrogados por 2 minutos a cada lance nos 2 minutos finais.
-  function fimEtapaAberta(inicioMs, lancesMs) {
-    let fim = inicioMs + 10 * 60000;
-    for (const t of [...lancesMs].sort((a, b) => a - b)) if (t <= fim && fim - t <= 2 * 60000) fim = t + 2 * 60000;
-    return fim;
-  }
+  /* ---------- Formatação ---------- */
   function moeda(v) {
     const n = Number(v);
     if (!isFinite(n)) return "";
@@ -574,6 +546,6 @@
     lerData, lerNumero, lerAvisos, lerEmails, lerCSV, gerarCSV, COLUNAS, mapearColunas, linhaParaRegistro, semAcento, statusPorTexto, tipoDocumentoPorTexto,
     prazoRenovacao, prazoReajuste, eventos, avaliar, textoFalta, textoAlerta, dataDoEvento, pendentes, gerarICS, rotuloContrato, rotuloLicitacao,
     CLASSES_MENSAGEM, classificarMensagem, datasNoTexto, chavesLicitacao, encontrarLicitacao,
-    sugerirLance, fimEtapaAberta, moeda, novoId
+    moeda, novoId
   };
 });

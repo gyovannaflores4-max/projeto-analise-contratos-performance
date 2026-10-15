@@ -135,20 +135,6 @@ test("mensagens dos portais", () => {
   assert.equal(R.encontrarLicitacao(lics, "Pregão 190012/2026"), null);
 });
 
-test("sugestão de lances", () => {
-  const item = { minimo: 900, decremento: 1, decrementoTipo: "valor", valorEstimado: 1200 };
-  assert.equal(R.sugerirLance({ ...item, melhorLance: 1000 }).valor, 999);
-  assert.equal(R.sugerirLance({ ...item, melhorLance: 1000, meuLance: 1000 }).acao, "manter");
-  assert.equal(R.sugerirLance({ ...item, melhorLance: 900.5 }).valor, 900);
-  assert.equal(R.sugerirLance({ ...item, melhorLance: 899 }).acao, "parar");
-  assert.equal(R.sugerirLance({ ...item, melhorLance: 1000, decremento: 0.5, decrementoTipo: "pct" }).valor, 995);
-  const lim = R.sugerirLance({ ...item, melhorLance: 950, meuLance: 1100, decrementoMax: 5, decrementoTipo: "pct", decremento: 0.1 });
-  assert.equal(lim.acao, "intermediario");
-  assert.equal(lim.valor, 1045);
-  assert.equal(R.sugerirLance({ melhorLance: 1000 }).acao, "aguardar");
-  // etapa aberta: 10 min + 2 min por lance nos 2 minutos finais
-  const t0 = 0, min = 60000;
-  assert.equal(R.fimEtapaAberta(t0, []), 10 * min);
-  assert.equal(R.fimEtapaAberta(t0, [5 * min, 9 * min, 10.5 * min]), 12.5 * min);
+test("formatação de moeda", () => {
   assert.equal(R.moeda(1234567.8), "R$ 1.234.567,80");
 });
