@@ -14,18 +14,16 @@ Processos monitorados hoje: **PE 328/2026, PE 400/2026 e PE 408/2026**.
 
 ## Alerta do chat do pregão (e-compras.AM)
 
-Na mesma verificação de 5 em 5 minutos, o robô abre o chat público de acompanhamento de cada pregão (`licitacoes_acompanhamento.asp`, o mesmo que aparece em "Acompanhe os Lances") e manda e-mail quando:
+Na mesma verificação de 5 em 5 minutos, o robô abre o chat público de acompanhamento de cada pregão (`licitacoes_acompanhamento.asp`, o mesmo que aparece em "Acompanhe os Lances") e **manda e-mail sempre que há movimentação**: qualquer mensagem nova no chat ou mudança na situação do pregão (ex.: de "Suspensão Recursal" para "Em Habilitação").
 
-- o pregoeiro ou o sistema informa **quando a sessão volta** (ex.: "retomada a partir das 14h30min do dia 15/10/2026"). O assunto do e-mail já traz a data e a hora: `PE 408/26: retomada 15/10/2026 às 14h30`;
-- a **sessão é reaberta** ("Sessão do Chat Aberta");
-- aparece suspensão, prazo de recurso e contrarrazões, convocação, habilitação, vencedor, adjudicação, homologação, diligência etc.;
-- a **situação do pregão muda** (ex.: de "Suspensão Recursal" para "Em Habilitação").
-
-Mensagens sem importância ("Obrigada", "bom dia") não geram aviso, mas aparecem no e-mail junto das importantes, para dar contexto. Os horários são os que o e-compras mostra no chat.
+- **Um e-mail só** para todos os pregões que tiveram movimentação naquela verificação. No fim do e-mail vem a situação dos que não mudaram.
+- O assunto resume o que aconteceu em cada pregão, com a **data e a hora de retomada** quando o pregoeiro informa. Exemplo: `[Alerta e-compras] Movimentação no chat: PE 408/26 (sessão reaberta; retomada 19/10/2026 às 12h00), PE 400/26 (2 mensagens novas)`.
+- As mensagens importantes (retomada, adiamento, suspensão, prazos de recurso, convocação, habilitação, vencedor, homologação etc.) vêm marcadas com `>>`.
+- Cada mensagem é avisada uma vez só. Os horários são os que o e-compras mostra no chat.
 
 Se o e-mail não estiver configurado ou falhar, o aviso do chat vai como issue no GitHub.
 
-Para testar: **Actions → Alerta de resenhas do CSC → Run workflow**, marque *Enviar um alerta de exemplo com as últimas mensagens do chat*.
+Para testar: **Actions → Alerta de resenhas do CSC → Run workflow**, marque *Enviar um alerta de exemplo com as últimas mensagens do chat*. Chega um e-mail só, com "[TESTE]" no assunto e as últimas mensagens de todos os pregões.
 
 ## Como ativar
 
