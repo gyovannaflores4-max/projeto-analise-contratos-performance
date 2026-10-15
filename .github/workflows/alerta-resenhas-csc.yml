@@ -52,6 +52,9 @@ jobs:
 
       - name: Verificar chat dos pregões (e-compras.AM)
         if: always()
+        # O e-compras às vezes trava a conexão: não deixa isso segurar o resto.
+        timeout-minutes: 4
+        continue-on-error: true
         env:
           PROCESSOS: ${{ vars.PROCESSOS || '328/26,400/26,408/26' }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
@@ -62,7 +65,7 @@ jobs:
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           GITHUB_TOKEN: ${{ github.token }}
           TESTE_CHAT: ${{ inputs.teste_chat && '1' || '' }}
-        run: python alerta-csc/alerta_chat.py
+        run: python -u alerta-csc/alerta_chat.py
 
       - name: Salvar o que já foi verificado
         if: always()

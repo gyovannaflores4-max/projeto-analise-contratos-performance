@@ -47,13 +47,13 @@ def sem_acento(texto):
     return "".join(c for c in texto if unicodedata.category(c) != "Mn")
 
 
-def requisitar(url, dados=None, tentativas=6):
+def requisitar(url, dados=None, tentativas=4):
     """O e-compras derruba conexões com frequência: tenta de novo algumas vezes."""
     corpo = urllib.parse.urlencode(dados).encode() if dados else None
     req = urllib.request.Request(url, data=corpo, headers={"User-Agent": USER_AGENT})
     for tentativa in range(1, tentativas + 1):
         try:
-            with urllib.request.urlopen(req, timeout=60) as resp:
+            with urllib.request.urlopen(req, timeout=20) as resp:
                 return resp.read().decode("cp1252", "replace")
         except OSError:
             if tentativa == tentativas:
