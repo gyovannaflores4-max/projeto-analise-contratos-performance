@@ -42,7 +42,8 @@ jobs:
           PROCESSOS: ${{ vars.PROCESSOS || '328/26,400/26,408/26' }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
-          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          # Nos testes, o e-mail vai só para EMAIL_TESTE (ou para o próprio SMTP_USER), nunca para a lista toda.
+          EMAIL_TO: ${{ (inputs.teste || inputs.teste_chat) && (secrets.EMAIL_TESTE || secrets.SMTP_USER) || secrets.EMAIL_TO }}
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           GITHUB_TOKEN: ${{ github.token }}
@@ -55,7 +56,8 @@ jobs:
           PROCESSOS: ${{ vars.PROCESSOS || '328/26,400/26,408/26' }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
-          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          # Nos testes, o e-mail vai só para EMAIL_TESTE (ou para o próprio SMTP_USER), nunca para a lista toda.
+          EMAIL_TO: ${{ (inputs.teste || inputs.teste_chat) && (secrets.EMAIL_TESTE || secrets.SMTP_USER) || secrets.EMAIL_TO }}
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           GITHUB_TOKEN: ${{ github.token }}

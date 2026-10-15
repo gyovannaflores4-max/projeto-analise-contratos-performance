@@ -34,7 +34,8 @@ Para testar: **Actions → Alerta de resenhas do CSC → Run workflow**, marque 
 3. No GitHub, abra **Settings → Secrets and variables → Actions → New repository secret** e crie:
    - `SMTP_USER`: o Gmail que vai enviar (ex.: `seuemail@gmail.com`);
    - `SMTP_PASS`: a senha de app do passo 2;
-   - `EMAIL_TO` (opcional): quem recebe. Pode ser mais de um, separados por vírgula. Se ficar vazio, vai para o próprio `SMTP_USER`.
+   - `EMAIL_TO` (opcional): quem recebe. Pode ser mais de um, separados por vírgula. Se ficar vazio, vai para o próprio `SMTP_USER`;
+   - `EMAIL_TESTE` (opcional): para onde vão os **testes**. Os testes nunca vão para a lista da `EMAIL_TO`; sem `EMAIL_TESTE`, vão só para o `SMTP_USER`.
 4. **Teste:** em **Actions → Alerta de resenhas do CSC → Run workflow**, marque *Reenviar o alerta...* e clique em **Run workflow**. Chega o e-mail da resenha mais recente que cita os processos.
 
 Para usar outro provedor de e-mail, crie também `SMTP_HOST` e `SMTP_PORT` (465 para SSL, 587 para STARTTLS).
