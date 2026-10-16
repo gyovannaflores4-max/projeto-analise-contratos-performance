@@ -7,6 +7,8 @@ Verifica a página de [resenhas do CSC/AM](https://www.csc.am.gov.br/site/resenh
 
 Processos monitorados hoje: **PE 328/2026, PE 400/2026 e PE 408/2026**.
 
+> **Quer o aviso mais rápido?** A pasta [`apps-script/`](apps-script/README.md) tem uma versão que roda na sua conta Google **de 1 em 1 minuto**, manda o e-mail pelo seu Gmail e cria um evento no Google Agenda na hora em que o pregão volta. Ela não depende do agendamento do GitHub.
+
 - `alerta_resenhas.py`: lê a página, baixa o PDF de cada resenha nova e procura os processos.
 - `alerta_chat.py`: lê o chat público de cada pregão no e-compras.AM (veja abaixo).
 - `estado.json` e `estado_chat.json`: o que já foi verificado (o robô atualiza sozinho).
