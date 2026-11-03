@@ -13,6 +13,10 @@ on:
         description: "Enviar um alerta de exemplo com as últimas mensagens do chat de todos os pregões (para testar)"
         type: boolean
         default: false
+      teste_resumo:
+        description: "Mandar agora o resumo diário do portal (mesmo que já tenha mandado hoje)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -82,10 +86,27 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: python -u alerta-csc/monitor_pncp.py
 
+      - name: Resumo diário do portal por e-mail
+        if: always()
+        timeout-minutes: 3
+        continue-on-error: true
+        env:
+          # Chave gerada no portal (Ajustes → Resumo diário por e-mail). Sem ela, o passo é pulado.
+          PORTAL_CHAVE_ROBO: ${{ secrets.PORTAL_CHAVE_ROBO }}
+          HORA_RESUMO: ${{ vars.HORA_RESUMO || '7' }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          # Vai só para este endereço.
+          EMAIL_TO: gyovannaflores4@gmail.com
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          TESTE_RESUMO: ${{ inputs.teste_resumo && '1' || '' }}
+        run: python -u alerta-csc/resumo_diario.py
+
       - name: Salvar o que já foi verificado
         if: always()
         run: |
-          git add alerta-csc/estado.json alerta-csc/estado_chat.json alerta-csc/chats.json alerta-csc/estado_pncp.json
+          git add alerta-csc/estado.json alerta-csc/estado_chat.json alerta-csc/chats.json alerta-csc/estado_pncp.json alerta-csc/estado_resumo.json
           if git diff --cached --quiet; then exit 0; fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

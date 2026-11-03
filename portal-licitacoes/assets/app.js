@@ -432,6 +432,10 @@
         registrar("Chat do " + p.edital + " trazido do robô do GitHub.", "chats");
         novos++;
       }
+      if (!c.editalId) { // liga ao edital de mesmo número/ano, se houver
+        const ed = S.editais.find(e => numAno(e.numero) && numAno(e.numero) === numAno(p.edital));
+        if (ed && !S.chats.some(x => x !== c && x.editalId === ed.id && x.mensagens.length)) { c.editalId = ed.id; c.orgao = c.orgao || ed.orgao; }
+      }
       c.ident = ident; c.robo = true; c.roboEm = dados.atualizado_em || null; c.roboOrigem = origem;
       mesclarChat(c, { pregao: { status: p.status, objeto: p.objeto, link: p.link }, mensagens: p.mensagens || [] });
     });
@@ -1752,6 +1756,31 @@
   }
 
   /* ---------- Ajustes ---------- */
+  /* Resumo diário por e-mail: o robô do GitHub lê os dados com uma chave própria (só o hash fica no banco) */
+  const LINK_SEGREDO = "https://github.com/gyovannaflores4-max/projeto-analise-contratos-performance/settings/secrets/actions/new";
+  function resumoDiarioHTML() {
+    const c = ui.chaveRobo;
+    if (!c) { carregarChaveRobo(); }
+    const fmt = iso => iso ? U.fmtDataHora(U.isoDataHora(new Date(iso))) : "";
+    const situacao = !c || c.carregando ? "Verificando…" : c.erro ? c.erro : c.criado_em
+      ? "Ligado. Chave criada em " + fmt(c.criado_em) + (c.usado_em ? "; último resumo lido em " + fmt(c.usado_em) + "." : "; o robô ainda não usou a chave (confira o segredo no GitHub).")
+      : "Desligado. Gere a chave e cadastre no GitHub para receber o resumo.";
+    return '<section class="card"><h2>Resumo diário por e-mail</h2><p>Todo dia útil, a partir das 7h, o robô do GitHub manda para ' + h(nuvem.usuario.email) +
+      " um e-mail com as sessões da semana, propostas a cadastrar, prazos de impugnação e de recurso, documentos e portais vencendo e as novidades dos chats.</p>" +
+      '<p class="nota"' + (c && c.criado_em ? "" : ' style="color:var(--ink-2)"') + ">" + h(situacao) + "</p>" +
+      '<div class="linha-acoes"><button class="btn ' + (c && c.criado_em ? "ghost" : "primario") + ' peq" data-acao="gerarChaveRobo">' + ic("raio") + (c && c.criado_em ? "Gerar nova chave" : "Gerar chave do robô") + "</button>" +
+      (c && c.criado_em ? '<button class="btn ghost peq" data-acao="desligarResumo">Desligar</button>' : "") + "</div></section>";
+  }
+  async function carregarChaveRobo() {
+    ui.chaveRobo = { carregando: true };
+    try {
+      const { data, error } = await nuvem.cliente.rpc("portal_situacao_chave_robo");
+      if (error) throw error;
+      ui.chaveRobo = data || {};
+    } catch (e) { ui.chaveRobo = { erro: "Não consegui verificar a chave do robô agora." }; }
+    if (rotaAtual() === "ajustes") renderSeLivre();
+  }
+
   function pgAjustes() {
     const e = S.empresa, a = S.ajustes;
     const campo = (id, rot, valor, chave, extra, dica) => '<div class="campo"><label for="' + id + '">' + rot + '</label><input id="' + id + '" value="' + h(valor) + '" data-mudar="ajuste" data-chave="' + chave + '" ' + (extra || "") + ">" + (dica ? "<small>" + dica + "</small>" : "") + "</div>";
@@ -1777,6 +1806,7 @@
       (ui.roboErro ? '<p class="nota" style="color:var(--crit)">' + h(ui.roboErro) + "</p>" : "") +
       '<button class="btn ghost peq" data-acao="sincRobo" style="align-self:flex-start">' + ic("atualizar") + "Sincronizar com o robô agora</button>" +
       '<button class="btn ghost peq" data-acao="testarApi" style="align-self:flex-start">' + ic("raio") + "Testar conexão</button></section>" +
+      (nuvem.usuario ? resumoDiarioHTML() : "") +
       '<section class="card" style="grid-column:1/-1"><h2>Seus dados</h2>' +
       (nuvem.usuario ? "<p>Seus dados ficam guardados na nuvem, na conta <b>" + h(nuvem.usuario.email) + "</b>, e aparecem em qualquer computador ou celular em que você entrar. " + h(textoNuvem()) + '.</p><div class="linha-acoes"><button class="btn ghost peq" data-acao="sair">Sair do portal</button><button class="btn ghost peq" data-acao="trocarSenha">Trocar a senha</button></div>'
         : "<p>Tudo fica salvo neste navegador. Faça um backup de vez em quando e use-o para levar os dados para outro computador.</p>") +
@@ -1860,6 +1890,30 @@
   }
 
   const ACOES = {
+    gerarChaveRobo: () => {
+      const gerar = async () => {
+        const { data, error } = await nuvem.cliente.rpc("portal_gerar_chave_robo");
+        if (error || !data) { toast("Não consegui gerar a chave", error ? traduzirErro(error) : "", "crit"); return; }
+        ui.chaveRobo = { criado_em: new Date().toISOString(), usado_em: null }; render();
+        abrirModal({
+          titulo: "Chave do robô", tamanho: "estreito",
+          corpo: '<p>Copie a chave agora: por segurança, ela não aparece de novo.</p>' +
+            '<div class="importar" style="margin:12px 0"><label for="chave-robo">Chave</label><div class="linha"><input id="chave-robo" readonly value="' + h(data) + '"><button type="button" class="btn primario peq" id="copiar-chave">' + ic("copiar") + "Copiar</button></div></div>" +
+            '<ol class="passos"><li>Abra a <a href="' + LINK_SEGREDO + '" target="_blank" rel="noopener">página de segredos do GitHub</a> (repositório → Settings → Secrets and variables → Actions → New repository secret).</li>' +
+            "<li>Em <b>Name</b>, escreva <code>PORTAL_CHAVE_ROBO</code>.</li><li>Em <b>Secret</b>, cole a chave e clique em <b>Add secret</b>.</li></ol>" +
+            '<p class="muted" style="font-size:13px;margin-top:10px">A chave só dá leitura aos seus dados do portal. Se ela vazar, gere outra aqui: a anterior para de funcionar na hora.</p>',
+          rodape: '<span style="flex:1"></span><button class="btn primario" data-acao="fecharModal">Pronto</button>',
+          aoAbrir: () => { $("#copiar-chave").addEventListener("click", () => { U.copiar(data); toast("Chave copiada", "Agora cole no segredo PORTAL_CHAVE_ROBO do GitHub."); }); }
+        });
+      };
+      if (ui.chaveRobo && ui.chaveRobo.criado_em) confirmar("Gerar nova chave?", "A chave atual para de funcionar. Depois, atualize o segredo <b>PORTAL_CHAVE_ROBO</b> no GitHub com a nova.", "Gerar nova chave", gerar, false);
+      else gerar();
+    },
+    desligarResumo: () => confirmar("Desligar o resumo diário?", "A chave do robô será apagada e o e-mail diário para de chegar. Dá para ligar de novo quando quiser.", "Desligar", async () => {
+      const { error } = await nuvem.cliente.rpc("portal_apagar_chave_robo");
+      ui.chaveRobo = error ? null : {}; render();
+      toast(error ? "Não consegui desligar" : "Resumo diário desligado", error ? traduzirErro(error) : "", error ? "crit" : "");
+    }),
     precoItem: () => {
       const e = editalPreco(); if (!e) return;
       const pr = precificacaoDe(e), ult = pr.itens[pr.itens.length - 1];
