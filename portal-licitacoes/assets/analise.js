@@ -155,8 +155,13 @@
     }
 
     /* ---- Datas ---- */
+    // Forma "às 10:00 horas do dia 18 de novembro de 2026 (...) será realizada a sessão"
+    for (const x of todos(t, /\bas \d{1,2}(?::\d{2}|h\d{0,2})? ?(?:horas|hs|h)?,? (?:do |de |no )?(?:dia )?(?=\d)/)) {
+      const d = dataPerto(t, x.i, 90);
+      if (d && /sessao|abertura|disputa|recebimento das propostas|lances/.test(t.slice(x.i, x.i + 400))) { campos.sessao = d; break; }
+    }
     const chavesSessao = [/data (?:e hora )?(?:da |de |do )?(?:licitacao|abertura|realizacao|inicio|disputa|certame)(?: da sessao| do certame| das propostas)?/, /sessao publica/, /abertura da sessao|abertura das propostas/, /inicio da (?:sessao|disputa)/, /data da sessao/];
-    for (const re of chavesSessao) {
+    for (const re of campos.sessao ? [] : chavesSessao) {
       for (const x of todos(t, re)) { const d = dataPerto(t, x.i); if (d) { campos.sessao = d; achados.sessao = x; break; } }
       if (campos.sessao) break;
     }
@@ -180,6 +185,7 @@
     const addCidade = (nome, uf) => {
       nome = String(nome || "").replace(/\s+/g, " ").trim().replace(/^(?:a|o|de|do|da)\s+/i, "").replace(/\s+(?:estado|secretaria|fundo|em|no|na|sp|rj|mg)$/i, "");
       if (/^(?:capital|estado|comarca|uni[ãa]o|rep[úu]blica|centro|bairro|rua|avenida|munic[íi]pio|unidade|hospital|prefeitura|secretaria|fundo|c[âa]mara|governo|departamento|edital|preg[ãa]o|processo|lei|decreto)\b/i.test(nome)) return;
+      if (/\b(?:munic[íi]pio|comunicad|previamente|conforme|mediante)\b/i.test(nome)) return;
       if (nome.length < 3 || nome.split(" ").length > 6 || /\d|^(?:sua|seu|esta|este|cada|todo|qualquer|outro|referido|presente|contratante)\b/i.test(nome)) return;
       if (/^[A-ZÀ-Ú' ]+$/.test(nome)) nome = nome.toLowerCase().replace(/(^|\s)(\S)/g, (x, e, l) => e + l.toUpperCase()).replace(/\s(De|Do|Da|Dos|Das|E)\s/g, x => x.toLowerCase());
       uf = uf ? uf.toUpperCase() : "";
@@ -248,6 +254,8 @@
       campos.itens.push({ item: mi[1], descricao: desc, unidade: mi[3].charAt(0).toUpperCase() + mi[3].slice(1).toLowerCase(), qtd: numeroBR(mi[4]), valorUnit: numeroBR(mi[5]), valorTotal: mi[6] ? numeroBR(mi[6]) : null });
     }
     if (!campos.itens.length) campos.itens = tabelaEmColunas(o);
+    // Termo de Referência publicado em arquivo separado: itens, local e horários ficam nele
+    campos.trSeparado = !campos.itens.length && /termo de refer[êe]ncia\s*\((?:em )?anexo\)|termo de refer[êe]ncia (?:segue )?em (?:arquivo|anexo) (?:separado|pr[óo]prio)|termo de refer[êe]ncia[^.\n]{0,40}(?:dispon[íi]vel|publicado) (?:em arquivo|separadamente)/i.test(o);
     // A descrição do item da tabela não é cláusula de horário
     campos.horarios = campos.horarios.filter(x => !campos.itens.some(i => i.descricao.includes(x.slice(0, 50))));
     if (!campos.valorEstimado && campos.itens.length && campos.itens.every(x => x.valorTotal || (x.qtd && x.valorUnit))) campos.valorEstimado = Math.round(campos.itens.reduce((s, x) => s + (x.valorTotal || x.qtd * x.valorUnit), 0) * 100) / 100;
