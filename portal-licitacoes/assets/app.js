@@ -822,17 +822,17 @@
     const th = 'style="border:1px solid #9AA9AB;padding:6px 8px;background:#E3EEEC;text-align:left;font-weight:700"';
     const itens = c.itens && c.itens.length ? c.itens : [{ item: "1", descricao: null, unidade: null, qtd: null, valorUnit: null }];
     const tabela = '<table style="border-collapse:collapse;margin:0 0 12px;font-size:inherit"><thead><tr><th ' + th + ">ITEM</th><th " + th + ">DESCRIÇÃO / EQUIPE MÍNIMA</th><th " + th + ">UNIDADE</th><th " + th + ">QTDE.</th><th " + th + ">VALOR UNIT</th></tr></thead><tbody>" +
-      itens.map(i => "<tr><td " + td + ">" + h(i.item) + "</td><td " + td + ">" + (i.descricao ? h(i.descricao) : falta("descrição")) + "</td><td " + td + ">" + (i.unidade ? h(i.unidade) : falta("unid.")) + "</td><td " + td + ">" + (i.qtd !== null && i.qtd !== undefined ? i.qtd.toLocaleString("pt-BR") : falta("qtde.")) + '</td><td ' + td + ' nowrap>' + (i.valorUnit ? U.moeda(i.valorUnit) : falta("valor")) + "</td></tr>").join("") + "</tbody></table>";
+      itens.map(i => "<tr><td " + td + ">" + h(i.item) + "</td><td " + td + ">" + (i.descricao ? h(i.descricao) : falta("descrição")) + "</td><td " + td + ">" + (i.unidade ? h(i.unidade) : falta("unid.")) + "</td><td " + td + ">" + (i.qtd !== null && i.qtd !== undefined ? i.qtd.toLocaleString("pt-BR") : falta("qtde.")) + '</td><td ' + td + ' nowrap>' + (i.valorUnit ? U.moeda(i.valorUnit) : c.orcamentoSigiloso ? "Sigiloso" : falta("valor")) + "</td></tr>").join("") + "</tbody></table>";
     const imp = c.impugnacaoInformada || c.impugnacaoAte;
     const sessao = c.sessao ? U.fmtData(c.sessao) + (U.temHora(c.sessao) ? " " + c.sessao.slice(11, 16) : "") : "";
     const portal = c.plataforma ? PORTAL_RESUMO[c.plataforma] || c.plataforma.toUpperCase() : /presencial/i.test(c.modalidade || "") ? "Presencial" : "";
     const ass = S.ajustes.resumoAssinatura || "";
     return p(h(dest) + ",") + p(saudacao + ",") +
-      p("Este processo trata-se da " + (mod ? "<b>" + h(mod) + "</b> " : falta("modalidade") + " ") + (c.objetoCompleto ? h(minusculaInicial(c.objetoCompleto)) : falta("objeto"))) +
-      p("<b>Informações sobre a " + orgao + ":</b>", ";margin-bottom:4px") + lista(infoCidade) +
+      p("Este processo trata-se da " + (mod ? "<b>" + h(mod) + "</b> " : falta("modalidade") + " ") + (c.objetoCompleto ? h(minusculaInicial(c.objetoCompleto).replace(/[\s,;:]*$/, "").replace(/([^.])$/, "$1.")) : falta("objeto"))) +
+      p("<b>Informações sobre " + (/^(?:departamento|fundo|hospital|munic[íi]pio|cons[óo]rcio|tribunal|instituto|governo|centro|minist[ée]rio|servi[çc]o|conselho|comando|ex[ée]rcito|n[úu]cleo)/i.test(c.orgao || "") ? "o " : "a ") + orgao + ":</b>", ";margin-bottom:4px") + lista(infoCidade) +
       p("<b>Execução do Serviço:</b>", ";margin-bottom:4px") + lista(["Local: " + (c.local ? h(c.local.replace(/\.$/, "")) + "." : falta("local de execução")), "Horários: " + (horarios ? horarios + "." : falta("dias e horários"))]) +
       tabela +
-      p("<b>Valor Global Estimado:</b> " + (c.valorEstimado ? U.moeda(c.valorEstimado) + "." : c.orcamentoSigiloso ? "sigiloso." : falta("valor"))) +
+      p("<b>Valor Global Estimado:</b> " + (c.valorEstimado ? U.moeda(c.valorEstimado) + "." : c.orcamentoSigiloso ? "sigiloso (o órgão divulga o valor só depois da fase de lances)." : falta("valor"))) +
       p("<b>Data e Hora da Licitação:</b> " + (sessao || falta("data e hora"))) +
       p("<b>Prazo para Impugnação/Esclarecimentos:</b> " + (imp ? U.fmtData(imp) : falta("prazo"))) +
       p("<b>Portal:</b> " + (portal ? h(portal) : falta("portal"))) +
