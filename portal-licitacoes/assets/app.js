@@ -786,6 +786,7 @@
   }
   /* ---------- Resumo para e-mail (formato da equipe) ---------- */
   const PORTAL_RESUMO = { "Compras.gov.br": "COMPRASGOV", "BLL": "BLL", "BNC": "BNC", "Licitações-e": "LICITAÇÕES-E", "Portal de Compras Públicas": "PORTAL DE COMPRAS PÚBLICAS", "Licitanet": "LICITANET", "Licitar Digital": "LICITAR DIGITAL", "e-compras AM": "E-COMPRAS AM" };
+  const CAPITAIS = { AC: "Rio Branco", AL: "Maceió", AP: "Macapá", AM: "Manaus", BA: "Salvador", CE: "Fortaleza", DF: "Brasília", ES: "Vitória", GO: "Goiânia", MA: "São Luís", MT: "Cuiabá", MS: "Campo Grande", MG: "Belo Horizonte", PA: "Belém", PB: "João Pessoa", PR: "Curitiba", PE: "Recife", PI: "Teresina", RJ: "Rio de Janeiro", RN: "Natal", RS: "Porto Alegre", RO: "Porto Velho", RR: "Boa Vista", SC: "Florianópolis", SP: "São Paulo", SE: "Aracaju", TO: "Palmas" };
   const falta = t => '<mark style="background:#FFE7A3;color:#5A3D00;padding:0 3px;border-radius:3px">[' + h(t) + "]</mark>";
   const minusculaInicial = t => t ? t.charAt(0).toLowerCase() + t.slice(1) : t;
   function tempoViagem(min) { if (!min) return ""; const r = Math.round(min / 10) * 10, hh = Math.floor(r / 60), mm = r % 60; return hh ? hh + "h" + (mm ? String(mm).padStart(2, "0") : "") : mm + " min"; }
@@ -809,11 +810,14 @@
         d.populacao ? "População: aproximadamente " + d.populacao.toLocaleString("pt-BR") + " habitantes, conforme estimativa do IBGE para " + d.anoPopulacao + "." : "População: " + falta("população (IBGE)")
       ];
     } else {
-      infoCidade = ["Cidade: " + (cidade ? h(cidade) + (uf ? " – " + uf : "") : falta("cidade")) + " (capital – " + falta("capital") + ").",
-        "Localização: aproximadamente " + falta("tempo") + " da capital, cerca de " + falta("km") + " por rodovia.",
+      const cap = uf && CAPITAIS[uf];
+      const ehCap = cap && cidade && U.semAcento(cap).toLowerCase() === U.semAcento(cidade).toLowerCase();
+      infoCidade = ["Cidade: " + (cidade ? h(cidade) + (uf ? " – " + uf : "") : falta("cidade")) + (ehCap ? " (capital do estado)." : " (capital – " + (cap ? h(cap) : falta("capital")) + ")."),
+        ehCap ? "Localização: é a própria capital do estado." : "Localização: aproximadamente " + falta("tempo") + " da capital, cerca de " + falta("km") + " por rodovia.",
         "População: aproximadamente " + falta("habitantes") + ", conforme estimativa do IBGE."];
     }
     const horarios = (c.horarios || []).map((x, i) => h((i ? minusculaInicial(x) : x).replace(/\.$/, ""))).join("; ");
+    const cid = ui.cidade || {};
     const td = 'style="border:1px solid #9AA9AB;padding:6px 8px;vertical-align:top"';
     const th = 'style="border:1px solid #9AA9AB;padding:6px 8px;background:#E3EEEC;text-align:left;font-weight:700"';
     const itens = c.itens && c.itens.length ? c.itens : [{ item: "1", descricao: null, unidade: null, qtd: null, valorUnit: null }];
@@ -854,7 +858,7 @@
     try {
       const d = await api("/api/municipio?nome=" + encodeURIComponent(nome) + "&uf=" + encodeURIComponent(uf || ""), 25000);
       ui.cidade = { dados: d };
-    } catch (e) { ui.cidade = { erro: /Vercel|API|conexão|Entre no portal/.test(e.message) ? "Dados da cidade disponíveis no portal publicado (com login)." : e.message }; }
+    } catch (e) { ui.cidade = { erro: "Distância e população não carregaram: " + e.message }; }
     atualizarResumo();
   }
   function atualizarResumo() { const el = $("#cartao-resumo"); if (el && ui.analise) el.outerHTML = resumoCartao(ui.analise); }

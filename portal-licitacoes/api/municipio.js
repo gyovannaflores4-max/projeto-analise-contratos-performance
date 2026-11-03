@@ -32,8 +32,13 @@ async function rota(de, para) {
   try {
     const j = await getJson("https://router.project-osrm.org/route/v1/driving/" + de[4] + "," + de[3] + ";" + para[4] + "," + para[3] + "?overview=false", 9000);
     const r = j && j.routes && j.routes[0];
-    return r ? { distanciaKm: Math.round(r.distance / 1000), tempoMin: Math.round(r.duration / 60) } : {};
-  } catch (e) { return {}; }
+    if (r) return { distanciaKm: Math.round(r.distance / 1000), tempoMin: Math.round(r.duration / 60) };
+  } catch (e) { /* usa a estimativa abaixo */ }
+  // Sem resposta do serviço de rotas: estima pela distância em linha reta (estradas ~25% mais longas, ~75 km/h)
+  const rad = x => x * Math.PI / 180, R = 6371;
+  const a = Math.sin(rad(para[3] - de[3]) / 2) ** 2 + Math.cos(rad(de[3])) * Math.cos(rad(para[3])) * Math.sin(rad(para[4] - de[4]) / 2) ** 2;
+  const km = 2 * R * Math.asin(Math.sqrt(a)) * 1.25;
+  return { distanciaKm: Math.round(km), tempoMin: Math.round(km / 75 * 60), distanciaEstimada: true };
 }
 
 module.exports = async (req, res) => {
