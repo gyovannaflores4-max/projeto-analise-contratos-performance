@@ -195,13 +195,13 @@
     });
 
     const L = limitesDoc();
-    S.documentos.forEach(d => {
+    docsAtivos().forEach(d => {
       const s = situacaoDoc(d);
       if (s.cls !== "crit" && s.cls !== "warn") return;
       const afeta = sessaoAfetada(d.validade);
       add({ id: "doc:" + d.id + ":" + d.validade, tipo: "documento", icone: "documentos", quando: d.validade,
         nivel: s.dias < 0 || s.dias <= L.menor ? "critico" : s.dias <= Math.round(L.maior / 2) ? "atencao" : "info",
-        titulo: (s.dias < 0 ? "Documento vencido: " : "Renovar documento: ") + d.nome,
+        titulo: (s.dias < 0 ? "Documento vencido: " : "Renovar documento: ") + d.nome + (d.empresa ? " (" + empresaCurta(d.empresa) + ")" : ""),
         detalhe: s.rotulo + (afeta ? " · antes da sessão do " + afeta.numero : ""), rota: "documentos", ref: d.id });
     });
     S.portais.forEach(p => {
@@ -246,7 +246,7 @@
       if (dentro(p.razoes) && r.status === "intencao") ev.push({ data: p.razoes, tipo: "recurso", titulo: "Fim do prazo das razões · " + r.pregao, sub: nosso.tipo === "razoes" ? "Prazo nosso" : "Prazo da recorrente", rota: "recursos", ref: r.id });
       if (dentro(p.contrarrazoes) && ["intencao", "razoes"].includes(r.status)) ev.push({ data: p.contrarrazoes, tipo: "recurso", titulo: "Fim do prazo das contrarrazões · " + r.pregao, sub: nosso.tipo === "contrarrazoes" ? "Prazo nosso" : "Acompanhar", rota: "recursos", ref: r.id });
     });
-    S.documentos.forEach(d => { if (dentro(d.validade)) ev.push({ data: d.validade, tipo: "documento", titulo: "Vence: " + d.nome, sub: d.emissor || "Documento", rota: "documentos", ref: d.id }); });
+    docsAtivos().forEach(d => { if (dentro(d.validade)) ev.push({ data: d.validade, tipo: "documento", titulo: "Vence: " + d.nome, sub: d.emissor || "Documento", rota: "documentos", ref: d.id }); });
     S.portais.forEach(p => {
       if (dentro(p.validadeCadastro)) ev.push({ data: p.validadeCadastro, tipo: "portal", titulo: "Cadastro vence · " + p.nome, sub: p.cadastro || "Portal", rota: "portais", ref: p.id });
       if (dentro(p.validadePlano)) ev.push({ data: p.validadePlano, tipo: "portal", titulo: "Plano vence · " + p.nome, sub: "Renovar assinatura", rota: "portais", ref: p.id });
@@ -896,7 +896,10 @@
     const exigidos = r.habilitacao.filter(x => x.exigido);
     const pasta = exigidos.map(x => {
       if (x.chave === "declaracoes" || x.chave === "responsavel_tecnico") return Object.assign({ st: "neutral", rot: "Preparar para este edital" }, x);
-      const docs = S.documentos.filter(d => d.tipo === x.chave);
+      const daEmpresa = docsAtivos().filter(d => d.tipo === x.chave);
+      const chaveEmp = U.semAcento((S.empresa.apelido || S.empresa.nome || "").split(/\s+/)[0]).toLowerCase();
+      const preferidos = daEmpresa.filter(d => chaveEmp && U.semAcento(d.empresa || "").toLowerCase().includes(chaveEmp) && !/filial/i.test(d.empresa || ""));
+      const docs = preferidos.length ? preferidos : daEmpresa;
       if (!docs.length) return Object.assign({ st: "warn", rot: "Não está na pasta" }, x);
       const valido = docs.find(d => !d.validade || d.validade >= sessaoData);
       if (valido) return Object.assign({ st: "ok", rot: valido.validade ? "Válido na sessão (até " + U.fmtData(valido.validade) + ")" : "Na pasta" }, x);
@@ -1242,33 +1245,144 @@
   }
 
   /* ---------- Documentos ---------- */
+  // Documentos ativos (os arquivados, por exemplo de filiais encerradas, não geram alerta)
+  const docsAtivos = () => S.documentos.filter(d => !d.arquivado);
   function pgDocumentos() {
     const L = limitesDoc();
-    const docs = S.documentos.map(d => ({ d, s: situacaoDoc(d) }));
+    const f = ui.fDoc || (ui.fDoc = { empresa: "", busca: "", arquivados: false });
+    const empresas = [...new Set(S.documentos.map(d => d.empresa || ""))].sort();
+    const base = S.documentos.filter(d => (f.arquivados ? d.arquivado : !d.arquivado) && (!f.empresa || (d.empresa || "") === f.empresa));
+    const docs = base.map(d => ({ d, s: situacaoDoc(d) }));
     const grupos = {
       vencidos: docs.filter(x => x.s.dias !== null && x.s.dias < 0),
       curto: docs.filter(x => x.s.dias !== null && x.s.dias >= 0 && x.s.dias <= L.menor),
       medio: docs.filter(x => x.s.dias !== null && x.s.dias > L.menor && x.s.dias <= L.maior),
       ok: docs.filter(x => x.s.dias === null || x.s.dias > L.maior)
     };
-    const lista = (ui.docFiltro === "todos" ? docs : grupos[ui.docFiltro] || docs).sort((a, b) => a.s.ordem - b.s.ordem || (a.s.dias === null ? 1e6 : a.s.dias) - (b.s.dias === null ? 1e6 : b.s.dias));
-    const tile = (id, cls, n, rot) => '<button class="' + cls + '" data-acao="filtroDoc" data-f="' + id + '" aria-pressed="' + (ui.docFiltro === id) + '"><b>' + n + "</b><span>" + rot + "</span></button>";
-    return '<div class="cab"><div><span class="eyebrow">Cadastro da empresa</span><h1>Documentos e certidões</h1><p>A pasta de habilitação sempre em dia. Alertas em ' + L.maior + " e " + L.menor + ' dias antes do vencimento, e aviso quando algo vence antes de uma sessão marcada.</p></div><div class="cab-acoes"><button class="btn primario" data-acao="novoDoc">' + ic("mais") + "Novo documento</button></div></div>" +
-      '<div class="resumo-docs">' + tile(ui.docFiltro === "vencidos" ? "todos" : "vencidos", "crit", grupos.vencidos.length, "vencidos") + tile(ui.docFiltro === "curto" ? "todos" : "curto", "crit", grupos.curto.length, "vencem em até " + L.menor + " dias") + tile(ui.docFiltro === "medio" ? "todos" : "medio", "warn", grupos.medio.length, "vencem em até " + L.maior + " dias") + tile(ui.docFiltro === "ok" ? "todos" : "ok", "ok", grupos.ok.length, "em dia") + "</div>" +
-      (lista.length ? '<div class="tabela-wrap"><table class="tabela"><thead><tr><th>Documento</th><th>Grupo</th><th>Validade</th><th>Situação</th><th style="text-align:right">Ações</th></tr></thead><tbody>' + lista.map(({ d, s }) => {
-        const afeta = s.dias !== null ? sessaoAfetada(d.validade) : null;
-        return '<tr><td class="forte">' + h(d.nome) + '<span class="sub">' + h(d.emissor || nomeLista(TIPOS_DOC, d.tipo)) + "</span></td><td>" + h(GRUPO_DOC(d.tipo)) + '</td><td class="num">' + (d.validade ? U.fmtData(d.validade) : "—") + '</td><td><span class="pill ' + s.cls + '">' + h(s.rotulo) + "</span>" + (afeta ? '<span class="sub" style="color:var(--crit)">antes da sessão do ' + h(afeta.numero) + "</span>" : "") + "</td>" +
-          '<td><div class="acoes">' + (d.validade ? '<button class="btn peq ghost" data-acao="renovarDoc" data-id="' + d.id + '">' + ic("atualizar") + "Renovar</button>" : "") + (d.link ? '<a class="icon-btn" href="' + h(d.link) + '" target="_blank" rel="noopener" aria-label="Emitir no site oficial">' + ic("link") + "</a>" : "") + '<button class="icon-btn" data-acao="editarDoc" data-id="' + d.id + '" aria-label="Editar">' + ic("editar") + '</button><button class="icon-btn" data-acao="excluirDoc" data-id="' + d.id + '" aria-label="Excluir">' + ic("lixo") + "</button></div></td></tr>";
-      }).join("") + "</tbody></table></div>" : '<div class="card">' + vazio("documentos", ui.docFiltro === "todos" ? "Nenhum documento cadastrado." : "Nenhum documento nesta situação.", '<button class="btn primario" data-acao="novoDoc">Cadastrar documento</button>') + "</div>") +
+    const nArq = S.documentos.filter(d => d.arquivado).length;
+    const tile = (id, cls, n, rot) => '<button class="' + cls + '" data-acao="filtroDoc" data-f="' + (ui.docFiltro === id ? "todos" : id) + '" aria-pressed="' + (ui.docFiltro === id) + '"><b>' + n + "</b><span>" + rot + "</span></button>";
+    return '<div class="cab"><div><span class="eyebrow">Cadastro da empresa</span><h1>Documentos e certidões</h1><p>A pasta de habilitação de cada empresa e filial sempre em dia. Alertas em ' + L.maior + " e " + L.menor + ' dias antes do vencimento, e aviso quando algo vence antes de uma sessão marcada.</p></div>' +
+      '<div class="cab-acoes"><label class="btn ghost" for="imp-docs">' + ic("upload") + 'Importar planilha<input type="file" id="imp-docs" accept=".xlsx,.xlsm,.xls" class="sr" data-mudar="importarDocs"></label><button class="btn primario" data-acao="novoDoc">' + ic("mais") + "Novo documento</button></div></div>" +
+      '<div class="resumo-docs">' + tile("vencidos", "crit", grupos.vencidos.length, "vencidos") + tile("curto", "crit", grupos.curto.length, "vencem em até " + L.menor + " dias") + tile("medio", "warn", grupos.medio.length, "vencem em até " + L.maior + " dias") + tile("ok", "ok", grupos.ok.length, "em dia") + "</div>" +
+      (S.documentos.length ? '<div class="ferramentas"><label class="campo-busca"><span class="sr">Buscar documento</span>' + ic("busca") + '<input type="search" id="f-busca-doc" data-digitar="buscaDoc" value="' + h(f.busca) + '" placeholder="Documento, setor ou empresa…"></label>' +
+        (empresas.length > 1 ? '<select id="f-empresa-doc" data-mudar="filtroDocEmpresa" aria-label="Empresa"><option value="">Todas as empresas</option>' + empresas.map(e => '<option value="' + h(e) + '"' + (f.empresa === e ? " selected" : "") + ">" + h(e || "Sem empresa") + " (" + S.documentos.filter(d => (d.empresa || "") === e && (f.arquivados ? d.arquivado : !d.arquivado)).length + ")</option>").join("") + "</select>" : "") +
+        (nArq ? '<button class="chip" data-acao="docArquivados" aria-pressed="' + f.arquivados + '">Arquivados <span class="n">' + nArq + "</span></button>" : "") + "</div>" : "") +
+      '<div id="lista-docs">' + listaDocsHTML(docs, grupos) + "</div>" +
       '<p class="nota">Dica: o campo "tipo" liga cada documento às exigências encontradas na análise de edital. Assim o portal diz se a certidão estará válida no dia da sessão.</p>';
+  }
+  function listaDocsHTML(docs, grupos) {
+    const f = ui.fDoc;
+    const b = U.semAcento(f.busca).toLowerCase().trim();
+    const lista = (ui.docFiltro === "todos" ? docs : grupos[ui.docFiltro] || docs)
+      .filter(({ d }) => !b || U.semAcento([d.nome, d.setor, d.empresa, d.emissor, d.obs].join(" ")).toLowerCase().includes(b))
+      .sort((a, c) => a.s.ordem - c.s.ordem || (a.s.dias === null ? 1e6 : a.s.dias) - (c.s.dias === null ? 1e6 : c.s.dias));
+    if (!lista.length) return '<div class="card">' + vazio("documentos", S.documentos.length ? "Nenhum documento com esse filtro." : "Nenhum documento cadastrado. Importe a planilha de controle de documentação ou cadastre um por um.", S.documentos.length ? "" : '<label class="btn primario" for="imp-docs2">' + ic("upload") + 'Importar planilha<input type="file" id="imp-docs2" accept=".xlsx,.xlsm,.xls" class="sr" data-mudar="importarDocs"></label>') + "</div>";
+    const multi = new Set(S.documentos.map(d => d.empresa || "")).size > 1;
+    return '<div class="tabela-wrap"><table class="tabela"><thead><tr><th>Documento</th>' + (multi ? "<th>Empresa</th>" : "") + "<th>Setor</th><th>Emissão</th><th>Validade</th><th>Situação</th><th style=\"text-align:right\">Ações</th></tr></thead><tbody>" + lista.map(({ d, s }) => {
+      const afeta = s.dias !== null && !d.arquivado ? sessaoAfetada(d.validade) : null;
+      return '<tr><td class="forte">' + h(d.nome) + '<span class="sub">' + h(nomeLista(TIPOS_DOC, d.tipo)) + (d.obs ? " · " + h(d.obs) : "") + "</span></td>" + (multi ? "<td>" + h(empresaCurta(d.empresa)) + "</td>" : "") + "<td>" + h(d.setor || d.emissor || "—") + '</td><td class="num">' + (d.emissao ? U.fmtData(d.emissao) : "—") + '</td><td class="num">' + (d.validade ? U.fmtData(d.validade) : "—") + '</td><td><span class="pill ' + s.cls + '">' + h(s.rotulo) + "</span>" + (afeta ? '<span class="sub" style="color:var(--crit)">antes da sessão do ' + h(afeta.numero) + "</span>" : "") + "</td>" +
+        '<td><div class="acoes">' + (d.validade ? '<button class="btn peq ghost" data-acao="renovarDoc" data-id="' + d.id + '">' + ic("atualizar") + "Renovar</button>" : "") + (d.link ? '<a class="icon-btn" href="' + h(d.link) + '" target="_blank" rel="noopener" aria-label="Emitir no site oficial">' + ic("link") + "</a>" : "") + '<button class="icon-btn" data-acao="editarDoc" data-id="' + d.id + '" aria-label="Editar">' + ic("editar") + '</button><button class="icon-btn" data-acao="excluirDoc" data-id="' + d.id + '" aria-label="Excluir">' + ic("lixo") + "</button></div></td></tr>";
+    }).join("") + "</tbody></table></div>";
+  }
+  /* Importa a planilha "Controle de Certidões": uma aba por empresa/filial, cabeçalho
+     Tipo | UF | Município | CNPJ | I.E | I.M | Ref. Bancárias | Setor Responsável | Certidão | Emissão | Validade | Status | Previsão | Vencimento.
+     Inscrições e referências bancárias NÃO são lidas. */
+  function tipoDoDocumento(nome) {
+    const n = U.semAcento(nome).toLowerCase();
+    if (/ilicitos trabalhistas|^inscricao (?:estadual|municipal)/.test(n)) return "outro";
+    if (/tributos federa|receita federal|pgfn|divida ativa da uniao|cnd federal|conjunta/.test(n)) return "cnd_federal";
+    if (/fgts|\bcrf\b/.test(n)) return "fgts";
+    if (/debitos trabalhistas|cndt/.test(n)) return "cndt";
+    if (/estadua|icms|divida ativa do estado/.test(n)) return "estadual";
+    if (/municip|issqn|\biss\b|mobiliari/.test(n)) return "municipal";
+    if (/falen|falenc|concordat|recuperacao judicial/.test(n)) return "falencia";
+    if (/balanco|demonstrac/.test(n)) return "balanco";
+    if (/alteracao contratual|aletracao contratual|contrato social|ato constitutivo|jucerja|junta comercial/.test(n)) return "contrato_social";
+    if (/\bcrm\b|cremerj|coren|crtr|\bcra\b|conselho regional/.test(n)) return "conselho";
+    if (/cnes/.test(n)) return "cnes";
+    if (/sanitari|vigilancia|\bvisa\b/.test(n)) return "licenca_sanitaria";
+    if (/certificado digital|e-?cnpj/.test(n)) return "certificado";
+    if (/atestado/.test(n)) return "atestado";
+    return "outro";
+  }
+  async function lerPlanilhaDocs(arq) {
+    await carregarScript("https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js");
+    const X = window.XLSX;
+    const wb = X.read(await arq.arrayBuffer(), { type: "array" });
+    const dataExcel = n => { const d = new Date(Date.UTC(1899, 11, 30) + Math.round(n) * 86400000); return d.getUTCFullYear() + "-" + U.pad(d.getUTCMonth() + 1) + "-" + U.pad(d.getUTCDate()); };
+    const lidos = [];
+    wb.SheetNames.forEach(aba => {
+      const ws = wb.Sheets[aba];
+      if (!ws["!ref"]) return;
+      const r0 = X.utils.decode_range(ws["!ref"]);
+      r0.e.c = Math.min(r0.e.c, 20); r0.e.r = Math.min(r0.e.r, 1500); // a planilha tem milhares de colunas vazias
+      const linhas = X.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null, range: r0 });
+      const hi = linhas.findIndex((r, i) => i < 25 && r && r.some(c => String(c || "").trim() === "Tipo") && r.some(c => /certid/i.test(String(c || ""))));
+      if (hi < 0) return;
+      const cab = linhas[hi].map(c => String(c || "").trim().toLowerCase());
+      const ix = k => cab.findIndex(c => k.test(c));
+      const col = { tipo: ix(/^tipo$/), cnpj: ix(/^cnpj$/), setor: ix(/^setor/), nome: ix(/^certid/), emissao: ix(/^emiss/), validade: ix(/^validade/), status: ix(/^status/), previsao: ix(/^previs/), venc: ix(/^vencimento/) };
+      const cnpjs = {};
+      const linhasDados = linhas.slice(hi + 1).filter(r => r && col.nome >= 0 && r[col.nome] && String(r[col.nome]).trim() && !/^x+$/i.test(String(r[col.nome]).trim()));
+      linhasDados.forEach(r => { const c = col.cnpj >= 0 ? String(r[col.cnpj] || "").trim() : ""; if (c) cnpjs[c] = (cnpjs[c] || 0) + 1; });
+      const cnpj = Object.keys(cnpjs).sort((a, b) => cnpjs[b] - cnpjs[a])[0] || "";
+      const matriz = linhasDados.some(r => col.tipo >= 0 && /matriz/i.test(String(r[col.tipo] || "")));
+      let rotulo = aba.replace(/\s+/g, " ").trim();
+      if (matriz && !/[-–]/.test(rotulo)) rotulo += " MATRIZ";
+      const empresa = rotulo.toUpperCase() + (cnpj ? " - " + cnpj : "");
+      const encerrada = /encerrad/i.test(aba);
+      linhasDados.forEach(r => {
+        const nome = String(r[col.nome]).replace(/\s+/g, " ").trim();
+        const v = k => (col[k] >= 0 ? r[col[k]] : null);
+        const emissao = typeof v("emissao") === "number" ? dataExcel(v("emissao")) : "";
+        const dias = String(v("validade") || "").trim();
+        let validade = typeof v("venc") === "number" ? dataExcel(v("venc")) : "";
+        if (!validade && emissao && /^\d+$/.test(dias)) validade = U.addDias(emissao, +dias);
+        const obs = [];
+        if (/^ind/i.test(dias)) obs.push("validade indeterminada");
+        else if (/^\d+$/.test(dias)) obs.push("validade de " + dias + " dias");
+        if (!emissao && v("emissao")) obs.push(String(v("emissao")).trim().toLowerCase());
+        if (typeof v("previsao") === "number") obs.push("renovação prevista para " + U.fmtData(dataExcel(v("previsao"))));
+        const st = String(v("status") || "").trim().toUpperCase();
+        if (st === "REGULAR" && validade && U.diasAte(validade) < 0) obs.push("na planilha consta REGULAR");
+        lidos.push({ nome, tipo: tipoDoDocumento(nome), empresa, setor: col.setor >= 0 ? String(r[col.setor] || "").trim() : "", emissao, validade, obs: obs.join("; "), arquivado: encerrada, origem: "planilha" });
+      });
+    });
+    return lidos;
+  }
+  const chaveDoc = d => [d.empresa, d.nome].map(x => U.semAcento(x || "").toLowerCase().replace(/\W+/g, "")).join("|");
+  async function importarDocs(el) {
+    const arq = el.files[0]; el.value = "";
+    if (!arq) return;
+    toast("Lendo a planilha…", arq.name);
+    let lidos;
+    try { lidos = await lerPlanilhaDocs(arq); } catch (e) { toast("Não consegui ler a planilha", e.message, "crit"); return; }
+    if (!lidos.length) { toast("Nenhum documento encontrado", "A planilha precisa ter o cabeçalho com \"Tipo\" e \"Certidão\".", "crit"); return; }
+    const existentes = new Map(S.documentos.map(d => [chaveDoc(d), d]));
+    const novos = lidos.filter(x => !existentes.has(chaveDoc(x))), atualizados = lidos.filter(x => existentes.has(chaveDoc(x)));
+    const ativos = lidos.filter(x => !x.arquivado);
+    const vencidos = ativos.filter(x => x.validade && U.diasAte(x.validade) < 0).length;
+    const arquivados = lidos.length - ativos.length;
+    confirmar("Importar " + U.plural(lidos.length, "documento", "documentos") + "?",
+      "Encontrei <b>" + U.plural(lidos.length, "documento", "documentos") + "</b> de " + U.plural(new Set(lidos.map(x => x.empresa)).size, "empresa/filial", "empresas/filiais") + ": " + U.plural(novos.length, "novo", "novos") + " e " + U.plural(atualizados.length, "já existente", "já existentes") + " (emissão e validade serão atualizadas). " + U.plural(vencidos, "documento ativo vencido", "documentos ativos vencidos") + "." + (arquivados ? " " + U.plural(arquivados, "documento de filial encerrada entra", "documentos de filiais encerradas entram") + " como arquivado(s), sem alerta." : "") + "<br><br>Inscrições estadual/municipal e referências bancárias <b>não foram lidas</b>.",
+      "Importar", () => {
+        novos.forEach(x => S.documentos.push(Object.assign({ id: U.uid() }, x)));
+        atualizados.forEach(x => Object.assign(existentes.get(chaveDoc(x)), { emissao: x.emissao, validade: x.validade, setor: x.setor, obs: x.obs, arquivado: x.arquivado }));
+        registrar("Planilha de documentos importada: " + U.plural(novos.length, "novo", "novos") + ", " + U.plural(atualizados.length, "atualizado", "atualizados") + ".", "documentos");
+        ui.docFiltro = vencidos ? "vencidos" : "todos";
+        atualizar(); toast("Planilha importada", U.plural(lidos.length, "documento", "documentos") + " · " + U.plural(vencidos, "vencido", "vencidos"));
+      }, false);
   }
   const camposDoc = () => [
     { nome: "nome", rotulo: "Nome do documento", req: true, span: 2 },
     { nome: "tipo", rotulo: "Tipo", tipo: "select", opcoes: TIPOS_DOC },
+    { nome: "empresa", rotulo: "Empresa / filial" },
+    { nome: "setor", rotulo: "Setor responsável" },
     { nome: "emissor", rotulo: "Emissor" },
     { nome: "emissao", rotulo: "Emissão", tipo: "date" },
     { nome: "validade", rotulo: "Validade", tipo: "date", dica: "Deixe vazio se o documento não vence." },
     { nome: "link", rotulo: "Onde emitir (link)", tipo: "url", span: 2, ph: "https://" },
+    { nome: "arquivado", rotulo: "Arquivado (filial encerrada ou documento que não se usa mais: não gera alerta)", tipo: "check" },
     { nome: "obs", rotulo: "Observações", tipo: "textarea", span: 2, linhas: 2 }
   ];
   function formDoc(id) {
@@ -1290,8 +1404,8 @@
   }
 
   /* ---------- Portais ---------- */
-  /* ---------- Portais ---------- */
-  const empresaCurta = e => String(e || "").split(/\s+[-–]\s+/)[0].trim() || "Sem empresa";
+  // "DIMPI - FILIAL AM - 10.893.674/0007-01" -> "DIMPI - FILIAL AM" (tira só o CNPJ do fim)
+  const empresaCurta = e => String(e || "").replace(/\s*[-–]\s*\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}\s*$/, "").trim() || "Sem empresa";
   function situacaoDoPortal(p) {
     const a = situacaoPortal(p.validadeCadastro), b = situacaoPortal(p.validadePlano);
     let s = a.ordem <= b.ordem ? a : b;
@@ -1529,7 +1643,7 @@
       propostas: al.filter(a => a.tipo === "proposta" && a.nivel !== "info").length,
       chats: S.chats.reduce((s, c) => s + naoLidas(c).length, 0),
       recursos: al.filter(a => a.tipo === "recurso" && a.nivel !== "info").length,
-      documentos: S.documentos.filter(d => situacaoDoc(d).cls === "crit").length,
+      documentos: docsAtivos().filter(d => situacaoDoc(d).cls === "crit").length,
       portais: S.portais.filter(p => situacaoPortal(p.validadeCadastro).cls === "crit" || situacaoPortal(p.validadePlano).cls === "crit").length,
       alertas: al.filter(a => a.nivel === "critico").length
     };
@@ -1565,6 +1679,7 @@
   function excluir(lista, id, nome, rotulo) {
     confirmar("Excluir " + rotulo + "?", "<b>" + h(nome) + "</b> será removido. Essa ação não pode ser desfeita.", "Excluir", () => {
       S[lista] = S[lista].filter(x => x.id !== id);
+      S.apagados = (S.apagados || []).concat(id).slice(-1000); // para não voltar ao juntar com a nuvem
       atualizar(); toast(rotulo.charAt(0).toUpperCase() + rotulo.slice(1) + " excluído", nome);
     });
   }
@@ -1645,6 +1760,7 @@
     novoDoc: () => formDoc(), editarDoc: d => formDoc(d.id), renovarDoc: d => renovarDoc(d.id),
     excluirDoc: d => { const x = S.documentos.find(y => y.id === d.id); excluir("documentos", d.id, x.nome, "documento"); },
     filtroDoc: d => { ui.docFiltro = d.f; render(); },
+    docArquivados: () => { ui.fDoc.arquivados = !ui.fDoc.arquivados; ui.docFiltro = "todos"; render(); },
     novoPortal: () => formPortal(), editarPortal: d => formPortal(d.id),
     renovarPortal: d => renovarPortal(d.id),
     filtroPortalGrupo: d => { ui.fPortal.grupo = d.f; render(); },
@@ -1706,6 +1822,8 @@
     notasEdital: el => { const e = edital(el.dataset.id); e.notas = el.value; salvar(); toast("Anotação salva"); },
     statusRec: el => { const r = S.recursos.find(x => x.id === el.dataset.id); r.status = el.value; registrar(r.pregao + ": recurso agora está \"" + nomeLista(STATUS_REC, el.value) + "\".", "recursos"); atualizar(); },
     resumoOpcao: el => { S.ajustes[el.dataset.chave] = el.value.trim(); salvar(); atualizarResumo(); },
+    filtroDocEmpresa: el => { ui.fDoc.empresa = el.value; render(); },
+    importarDocs: el => importarDocs(el),
     filtroPortalEmpresa: el => { ui.fPortal.empresa = el.value; render(); },
     importarPortais: el => importarPortais(el),
     calc: () => { ui.calc = { tipo: $("#calc-tipo").value, data: $("#calc-data").value, regime: $("#calc-regime").value }; const lbl = $('label[for="calc-data"]'); if (lbl) lbl.textContent = ui.calc.tipo === "recurso" ? "Data da intimação / ata" : "Data da sessão"; $("#calc-res").innerHTML = calcHTML(); },
@@ -1730,6 +1848,7 @@
   };
   const DIGITAR = {
     buscaEd: el => { ui.fEd.busca = el.value; const g = $("#busca-global"); if (g) g.value = el.value; $("#ed-resultado").innerHTML = resultadoEditais(); ligarArraste(); },
+    buscaDoc: el => { ui.fDoc.busca = el.value; render(); const i = $("#f-busca-doc"); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } },
     buscaPortal: el => { ui.fPortal.busca = el.value; $("#lista-portais").innerHTML = listaPortaisHTML(); },
     buscaChat: el => { ui.chatBusca = el.value; const c = S.chats.find(x => x.id === ui.chatSel); if (c) $("#msgs").innerHTML = mensagensHTML(c); }
   };
@@ -1780,11 +1899,51 @@
     nuvem.timer = setTimeout(enviarNuvem, 1500);
     atualizarStatusNuvem();
   }
+  /* Junta a versão deste navegador com uma versão mais nova da nuvem (outro computador, ou dados carregados
+     pelo Claude). Itens são unidos pelo id; o que foi excluído aqui não volta; mensagens de chat são unidas. */
+  const LISTAS = ["editais", "recursos", "documentos", "portais", "chats"];
+  function mesclarEstados(local, remoto) {
+    const apagados = new Set([].concat(local.apagados || [], remoto.apagados || []));
+    const r = normalizar(remoto), out = Object.assign({}, local);
+    LISTAS.forEach(k => {
+      const meus = (local[k] || []).filter(x => !apagados.has(x.id));
+      const ids = new Map(meus.map(x => [x.id, x]));
+      (r[k] || []).forEach(x => {
+        if (apagados.has(x.id)) return;
+        const m = ids.get(x.id);
+        if (!m) { meus.push(x); return; }
+        if (k === "chats") { // une as mensagens dos dois lados
+          const vistas = new Map((m.mensagens || []).map(msg => [A.chaveMensagem(msg), msg]));
+          (x.mensagens || []).forEach(msg => { const c = A.chaveMensagem(msg); if (!vistas.has(c)) vistas.set(c, msg); else if (msg.lida) vistas.get(c).lida = true; });
+          m.mensagens = [...vistas.values()].sort((a, b) => (a.hora < b.hora ? -1 : a.hora > b.hora ? 1 : 0));
+        }
+      });
+      out[k] = meus;
+    });
+    const atv = new Map([].concat(local.atividade || [], r.atividade || []).map(a => [a.quando + "|" + a.texto, a]));
+    out.atividade = [...atv.values()].sort((a, b) => String(b.quando).localeCompare(String(a.quando))).slice(0, 80);
+    out.resolvidos = Object.assign({}, r.resolvidos || {}, local.resolvidos || {});
+    out.apagados = [...apagados].slice(-1000);
+    return out;
+  }
   async function enviarNuvem() {
     if (!nuvem.usuario) return;
     if (nuvem.enviando) { clearTimeout(nuvem.timer); nuvem.timer = setTimeout(enviarNuvem, 1500); return; }
-    const json = JSON.stringify(S);
     nuvem.enviando = true;
+    // Alguém salvou na nuvem depois da nossa última leitura? Junta antes de gravar, para não apagar o trabalho do outro.
+    try {
+      const v = await nuvem.cliente.from("portal_estado").select("atualizado_em").maybeSingle();
+      if (v.data && nuvem.remotoEm && v.data.atualizado_em > nuvem.remotoEm) {
+        const rr = await nuvem.cliente.from("portal_estado").select("dados, atualizado_em").maybeSingle();
+        if (rr.data) {
+          const antes = { d: S.documentos.length, p: S.portais.length, e: S.editais.length };
+          S = mesclarEstados(S, rr.data.dados);
+          U.gravar(chaveLocal(), S); aplicarConfig();
+          if (S.documentos.length !== antes.d || S.portais.length !== antes.p || S.editais.length !== antes.e) { renderSeLivre(); toast("Dados juntados", "Havia alterações feitas em outro lugar; nada foi perdido."); }
+        }
+      }
+    } catch (e) { /* segue com a gravação normal */ }
+    const json = JSON.stringify(S);
     let r;
     try { r = await nuvem.cliente.from("portal_estado").upsert({ user_id: nuvem.usuario.id, dados: JSON.parse(json) }).select("atualizado_em").single(); }
     catch (e) { r = { error: e }; }
