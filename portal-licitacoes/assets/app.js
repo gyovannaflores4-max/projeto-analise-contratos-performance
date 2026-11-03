@@ -177,6 +177,10 @@
           titulo: "Sessão " + (U.diasAte(e.sessao) === 0 ? "hoje" : "amanhã") + " às " + U.fmtHora(e.sessao) + ": " + e.numero,
           detalhe: e.orgao + " · " + e.portal, rota: "editais", ref: e.id });
       }
+      if (e.nossoValor && e.valorEstimado && e.nossoValor < e.valorEstimado / 2 && ["proposta", "cadastrada", "disputa"].includes(e.etapa)) {
+        add({ id: "inex:" + e.id + ":" + e.nossoValor, tipo: "proposta", icone: "aviso", nivel: "atencao", quando: e.sessao || U.hojeISO(),
+          titulo: "Proposta abaixo de 50% do estimado: " + e.numero, detalhe: U.moeda(e.nossoValor) + " de " + U.moeda(e.valorEstimado) + ". Tenha a planilha de custos pronta para a diligência de exequibilidade.", rota: "precos", ref: e.id });
+      }
       if (["triagem", "analise", "proposta"].includes(e.etapa) && e.sessao) {
         const imp = U.subtrairDiasUteis(e.sessao, 3), n = U.diasAte(imp);
         if (n >= 0 && n <= 3) add({ id: "imp:" + e.id + ":" + imp, tipo: "impugnacao", icone: "recursos", nivel: n === 0 ? "atencao" : "info", quando: imp,
@@ -236,6 +240,10 @@
       const lim = limiteDe(e);
       if (precisaProposta(e) && dentro(lim)) ev.push({ data: lim, tipo: "proposta", titulo: "Limite da proposta · " + e.numero, sub: e.orgao, rota: "propostas", ref: e.id });
       if (dentro(e.sessao) && !(precisaProposta(e) && U.soData(lim) === U.soData(e.sessao))) ev.push({ data: e.sessao, tipo: "sessao", titulo: "Sessão pública · " + e.numero, sub: e.orgao + " · " + e.portal, rota: "editais", ref: e.id });
+      if (e.nossoValor && e.valorEstimado && e.nossoValor < e.valorEstimado / 2 && ["proposta", "cadastrada", "disputa"].includes(e.etapa)) {
+        add({ id: "inex:" + e.id + ":" + e.nossoValor, tipo: "proposta", icone: "aviso", nivel: "atencao", quando: e.sessao || U.hojeISO(),
+          titulo: "Proposta abaixo de 50% do estimado: " + e.numero, detalhe: U.moeda(e.nossoValor) + " de " + U.moeda(e.valorEstimado) + ". Tenha a planilha de custos pronta para a diligência de exequibilidade.", rota: "precos", ref: e.id });
+      }
       if (["triagem", "analise", "proposta"].includes(e.etapa) && e.sessao) {
         const imp = U.subtrairDiasUteis(e.sessao, 3);
         if (dentro(imp)) ev.push({ data: imp, tipo: "impugnacao", titulo: "Último dia para impugnar · " + e.numero, sub: e.orgao, rota: "editais", ref: e.id });
@@ -688,6 +696,7 @@
       '<div class="bloco"><h3>Atalhos</h3><div class="linha-acoes">' +
       (e.link ? '<a class="btn peq ghost" href="' + h(e.link) + '" target="_blank" rel="noopener">' + ic("link") + "Abrir no portal</a>" : "") +
       (chat ? '<a class="btn peq ghost" href="#chats" data-acao="ir" data-rota="chats" data-ref="' + chat.id + '">' + ic("chats") + "Ver chat" + (naoLidas(chat).length ? " (" + naoLidas(chat).length + " novas)" : "") + "</a>" : '<button class="btn peq ghost" data-acao="monitorarChat" data-id="' + e.id + '">' + ic("chats") + "Monitorar chat</button>") +
+      '<button class="btn peq ghost" data-acao="abrirPreco" data-id="' + e.id + '">' + ic("preco") + "Formação de preço</button>" +
       '<button class="btn peq ghost" data-acao="novoRecurso" data-edital="' + e.id + '">' + ic("recursos") + "Registrar recurso</button>" +
       '<a class="btn peq ghost" href="#analise">' + ic("analise") + "Analisar edital</a></div></div>" +
 
@@ -780,7 +789,163 @@
       '<span class="org">' + h(e.orgao) + " · " + U.moedaCurta(e.valorEstimado) + "</span>" +
       '<div class="linha-acoes"><select data-mudar="propStatus" data-id="' + e.id + '" aria-label="Situação da proposta de ' + h(e.numero) + '">' + PROP_STATUS.map(x => '<option value="' + x[0] + '"' + (x[0] === e.propostaStatus ? " selected" : "") + ">" + x[1] + "</option>").join("") + '</select><span class="muted" style="font-size:12.5px">' + p + "/" + CHECK_PROPOSTA.length + "</span></div>" +
       '<div class="progresso"><i style="width:' + Math.round(100 * p / CHECK_PROPOSTA.length) + '%"></i></div>' + checklistHTML(e) +
-      '<div class="linha-acoes"><button class="btn peq primario" data-acao="propCadastrada" data-id="' + e.id + '">' + ic("check") + 'Cadastrada no portal</button><button class="btn peq ghost" data-acao="abrirEdital" data-id="' + e.id + '">Detalhes</button>' + (e.link ? '<a class="btn peq ghost" href="' + h(e.link) + '" target="_blank" rel="noopener">' + ic("link") + "Portal</a>" : "") + "</div></div></article>";
+      '<div class="linha-acoes"><button class="btn peq primario" data-acao="propCadastrada" data-id="' + e.id + '">' + ic("check") + 'Cadastrada no portal</button><button class="btn peq ghost" data-acao="abrirPreco" data-id="' + e.id + '">' + ic("preco") + 'Preço</button><button class="btn peq ghost" data-acao="abrirEdital" data-id="' + e.id + '">Detalhes</button>' + (e.link ? '<a class="btn peq ghost" href="' + h(e.link) + '" target="_blank" rel="noopener">' + ic("link") + "Portal</a>" : "") + "</div></div></article>";
+  }
+
+  /* ---------- Formação de preço ---------- */
+  const P = window.Preco;
+  const UNIDADES_PRECO = ["Plantão", "Hora", "Mês", "Consulta", "Sessão", "Procedimento", "Exame", "Diária", "Serviço", "Unidade"];
+  const REGIMES = {
+    presumido: { nome: "Lucro presumido", dica: "PIS 0,65%, COFINS 3%, IRPJ 4,8% e CSLL 2,88% (presunção de 32% para serviços). Ajuste o ISS ao município.", v: { pis: 0.65, cofins: 3, irpj: 4.8, csll: 2.88, iss: 5, outros: 0 } },
+    simples: { nome: "Simples Nacional", dica: "Informe em \"Outros tributos\" a alíquota efetiva do DAS da empresa (já inclui ISS, PIS, COFINS, IRPJ e CSLL).", v: { pis: 0, cofins: 0, irpj: 0, csll: 0, iss: 0, outros: 15.5 } },
+    real: { nome: "Lucro real", dica: "PIS 1,65% e COFINS 7,6% não cumulativos (sem créditos aqui). IRPJ e CSLL incidem sobre o lucro: deixe zerados ou informe a estimativa sobre o faturamento.", v: { pis: 1.65, cofins: 7.6, irpj: 0, csll: 0, iss: 5, outros: 0 } }
+  };
+  const pct = (v, casas) => (isFinite(v) ? (v * 100).toFixed(casas === undefined ? 1 : casas).replace(".", ",") + "%" : "—");
+  const numCampo = v => (v === null || v === undefined ? "" : typeof v === "number" ? String(v).replace(".", ",") : String(v));
+  const editaisPreco = () => S.editais.filter(e => ativo(e) || e.precificacao).sort((a, b) => (a.sessao || "9").localeCompare(b.sessao || "9"));
+  function editalPreco() {
+    const lista = editaisPreco();
+    let e = ui.precoSel && edital(ui.precoSel);
+    if (!e) e = lista.find(x => x.precificacao && (x.precificacao.itens || []).length) || lista.find(precisaProposta) || lista[0];
+    if (e) ui.precoSel = e.id;
+    return e;
+  }
+  function precificacaoDe(e) {
+    if (!e.precificacao) e.precificacao = { itens: [], parametros: P.PARAMETROS_PADRAO(), regime: "presumido" };
+    e.precificacao.parametros = Object.assign(P.PARAMETROS_PADRAO(), e.precificacao.parametros || {});
+    return e.precificacao;
+  }
+  /* Estimado para comparar: a soma dos estimados dos itens cotados, quando todos têm estimado (a empresa pode
+     disputar só parte dos itens); senão, o valor estimado do edital. */
+  function estimadoPreco(e) {
+    const it = ((e.precificacao || {}).itens || []);
+    if (it.length && it.every(x => P.numero(x.estimadoUnit) && P.numero(x.quantidade))) return { valor: it.reduce((t, x) => t + P.numero(x.estimadoUnit) * P.numero(x.quantidade), 0), base: "dos itens cotados" };
+    return { valor: +e.valorEstimado || 0, base: "do edital" };
+  }
+
+  const textoEstimado = e => { const est = estimadoPreco(e); return "Estimado " + est.base + ": <b>" + U.moeda(est.valor || null) + "</b>" + (e.sessao ? " · sessão " + U.fmtDataHora(e.sessao) : ""); };
+  function pgPrecos() {
+    const e = editalPreco();
+    const cab = '<div class="cab"><div><span class="eyebrow">Operação</span><h1>Formação de preço</h1><p>Monte o custo de cada item, aplique BDI e tributos e veja o preço, a margem, o lance mínimo e o risco de inexequibilidade em relação ao valor estimado.</p></div>' +
+      (e ? '<div class="cab-acoes"><button class="btn ghost" data-acao="precoCopiar">' + ic("copiar") + 'Copiar planilha</button><button class="btn primario" data-acao="precoUsar">' + ic("check") + "Usar como nossa proposta</button></div>" : "") + "</div>";
+    if (!e) return cab + '<div class="card">' + vazio("propostas", "Cadastre um edital para montar a formação de preço.", '<button class="btn primario" data-acao="novoEdital">' + ic("mais") + "Novo edital</button>") + "</div>";
+    const pr = e.precificacao || { itens: [], parametros: P.PARAMETROS_PADRAO(), regime: "presumido" };
+    const calc = P.calcular(pr);
+    const temAnalise = ui.analise && ui.analise.campos && (ui.analise.campos.itens || []).length;
+    return cab +
+      '<div class="ferramentas"><label class="sr" for="preco-edital">Edital</label><select id="preco-edital" data-mudar="precoEdital" style="max-width:100%">' +
+      editaisPreco().map(x => '<option value="' + x.id + '"' + (x.id === e.id ? " selected" : "") + ">" + h(x.numero + " · " + (x.orgao || "")) + "</option>").join("") + "</select>" +
+      '<span class="muted" style="font-size:13px" id="preco-estimado">' + textoEstimado(e) + "</span>" + "</div>" +
+      '<div class="preco"><div class="pilha">' +
+      '<section class="card"><div class="card-h"><h2>Itens e custos</h2><div class="linha-acoes">' +
+      (temAnalise ? '<button class="btn peq ghost" data-acao="precoDaAnalise">' + ic("analise") + "Trazer itens da análise</button>" : "") +
+      '<button class="btn peq primario" data-acao="precoItem">' + ic("mais") + "Item</button></div></div>" +
+      (pr.itens.length ? '<div class="preco-itens">' + pr.itens.map((it, i) => itemPrecoHTML(it, i, calc.itens[i], e)).join("") + "</div>"
+        : vazio("propostas", "Nenhum item ainda. Adicione os itens do edital" + (temAnalise ? " ou traga da última análise de edital" : "") + ".")) + "</section>" +
+      parametrosPrecoHTML(pr, calc) + "</div>" +
+      '<aside class="pilha preco-lado" id="preco-resultado">' + resultadoPrecoHTML(e, calc) + "</aside></div>";
+  }
+  function itemPrecoHTML(it, i, c, e) {
+    const inp = (campo, rot, extra, larg) => '<div class="campo"' + (larg ? ' style="grid-column:span ' + larg + '"' : "") + '><label for="pi-' + it.id + "-" + campo + '">' + rot + "</label>" +
+      '<input id="pi-' + it.id + "-" + campo + '" data-digitar="preco" data-item="' + it.id + '" data-campo="' + campo + '" value="' + h(numCampo(it[campo])) + '"' + (extra || ' inputmode="decimal"') + "></div>";
+    return '<article class="preco-item" data-item="' + it.id + '"><div class="preco-item-h"><b>Item ' + (i + 1) + "</b>" +
+      '<span class="muted num" id="pr-res-' + it.id + '">' + resumoItemPreco(c, it) + "</span>" +
+      '<button class="link-btn" data-acao="precoRemoverItem" data-item="' + it.id + '" aria-label="Remover item ' + (i + 1) + '">' + ic("lixo") + "</button></div>" +
+      '<div class="preco-grade">' +
+      inp("descricao", "Descrição", ' placeholder="Ex.: plantão médico 12 h, clínico geral"', 4) +
+      '<div class="campo"><label for="pi-' + it.id + '-unidade">Unidade</label><select id="pi-' + it.id + '-unidade" data-mudar="precoUnidade" data-item="' + it.id + '">' +
+      UNIDADES_PRECO.concat(UNIDADES_PRECO.includes(it.unidade) || !it.unidade ? [] : [it.unidade]).map(u => '<option' + (u === it.unidade ? " selected" : "") + ">" + h(u) + "</option>").join("") + "</select></div>" +
+      inp("quantidade", "Quantidade") + inp("estimadoUnit", "Estimado unitário (R$)") + '<div class="campo"><span class="rot-calc">Preço unitário</span><b class="num" id="pr-unit-' + it.id + '">' + U.moeda(c.unitario) + "</b></div>" +
+      inp("profissionais", "Profissionais") + inp("horas", "Horas por " + h((it.unidade || "unidade").toLowerCase())) + inp("valorHora", "Valor da hora (R$)") +
+      '<div class="campo"><span class="rot-calc">Custo direto</span><b class="num" id="pr-dir-' + it.id + '">' + U.moeda(c.direto) + "</b></div>" +
+      "</div>" +
+      '<div class="preco-custos">' + (it.custos || []).map((cu, k) =>
+        '<div class="preco-custo"><label class="sr" for="pc-' + it.id + "-" + k + '">Outro custo</label><input id="pc-' + it.id + "-" + k + '" data-digitar="precoCusto" data-item="' + it.id + '" data-k="' + k + '" data-campo="descricao" value="' + h(cu.descricao || "") + '" placeholder="Ex.: coordenação médica, insumos, deslocamento">' +
+        '<input aria-label="Valor por ' + h((it.unidade || "unidade").toLowerCase()) + '" data-digitar="precoCusto" data-item="' + it.id + '" data-k="' + k + '" data-campo="valor" value="' + h(numCampo(cu.valor)) + '" inputmode="decimal" placeholder="R$ por unidade">' +
+        '<label class="campo-check" title="Entra na base dos encargos"><input type="checkbox" data-mudar="precoCustoMO" data-item="' + it.id + '" data-k="' + k + '"' + (cu.maoDeObra ? " checked" : "") + "><span>Mão de obra</span></label>" +
+        '<button class="link-btn" data-acao="precoRemoverCusto" data-item="' + it.id + '" data-k="' + k + '" aria-label="Remover custo">' + ic("x") + "</button></div>").join("") +
+      '<button class="link-btn" data-acao="precoCusto" data-item="' + it.id + '">' + ic("mais") + " Outro custo por " + h((it.unidade || "unidade").toLowerCase()) + "</button></div></article>";
+  }
+  function resumoItemPreco(c, it) {
+    const est = P.numero(it.estimadoUnit);
+    return U.moeda(c.total) + " no total" + (est ? " · " + pct(c.unitario / est, 0) + " do estimado" : "");
+  }
+  function parametrosPrecoHTML(pr, calc) {
+    const par = pr.parametros || P.PARAMETROS_PADRAO();
+    const reg = REGIMES[pr.regime] || REGIMES.presumido;
+    const campo = (k, dica) => '<div class="campo"><label for="pp-' + k + '">' + P.ROTULOS[k] + " (%)</label><input id=\"pp-" + k + '" data-digitar="precoPar" data-chave="' + k + '" value="' + h(numCampo(par[k])) + '" inputmode="decimal">' + (dica ? "<small>" + dica + "</small>" : "") + "</div>";
+    return '<section class="card preco-par-card"><div class="card-h"><h2>BDI e tributos</h2><span class="muted" id="pp-resumo">BDI ' + pct(calc.bdi, 2) + " · tributos " + pct(calc.tributos, 2) + "</span></div>" +
+      '<div class="form-grid preco-par">' +
+      '<div class="campo span-2"><label for="pp-regime">Regime tributário</label><select id="pp-regime" data-mudar="precoRegime">' + Object.keys(REGIMES).map(k => '<option value="' + k + '"' + (k === (pr.regime || "presumido") ? " selected" : "") + ">" + REGIMES[k].nome + "</option>").join("") + "</select><small>" + h(reg.dica) + "</small></div>" +
+      '<div class="secao-form">Tributos sobre o faturamento</div>' +
+      campo("iss", "Entre 2% e 5%, conforme o município onde o serviço é prestado.") + campo("pis") + campo("cofins") + campo("irpj") + campo("csll") + campo("outros", "Simples Nacional (alíquota efetiva), adicional de IRPJ etc.") +
+      '<div class="secao-form">Despesas indiretas e lucro</div>' +
+      campo("ac") + campo("df") + campo("seguro") + campo("risco") + campo("garantia", "Se o edital exigir garantia contratual.") +
+      campo("lucro") + campo("lucroMinimo", "Define o lance mínimo da disputa.") +
+      campo("encargos", "Médicos PJ: 0%. Contratação CLT: em geral entre 65% e 80% sobre a remuneração.") +
+      '</div><p class="muted" style="font-size:12.5px;margin-top:12px">BDI no formato do TCU (Acórdão 2.622/2013): [(1 + AC + S + R + G) × (1 + DF) × (1 + L)] ÷ (1 − tributos) − 1.</p></section>';
+  }
+  function resultadoPrecoHTML(e, calc) {
+    const est = estimadoPreco(e).valor;
+    if (!calc.itens.length) return '<section class="card"><h2 style="font-size:16.5px">Resultado</h2><p class="muted" style="margin-top:8px">Adicione os itens para ver o preço, a margem e o lance mínimo.</p></section>';
+    const ex = P.exequibilidade(calc.total, est), exMin = P.exequibilidade(calc.totalMinimo, est);
+    const linhaEx = (rot, x, valor) => '<div class="alerta ' + ({ crit: "critico", warn: "atencao", ok: "info", info: "info" }[x.nivel]) + '"><span class="ico">' + ic(x.nivel === "ok" ? "check" : "aviso") + '</span><div class="tx"><b>' + rot + ": " + U.moeda(valor) + (x.razao ? " (" + pct(x.razao) + " do estimado)" : "") + "</b><span style=\"white-space:normal\">" + h(x.texto) + "</span></div></div>";
+    const lances = P.tabelaLances(calc);
+    return '<section class="card preco-total"><span class="rot">Preço global proposto</span><b class="num">' + U.moeda(calc.total) + "</b>" +
+      '<dl class="datas" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-top:12px">' +
+      "<div><dt>Custo direto</dt><dd>" + U.moeda(calc.diretoTotal) + "</dd></div><div><dt>BDI</dt><dd>" + pct(calc.bdi, 2) + "</dd></div>" +
+      "<div><dt>Lucro líquido</dt><dd>" + U.moeda(calc.lucroTotal) + "</dd></div><div><dt>Margem</dt><dd>" + pct(calc.margem, 2) + "</dd></div>" +
+      "<div><dt>Desconto sobre o estimado</dt><dd>" + (est ? pct(1 - calc.total / est) : "—") + "</dd></div><div><dt>Piso de 50% do estimado</dt><dd>" + (est ? U.moeda(est / 2) : "—") + "</dd></div></dl></section>" +
+      '<section class="card"><div class="card-h"><h2>Exequibilidade</h2></div><div class="alertas">' + linhaEx("Proposta", ex, calc.total) + linhaEx("Lance mínimo", exMin, calc.totalMinimo) + "</div>" +
+      '<p class="muted" style="font-size:12.5px;margin-top:8px">Serviços em geral: indício de inexequibilidade abaixo de 50% do estimado (IN SEGES 73/2022, art. 34). Os 75% do art. 59, § 4º, da Lei 14.133 valem para obras e serviços de engenharia. Em qualquer caso, a empresa pode demonstrar a exequibilidade antes da desclassificação.</p></section>' +
+      '<section class="card"><div class="card-h"><h2>Lances</h2><span class="muted">até onde dá para ir</span></div>' +
+      '<div class="preco-lance"><label for="preco-lance">Simular lance global (R$)</label><input id="preco-lance" data-digitar="precoLance" inputmode="decimal" placeholder="0,00" value="' + h(ui.precoLance || "") + '"><span id="preco-lance-res" class="muted">' + simulaLance(calc) + "</span></div>" +
+      '<div class="tabela-wrap" style="margin-top:10px"><table class="tabela"><thead><tr><th>Degrau</th><th style="text-align:right">Global</th><th style="text-align:right">Margem</th></tr></thead><tbody>' +
+      lances.map(l => '<tr class="' + (l.marco ? "marco" : "") + (l.global < calc.totalMinimo - 0.005 ? " abaixo" : "") + '"><td>' + h(l.rotulo) + '</td><td class="num" style="text-align:right">' + U.moeda(l.global) + '</td><td class="num" style="text-align:right">' + pct(l.margem) + "</td></tr>").join("") +
+      "</tbody></table></div>" +
+      (calc.itens.length > 1 ? '<details style="margin-top:10px"><summary class="link-btn">Mínimo por item (disputa item a item)</summary><div class="tabela-wrap" style="margin-top:8px"><table class="tabela"><thead><tr><th>Item</th><th style="text-align:right">Proposto</th><th style="text-align:right">Mínimo</th></tr></thead><tbody>' +
+        calc.itens.map((x, i) => "<tr><td>" + (i + 1) + (x.item.descricao ? ' <span class="sub">' + h(x.item.descricao) + "</span>" : "") + '</td><td class="num" style="text-align:right">' + U.moeda(x.unitario) + '</td><td class="num" style="text-align:right">' + U.moeda(x.minimo) + "</td></tr>").join("") + "</tbody></table></div></details>" : "") +
+      "</section>";
+  }
+  function simulaLance(calc) {
+    const v = P.numero(ui.precoLance);
+    if (!v) return "Digite um valor para ver o lucro e a margem.";
+    const lucro = v * (1 - calc.tributos) - calc.diretoTotal * P.fatorIndireto(calc.par);
+    const m = lucro / v;
+    return (lucro < 0 ? "Prejuízo de " + U.moeda(-lucro) : "Lucro de " + U.moeda(lucro)) + " · margem " + pct(m, 2) + (v < calc.totalMinimo ? " · abaixo do lance mínimo" : "");
+  }
+  function recalcPreco() {
+    const e = editalPreco();
+    if (!e || !e.precificacao) return;
+    const calc = P.calcular(e.precificacao);
+    calc.itens.forEach(x => {
+      const id = x.item.id, set = (s, v) => { const el = $("#" + s + id); if (el) el.textContent = v; };
+      set("pr-res-", resumoItemPreco(x, x.item)); set("pr-unit-", U.moeda(x.unitario)); set("pr-dir-", U.moeda(x.direto));
+    });
+    const es = $("#preco-estimado"); if (es) es.innerHTML = textoEstimado(e);
+    const r = $("#pp-resumo"); if (r) r.textContent = "BDI " + pct(calc.bdi, 2) + " · tributos " + pct(calc.tributos, 2);
+    const lado = $("#preco-resultado");
+    if (lado) {
+      const foco = document.activeElement && document.activeElement.id === "preco-lance";
+      const aberto = $("details", lado) && $("details", lado).open;
+      lado.innerHTML = resultadoPrecoHTML(e, calc);
+      if (aberto && $("details", lado)) $("details", lado).open = true;
+      if (foco) { const i = $("#preco-lance"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
+    }
+  }
+  let timerPreco = null;
+  function salvarPreco() { clearTimeout(timerPreco); timerPreco = setTimeout(() => { const e = editalPreco(); if (e && e.precificacao) e.precificacao.atualizadoEm = U.agoraISO(); salvar(); }, 600); }
+  const itemPreco = d => { const e = editalPreco(); return e && precificacaoDe(e).itens.find(x => x.id === d.item); };
+  // Horas por plantão a partir da descrição ("plantão de 12 horas", "24h")
+  const horasDaDescricao = t => { const m = String(t || "").match(/(\d{1,2})\s*(?:h\b|hs\b|horas?\b)/i); return m && +m[1] <= 24 ? +m[1] : null; };
+  function itensDaAnalise() {
+    const c = ui.analise.campos;
+    return c.itens.map(x => {
+      const un = String(x.unidade || "").toLowerCase();
+      const unidade = UNIDADES_PRECO.find(u => un.startsWith(u.toLowerCase().slice(0, 4))) || (/h(ora)?s?$/.test(un) ? "Hora" : x.unidade || "Unidade");
+      const horas = unidade === "Hora" ? 1 : horasDaDescricao(x.descricao) || (unidade === "Plantão" ? 12 : 0);
+      return P.itemNovo({ descricao: x.descricao || "Item " + x.item, unidade, quantidade: x.qtd || 0, estimadoUnit: x.valorUnit || "", horas });
+    });
   }
 
   /* ---------- Análise de edital ---------- */
@@ -1623,7 +1788,7 @@
      Roteamento e renderização
      ================================================================= */
   const PAGINAS = {
-    painel: { html: pgPainel }, editais: { html: pgEditais, depois: ligarArraste }, propostas: { html: pgPropostas },
+    painel: { html: pgPainel }, editais: { html: pgEditais, depois: ligarArraste }, propostas: { html: pgPropostas }, precos: { html: pgPrecos },
     chats: { html: pgChats, depois: depoisChats }, analise: { html: pgAnalise, depois: ligarAnalise }, recursos: { html: pgRecursos },
     documentos: { html: pgDocumentos }, portais: { html: pgPortais }, alertas: { html: pgAlertas }, ajustes: { html: pgAjustes }
   };
@@ -1667,6 +1832,7 @@
     if (!$("#modal").hidden) fecharModal();
     if (rota === "chats" && ref) { ui.chatSel = ref; ui.chatFiltro = "todas"; }
     if ((rota === "editais" || rota === "propostas") && ref && edital(ref)) ui.abrirApos = ref;
+    if (rota === "precos" && ref && edital(ref)) { ui.precoSel = ref; ui.precoLance = ""; }
     if (rota === "recursos" && ref && ref.startsWith("novo:")) { setTimeout(() => formRecurso(null, ref.slice(5)), 50); }
     if (location.hash === "#" + rota) render(); else location.hash = "#" + rota;
   }
@@ -1694,6 +1860,50 @@
   }
 
   const ACOES = {
+    precoItem: () => {
+      const e = editalPreco(); if (!e) return;
+      const pr = precificacaoDe(e), ult = pr.itens[pr.itens.length - 1];
+      const novo = P.itemNovo(ult ? { unidade: ult.unidade, horas: ult.horas, profissionais: ult.profissionais, valorHora: ult.valorHora } : {});
+      pr.itens.push(novo); salvar(); render();
+      const i = $("#pi-" + novo.id + "-descricao"); if (i) i.focus();
+    },
+    precoRemoverItem: d => {
+      const e = editalPreco(), pr = precificacaoDe(e), it = pr.itens.find(x => x.id === d.item);
+      confirmar("Remover este item?", "<b>" + h(it.descricao || "Item sem descrição") + "</b> sai da formação de preço.", "Remover", () => { pr.itens = pr.itens.filter(x => x.id !== d.item); salvar(); render(); });
+    },
+    precoCusto: d => { const it = itemPreco(d); (it.custos = it.custos || []).push({ descricao: "", valor: "", maoDeObra: false }); salvar(); render(); const i = $("#pc-" + it.id + "-" + (it.custos.length - 1)); if (i) i.focus(); },
+    precoRemoverCusto: d => { const it = itemPreco(d); it.custos.splice(+d.k, 1); salvar(); render(); },
+    precoDaAnalise: () => {
+      const e = editalPreco(), pr = precificacaoDe(e), novos = itensDaAnalise();
+      const aplicar = () => {
+        pr.itens = novos; salvar(); render();
+        toast(U.plural(novos.length, "item trazido", "itens trazidos") + " da análise", "Confira as quantidades e informe o valor da hora de cada profissional.");
+      };
+      if (pr.itens.length) confirmar("Substituir os itens?", "Os " + pr.itens.length + " itens atuais de <b>" + h(e.numero) + "</b> serão trocados pelos " + novos.length + " itens da última análise de edital.", "Substituir", aplicar);
+      else aplicar();
+    },
+    precoUsar: () => {
+      const e = editalPreco(); if (!e || !e.precificacao) return;
+      const calc = P.calcular(e.precificacao);
+      if (!calc.total) { toast("Ainda não há preço", "Preencha quantidade, horas e valor da hora dos itens.", "crit"); return; }
+      e.nossoValor = calc.total;
+      (e.checklist = e.checklist || {})[CHECK_PROPOSTA[0]] = true;
+      if (e.etapa === "triagem" || e.etapa === "analise") e.etapa = "proposta";
+      if (!e.propostaStatus || e.propostaStatus === "nao_iniciada") e.propostaStatus = "elaborando";
+      (e.historico = e.historico || []).unshift({ data: U.hojeISO(), texto: "Formação de preço: proposta de " + U.moeda(calc.total) + " (margem " + pct(calc.margem, 2) + ", lance mínimo " + U.moeda(calc.totalMinimo) + ")." });
+      registrar(e.numero + ": proposta de " + U.moeda(calc.total) + " pela formação de preço.", "precos");
+      atualizar(); toast("Valor da proposta atualizado", e.numero + ": " + U.moeda(calc.total) + ". Planilha de custos marcada no checklist.");
+    },
+    precoCopiar: () => {
+      const e = editalPreco(); if (!e || !e.precificacao) return;
+      const calc = P.calcular(e.precificacao), n = v => (Math.round(v * 100) / 100).toFixed(2).replace(".", ",");
+      const l = [["Item", "Descrição", "Unidade", "Quantidade", "Custo direto unitário", "BDI", "Preço unitário", "Preço total", "Lance mínimo unitário"].join("\t")];
+      calc.itens.forEach((x, i) => l.push([i + 1, x.item.descricao, x.item.unidade, x.quantidade, n(x.direto), pct(x.bdi, 2), n(x.unitario), n(x.total), n(x.minimo)].join("\t")));
+      l.push(["", "TOTAL", "", "", "", "", "", n(calc.total), ""].join("\t"), "", "Parâmetros (%)\tValor");
+      Object.keys(P.ROTULOS).forEach(k => l.push(P.ROTULOS[k] + "\t" + String(P.numero(calc.par[k])).replace(".", ",")));
+      U.copiar(l.join("\n")); toast("Planilha copiada", "Cole no Excel: cada coluna vai para o lugar certo.");
+    },
+    abrirPreco: d => { ui.precoSel = d.id; irPara("precos"); },
     fecharModal, abrirMenu: () => $("#app").classList.add("menu-aberto"), fecharMenu,
     ir: d => irPara(d.rota, d.ref),
     tema: () => {
@@ -1843,6 +2053,15 @@
     S[obj][campo] = valor;
   }
   const MUDAR = {
+    precoEdital: el => { ui.precoSel = el.value; ui.precoLance = ""; render(); },
+    precoUnidade: el => { const it = itemPreco(el.dataset); it.unidade = el.value; if (el.value === "Hora") it.horas = 1; salvar(); render(); },
+    precoCustoMO: el => { const it = itemPreco(el.dataset); it.custos[+el.dataset.k].maoDeObra = el.checked; salvar(); recalcPreco(); },
+    precoRegime: el => {
+      const pr = precificacaoDe(editalPreco()), iss = pr.parametros.iss;
+      pr.regime = el.value; Object.assign(pr.parametros, REGIMES[el.value].v);
+      if (el.value !== "simples" && pr.parametros.iss !== undefined && iss) pr.parametros.iss = iss; // mantém o ISS do município
+      salvar(); render();
+    },
     filtroEtapa: el => { ui.fEd.etapa = el.value; $("#ed-resultado").innerHTML = resultadoEditais(); ligarArraste(); },
     filtroPortal: el => { ui.fEd.portal = el.value; $("#ed-resultado").innerHTML = resultadoEditais(); ligarArraste(); },
     propStatus: el => {
@@ -1880,6 +2099,10 @@
     }
   };
   const DIGITAR = {
+    preco: el => { const it = itemPreco(el.dataset); it[el.dataset.campo] = el.value; recalcPreco(); salvarPreco(); },
+    precoCusto: el => { const it = itemPreco(el.dataset); it.custos[+el.dataset.k][el.dataset.campo] = el.value; recalcPreco(); salvarPreco(); },
+    precoPar: el => { const pr = precificacaoDe(editalPreco()); pr.parametros[el.dataset.chave] = el.value; recalcPreco(); salvarPreco(); },
+    precoLance: el => { ui.precoLance = el.value; const e = editalPreco(); const r = $("#preco-lance-res"); if (e && e.precificacao && r) r.textContent = simulaLance(P.calcular(e.precificacao)); },
     buscaEd: el => { ui.fEd.busca = el.value; const g = $("#busca-global"); if (g) g.value = el.value; $("#ed-resultado").innerHTML = resultadoEditais(); ligarArraste(); },
     buscaDoc: el => { ui.fDoc.busca = el.value; render(); const i = $("#f-busca-doc"); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } },
     buscaPortal: el => { ui.fPortal.busca = el.value; $("#lista-portais").innerHTML = listaPortaisHTML(); },
