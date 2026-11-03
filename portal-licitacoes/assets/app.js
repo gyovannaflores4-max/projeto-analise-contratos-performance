@@ -209,7 +209,7 @@
         const s = situacaoPortal(p[campo]);
         if (s.cls !== "crit" && s.cls !== "warn") return;
         add({ id: "portal:" + p.id + ":" + campo + ":" + p[campo], tipo: "portal", icone: "portais", quando: p[campo],
-          nivel: s.dias < 0 || s.dias <= 7 ? "critico" : "atencao", titulo: rot + " no " + p.nome + (s.dias < 0 ? " vencido" : " vencendo"), detalhe: s.rotulo, rota: "portais", ref: p.id });
+          nivel: s.dias < 0 || s.dias <= 7 ? "critico" : "atencao", titulo: rot + " no " + p.nome + (p.empresa ? " (" + empresaCurta(p.empresa) + ")" : "") + (s.dias < 0 ? " vencido" : " vencendo"), detalhe: s.rotulo + (p.responsavel ? " · responsável: " + p.responsavel : ""), rota: "portais", ref: p.id });
       });
     });
 
@@ -1290,29 +1290,133 @@
   }
 
   /* ---------- Portais ---------- */
+  /* ---------- Portais ---------- */
+  const empresaCurta = e => String(e || "").split(/\s+[-–]\s+/)[0].trim() || "Sem empresa";
+  function situacaoDoPortal(p) {
+    const a = situacaoPortal(p.validadeCadastro), b = situacaoPortal(p.validadePlano);
+    let s = a.ordem <= b.ordem ? a : b;
+    if (!p.validadeCadastro && !p.validadePlano) {
+      s = p.renovacaoSolicitada ? { cls: "info", rotulo: "Renovação solicitada em " + U.fmtData(p.renovacaoSolicitada), dias: null, ordem: 4 }
+        : p.semValidade ? { cls: "ok", rotulo: "Sem vencimento", dias: null, ordem: 8 } : { cls: "neutral", rotulo: "Sem data de vencimento", dias: null, ordem: 9 };
+    }
+    return s;
+  }
+  function grupoPortal(p) {
+    const s = situacaoDoPortal(p);
+    if (s.dias !== null && s.dias < 0) return "vencidos";
+    if (s.dias !== null && s.dias <= (+S.ajustes.diasPortal || 30)) return "vencendo";
+    if (s.dias !== null || s.ordem === 8) return "emdia";
+    return "semdata";
+  }
   function pgPortais() {
-    const linhaVal = (rot, v) => { const s = situacaoPortal(v); return "<div><dt>" + rot + "</dt><dd>" + (v ? '<span class="num">' + U.fmtData(v) + '</span><span class="pill ' + s.cls + '">' + h(s.cls === "ok" ? "Em dia" : s.rotulo) + "</span>" : '<span class="muted">—</span>') + "</dd></div>"; };
-    const iniciais = n => n.replace(/\(.*?\)/g, "").split(/[\s.-]+/).filter(w => w.length > 1 && !/^(de|do|da|dos|das|e)$/i.test(w)).slice(0, 2).map(w => w[0]).join("").toUpperCase();
-    const ord = S.portais.slice().sort((a, b) => Math.min(situacaoPortal(a.validadeCadastro).ordem, situacaoPortal(a.validadePlano).ordem) - Math.min(situacaoPortal(b.validadeCadastro).ordem, situacaoPortal(b.validadePlano).ordem));
-    return '<div class="cab"><div><span class="eyebrow">Cadastro da empresa</span><h1>Portais de compras</h1><p>Cadastros, credenciamentos e planos de cada plataforma. Por segurança o portal não guarda senhas: use um gerenciador de senhas da empresa.</p></div><div class="cab-acoes"><button class="btn primario" data-acao="novoPortal">' + ic("mais") + "Novo portal</button></div></div>" +
-      (ord.length ? '<div class="portais">' + ord.map(p => '<article class="portal"><div class="portal-h"><span class="av" style="--cor:' + corPortal(p.nome) + '">' + h(iniciais(p.nome) || "P") + "</span><div><b>" + h(p.nome) + "</b>" + (p.url ? '<a href="' + h(p.url) + '" target="_blank" rel="noopener">' + h(p.url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")) + "</a>" : "") + "</div></div>" +
-        "<dl>" + (p.usuario ? '<div><dt>Usuário</dt><dd class="mono">' + h(p.usuario) + "</dd></div>" : "") + (p.cadastro ? "<div><dt>Tipo de cadastro</dt><dd>" + h(p.cadastro) + "</dd></div>" : "") + linhaVal("Cadastro válido até", p.validadeCadastro) + linhaVal("Plano/mensalidade até", p.validadePlano) + "</dl>" +
-        (p.obs ? '<p class="nota">' + h(p.obs) + "</p>" : "") +
-        '<div class="linha-acoes">' + (p.url ? '<a class="btn peq ghost" href="' + h(p.url) + '" target="_blank" rel="noopener">' + ic("link") + "Acessar</a>" : "") + '<button class="btn peq ghost" data-acao="editarPortal" data-id="' + p.id + '">' + ic("editar") + 'Editar</button><button class="icon-btn" data-acao="excluirPortal" data-id="' + p.id + '" aria-label="Excluir">' + ic("lixo") + "</button></div></article>").join("") + "</div>"
-        : '<div class="card">' + vazio("portais", "Nenhum portal cadastrado.", '<button class="btn primario" data-acao="novoPortal">Cadastrar portal</button>') + "</div>");
+    const f = ui.fPortal || (ui.fPortal = { grupo: "todos", empresa: "", busca: "" });
+    const empresas = [...new Set(S.portais.map(p => p.empresa || ""))].sort();
+    const base = S.portais.filter(p => !f.empresa || (p.empresa || "") === f.empresa);
+    const cont = { vencidos: 0, vencendo: 0, emdia: 0, semdata: 0 };
+    base.forEach(p => { cont[grupoPortal(p)]++; });
+    const tile = (id, cls, n, rot) => '<button class="' + cls + '" data-acao="filtroPortalGrupo" data-f="' + (f.grupo === id ? "todos" : id) + '" aria-pressed="' + (f.grupo === id) + '"><b>' + n + "</b><span>" + rot + "</span></button>";
+    return '<div class="cab"><div><span class="eyebrow">Cadastro da empresa</span><h1>Portais de compras</h1><p>Cadastros e credenciamentos de cada empresa e filial, com aviso de vencimento. Por segurança o portal não guarda senhas: elas continuam só na sua planilha ou no gerenciador de senhas.</p></div>' +
+      '<div class="cab-acoes"><label class="btn ghost" for="imp-portais">' + ic("upload") + 'Importar planilha<input type="file" id="imp-portais" accept=".xlsx,.xls" class="sr" data-mudar="importarPortais"></label><button class="btn primario" data-acao="novoPortal">' + ic("mais") + "Novo portal</button></div></div>" +
+      (S.portais.length ? '<div class="resumo-docs">' + tile("vencidos", "crit", cont.vencidos, "vencidos") + tile("vencendo", "warn", cont.vencendo, "vencem em até " + (+S.ajustes.diasPortal || 30) + " dias") + tile("emdia", "ok", cont.emdia, "em dia") + tile("semdata", "", cont.semdata, "sem data de vencimento") + "</div>" +
+        '<div class="ferramentas"><label class="campo-busca"><span class="sr">Buscar portal</span>' + ic("busca") + '<input type="search" id="f-busca-portal" data-digitar="buscaPortal" value="' + h(f.busca) + '" placeholder="Portal, usuário ou responsável…"></label>' +
+        '<select id="f-empresa-portal" data-mudar="filtroPortalEmpresa" aria-label="Empresa"><option value="">Todas as empresas (' + S.portais.length + ")</option>" + empresas.map(e => '<option value="' + h(e) + '"' + (f.empresa === e ? " selected" : "") + ">" + h(e || "Sem empresa") + " (" + S.portais.filter(p => (p.empresa || "") === e).length + ")</option>").join("") + "</select></div>" +
+        '<div id="lista-portais">' + listaPortaisHTML() + "</div>"
+        : '<div class="card">' + vazio("portais", "Nenhum portal cadastrado. Importe a planilha de controle (as colunas de senha são ignoradas) ou cadastre um por um.", '<label class="btn primario" for="imp-portais2">' + ic("upload") + 'Importar planilha<input type="file" id="imp-portais2" accept=".xlsx,.xls" class="sr" data-mudar="importarPortais"></label>') + "</div>");
+  }
+  function listaPortaisHTML() {
+    const f = ui.fPortal;
+    const b = U.semAcento(f.busca).toLowerCase().trim();
+    const lista = S.portais.filter(p => (!f.empresa || (p.empresa || "") === f.empresa) && (f.grupo === "todos" || grupoPortal(p) === f.grupo) &&
+      (!b || U.semAcento([p.nome, p.usuario, p.responsavel, p.empresa, p.obs].join(" ")).toLowerCase().includes(b)))
+      .sort((x, y) => { const a = situacaoDoPortal(x), c = situacaoDoPortal(y); return a.ordem - c.ordem || (a.dias ?? 1e6) - (c.dias ?? 1e6) || empresaCurta(x.empresa).localeCompare(empresaCurta(y.empresa)) || x.nome.localeCompare(y.nome); });
+    if (!lista.length) return '<div class="card">' + vazio("portais", "Nenhum portal com esse filtro.") + "</div>";
+    return '<div class="tabela-wrap"><table class="tabela"><thead><tr><th>Portal</th><th>Empresa</th><th>Usuário</th><th>Responsável</th><th>Validade</th><th>Situação</th><th style="text-align:right">Ações</th></tr></thead><tbody>' +
+      lista.map(p => { const s = situacaoDoPortal(p), v = p.validadeCadastro || p.validadePlano;
+        return '<tr><td class="forte">' + h(p.nome) + (p.url ? '<span class="sub"><a href="' + h(/^https?:/i.test(p.url) ? p.url : "https://" + p.url) + '" target="_blank" rel="noopener">' + h(p.url.replace(/^https?:\/\/(www\.)?/i, "").replace(/\/$/, "")) + "</a></span>" : "") + (p.obs ? '<span class="sub">' + h(p.obs) + "</span>" : "") +
+          "</td><td>" + h(empresaCurta(p.empresa)) + '</td><td class="mono">' + h(p.usuario || "—") + "</td><td>" + h(p.responsavel || "—") + '</td><td class="num">' + (v ? U.fmtData(v) : "—") + '</td><td><span class="pill ' + s.cls + '">' + h(s.rotulo) + "</span></td>" +
+          '<td><div class="acoes"><button class="btn peq ghost" data-acao="renovarPortal" data-id="' + p.id + '">' + ic("atualizar") + 'Renovar</button><button class="icon-btn" data-acao="editarPortal" data-id="' + p.id + '" aria-label="Editar">' + ic("editar") + '</button><button class="icon-btn" data-acao="excluirPortal" data-id="' + p.id + '" aria-label="Excluir">' + ic("lixo") + "</button></div></td></tr>"; }).join("") +
+      "</tbody></table></div>";
   }
   const camposPortal = () => [
     { nome: "nome", rotulo: "Portal", req: true, ph: "Compras.gov.br (SICAF)" },
-    { nome: "url", rotulo: "Endereço", tipo: "url", ph: "https://" },
+    { nome: "empresa", rotulo: "Empresa / filial", ph: "DIMPI MATRIZ - 10.893.674/0001-16" },
     { nome: "usuario", rotulo: "Usuário / login", dica: "Não guarde senhas aqui." },
-    { nome: "cadastro", rotulo: "Tipo de cadastro", ph: "SICAF níveis I a VI" },
+    { nome: "responsavel", rotulo: "Responsável pelo cadastro" },
     { nome: "validadeCadastro", rotulo: "Cadastro válido até", tipo: "date" },
     { nome: "validadePlano", rotulo: "Plano/mensalidade até", tipo: "date" },
+    { nome: "renovacaoSolicitada", rotulo: "Renovação solicitada em", tipo: "date" },
+    { nome: "url", rotulo: "Endereço do portal", tipo: "url", ph: "https://" },
+    { nome: "semValidade", rotulo: "Este cadastro não vence", tipo: "check" },
     { nome: "obs", rotulo: "Observações", tipo: "textarea", span: 2, linhas: 2 }
   ];
   function formPortal(id) {
     const p = id ? S.portais.find(x => x.id === id) : null;
-    abrirForm({ titulo: p ? "Editar portal" : "Novo portal", campos: camposPortal(), valores: p || {}, salvar: v => { if (p) Object.assign(p, v); else S.portais.push(Object.assign({ id: U.uid() }, v)); atualizar(); toast(p ? "Portal atualizado" : "Portal cadastrado", v.nome); } });
+    abrirForm({ titulo: p ? "Editar portal" : "Novo portal", campos: camposPortal(), valores: p || { empresa: (ui.fPortal && ui.fPortal.empresa) || "" }, salvar: v => { if (p) Object.assign(p, v); else S.portais.push(Object.assign({ id: U.uid() }, v)); atualizar(); toast(p ? "Portal atualizado" : "Portal cadastrado", v.nome); } });
+  }
+  function renovarPortal(id) {
+    const p = S.portais.find(x => x.id === id);
+    abrirForm({
+      titulo: "Renovar · " + h(p.nome), tamanho: "estreito", botao: "Salvar renovação",
+      campos: [{ nome: "validadeCadastro", rotulo: "Novo vencimento do cadastro", tipo: "date", req: true }],
+      valores: { validadeCadastro: U.addDias(U.hojeISO(), 365) },
+      salvar: v => { p.validadeCadastro = v.validadeCadastro; p.renovacaoSolicitada = ""; p.semValidade = false; registrar(p.nome + " (" + empresaCurta(p.empresa) + ") renovado até " + U.fmtData(v.validadeCadastro) + ".", "portais"); atualizar(); toast("Cadastro renovado", "Válido até " + U.fmtData(v.validadeCadastro)); }
+    });
+  }
+  /* Importa a planilha de controle de acessos: uma aba por empresa/filial, cabeçalho "Portal | Login | ... | Vencimento".
+     Colunas de senha, credencial, pergunta e resposta secreta são ignoradas: nunca entram no portal. */
+  const SEGREDO = /senha|credencial|pergunta|resposta|chave|token|\bpin\b/i;
+  async function lerPlanilhaPortais(arq) {
+    await carregarScript("https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js");
+    const wb = window.XLSX.read(await arq.arrayBuffer(), { type: "array" });
+    const lidos = [];
+    const dataExcel = n => { const d = new Date(Date.UTC(1899, 11, 30) + Math.round(n) * 86400000); return d.getUTCFullYear() + "-" + U.pad(d.getUTCMonth() + 1) + "-" + U.pad(d.getUTCDate()); };
+    const dataTexto = t => { const m = /(\d{1,2})\/(\d{1,2})\/(\d{2,4})/.exec(t); return m ? (+m[3] < 100 ? 2000 + +m[3] : +m[3]) + "-" + U.pad(+m[2]) + "-" + U.pad(+m[1]) : ""; };
+    wb.SheetNames.forEach(aba => {
+      const linhas = window.XLSX.utils.sheet_to_json(wb.Sheets[aba], { header: 1, raw: true, defval: null });
+      const hi = linhas.findIndex(r => r && String(r[0] || "").trim().toLowerCase() === "portal");
+      if (hi < 0) return;
+      const titulo = String((linhas.slice(0, hi).map(r => r && r[0]).find(v => v && /\d{2}\.\d{3}\.\d{3}/.test(String(v)) || (v && !/acessos|portais/i.test(String(v)))) || aba)).replace(/\s+/g, " ").trim();
+      const col = {};
+      linhas[hi].forEach((c, j) => { c = String(c || "").trim().toLowerCase(); if (!c || SEGREDO.test(c)) return;
+        if (c === "portal") col.nome = j; else if (/^login|usu[áa]rio/.test(c)) col.usuario = j; else if (/respons/.test(c)) col.responsavel = j;
+        else if (/venc|validade/.test(c)) col.venc = j; else if (/^(site|link|url|endere)/.test(c)) col.url = j; });
+      linhas.slice(hi + 1).forEach(r => {
+        const nome = r && r[col.nome] !== null && r[col.nome] !== undefined ? String(r[col.nome]).trim() : "";
+        if (!nome) return;
+        const v = col.venc !== undefined ? r[col.venc] : null;
+        const item = { nome, empresa: titulo, usuario: col.usuario !== undefined && r[col.usuario] !== null ? String(r[col.usuario]).trim() : "", responsavel: col.responsavel !== undefined && r[col.responsavel] ? String(r[col.responsavel]).trim() : "",
+          validadeCadastro: "", renovacaoSolicitada: "", semValidade: false, url: "" };
+        if (typeof v === "number") item.validadeCadastro = dataExcel(v);
+        else if (v) { const t = String(v); if (/solicitad/i.test(t)) item.renovacaoSolicitada = dataTexto(t); else if (/sem (?:vencimento|validade)|n[ãa]o vence|indeterminad/i.test(t)) item.semValidade = true; else item.validadeCadastro = dataTexto(t); }
+        const u = col.url !== undefined && r[col.url] ? String(r[col.url]).trim() : "";
+        if (/^(https?:\/\/|www\.)/i.test(u)) item.url = u;
+        if (/n[ãa]o usar/i.test(item.usuario)) item.obs = "Login marcado como \"não usar\" na planilha.";
+        lidos.push(item);
+      });
+    });
+    return lidos;
+  }
+  const chavePortal = p => [p.empresa, p.nome, p.usuario].map(x => U.semAcento(x || "").toLowerCase().replace(/\W+/g, "")).join("|");
+  async function importarPortais(el) {
+    const arq = el.files[0]; el.value = "";
+    if (!arq) return;
+    let lidos;
+    try { lidos = await lerPlanilhaPortais(arq); } catch (e) { toast("Não consegui ler a planilha", e.message, "crit"); return; }
+    if (!lidos.length) { toast("Nenhum portal encontrado", "A planilha precisa ter uma linha de cabeçalho começando com \"Portal\".", "crit"); return; }
+    const existentes = new Map(S.portais.map(p => [chavePortal(p), p]));
+    const novos = lidos.filter(x => !existentes.has(chavePortal(x)));
+    const atualizados = lidos.filter(x => existentes.has(chavePortal(x)));
+    const vencidos = lidos.filter(x => x.validadeCadastro && U.diasAte(x.validadeCadastro) < 0).length;
+    const empresas = new Set(lidos.map(x => x.empresa)).size;
+    confirmar("Importar " + U.plural(lidos.length, "portal", "portais") + "?",
+      "Encontrei <b>" + U.plural(lidos.length, "cadastro", "cadastros") + "</b> em " + U.plural(empresas, "empresa/filial", "empresas/filiais") + ": " + U.plural(novos.length, "novo", "novos") + " e " + U.plural(atualizados.length, "já existente", "já existentes") + " (terão responsável e vencimento atualizados). " + U.plural(vencidos, "cadastro está vencido", "cadastros estão vencidos") + ".<br><br>As colunas de senha, pergunta e resposta secreta <b>não foram lidas</b>.",
+      "Importar", () => {
+        novos.forEach(x => S.portais.push(Object.assign({ id: U.uid(), origem: "planilha" }, x)));
+        atualizados.forEach(x => { const p = existentes.get(chavePortal(x)); ["responsavel", "validadeCadastro", "renovacaoSolicitada", "semValidade", "url"].forEach(k => { if (x[k] || k === "semValidade") p[k] = x[k] || p[k]; }); });
+        registrar("Planilha de portais importada: " + U.plural(novos.length, "novo", "novos") + ", " + U.plural(atualizados.length, "atualizado", "atualizados") + ".", "portais");
+        ui.fPortal = { grupo: vencidos ? "vencidos" : "todos", empresa: "", busca: "" };
+        atualizar(); toast("Planilha importada", U.plural(lidos.length, "portal", "portais") + " · " + U.plural(vencidos, "vencido", "vencidos"));
+      }, false);
   }
 
   /* ---------- Central de alertas ---------- */
@@ -1542,6 +1646,8 @@
     excluirDoc: d => { const x = S.documentos.find(y => y.id === d.id); excluir("documentos", d.id, x.nome, "documento"); },
     filtroDoc: d => { ui.docFiltro = d.f; render(); },
     novoPortal: () => formPortal(), editarPortal: d => formPortal(d.id),
+    renovarPortal: d => renovarPortal(d.id),
+    filtroPortalGrupo: d => { ui.fPortal.grupo = d.f; render(); },
     excluirPortal: d => { const x = S.portais.find(y => y.id === d.id); excluir("portais", d.id, x.nome, "portal"); },
 
     analisar: analisarAgora,
@@ -1600,6 +1706,8 @@
     notasEdital: el => { const e = edital(el.dataset.id); e.notas = el.value; salvar(); toast("Anotação salva"); },
     statusRec: el => { const r = S.recursos.find(x => x.id === el.dataset.id); r.status = el.value; registrar(r.pregao + ": recurso agora está \"" + nomeLista(STATUS_REC, el.value) + "\".", "recursos"); atualizar(); },
     resumoOpcao: el => { S.ajustes[el.dataset.chave] = el.value.trim(); salvar(); atualizarResumo(); },
+    filtroPortalEmpresa: el => { ui.fPortal.empresa = el.value; render(); },
+    importarPortais: el => importarPortais(el),
     calc: () => { ui.calc = { tipo: $("#calc-tipo").value, data: $("#calc-data").value, regime: $("#calc-regime").value }; const lbl = $('label[for="calc-data"]'); if (lbl) lbl.textContent = ui.calc.tipo === "recurso" ? "Data da intimação / ata" : "Data da sessão"; $("#calc-res").innerHTML = calcHTML(); },
     ajuste: el => {
       const v = el.type === "checkbox" ? el.checked : el.value;
@@ -1622,6 +1730,7 @@
   };
   const DIGITAR = {
     buscaEd: el => { ui.fEd.busca = el.value; const g = $("#busca-global"); if (g) g.value = el.value; $("#ed-resultado").innerHTML = resultadoEditais(); ligarArraste(); },
+    buscaPortal: el => { ui.fPortal.busca = el.value; $("#lista-portais").innerHTML = listaPortaisHTML(); },
     buscaChat: el => { ui.chatBusca = el.value; const c = S.chats.find(x => x.id === ui.chatSel); if (c) $("#msgs").innerHTML = mensagensHTML(c); }
   };
 
