@@ -525,3 +525,32 @@ table.tabela{width:100%;border-collapse:collapse;font-size:14px;min-width:760px}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
 }
+
+/* ===== Tela de entrada (login) ===== */
+body.trancado #app,body.trancado .toasts{display:none}
+#entrada{min-height:100vh;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);background:var(--bg)}
+.entrada-marca{background:var(--side-bg);color:var(--side-ink);padding:48px clamp(24px,6vw,80px);display:flex;flex-direction:column;justify-content:center;gap:18px}
+.entrada-marca .marca-logo{width:54px;height:54px;border-radius:15px}
+.entrada-marca .marca-logo svg{width:30px;height:30px}
+.entrada-marca h1{font-size:clamp(32px,4.4vw,52px);line-height:1.05}
+.entrada-marca p{font-size:18px;color:var(--side-ink-2);max-width:32ch}
+.entrada-marca ul{margin:6px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;color:var(--side-ink)}
+.entrada-marca li{display:flex;gap:10px;align-items:center}
+.entrada-marca li::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--pop);flex:none}
+.entrada-lado{display:grid;place-items:center;padding-block:32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.entrada-form{width:min(400px,100%);display:flex;flex-direction:column;gap:14px}
+.entrada-form h2{font-size:26px}
+.entrada-form .btn{padding:11px 16px;font-size:15px}
+.entrada-msg{min-height:20px;font-size:14px;color:var(--crit)}
+.entrada-msg.ok{color:var(--ok)}
+.entrada-links{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:14px}
+.opcao-inicio{appearance:none;text-align:left;border:1px solid var(--line-2);background:var(--surface);color:inherit;border-radius:12px;padding:14px 16px;cursor:pointer;display:flex;flex-direction:column;gap:3px;font-size:14px}
+.opcao-inicio span{color:var(--ink-2)}
+.opcao-inicio:hover{border-color:var(--brand);box-shadow:0 0 0 1px var(--brand)}
+.side-cartao .link-btn{color:var(--side-ink);text-decoration:underline;font-weight:600;margin-top:4px}
+@media (max-width:820px){
+  #entrada{grid-template-columns:minmax(0,1fr)}
+  .entrada-marca{padding:28px 20px;gap:10px}
+  .entrada-marca ul{display:none}
+  .entrada-marca p{font-size:15px}
+}

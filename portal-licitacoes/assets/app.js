@@ -44,6 +44,9 @@
   /* =================================================================
      Estado
      ================================================================= */
+  const CFG = window.PORTAL_CONFIG || {};
+  // Login e dados na nuvem (Supabase). Sem configuração, o portal funciona só com o navegador.
+  const nuvem = { cliente: null, usuario: null, bloqueado: false, pendente: false, enviando: false, timer: null, status: "", erro: "", salvoEm: 0, remotoEm: null, ultimoEnviado: "" };
   let S = carregar();
   let termos = [];
   let cacheMsg = new WeakMap();
@@ -56,13 +59,13 @@
 
   function lerPref(k, padrao) { try { return localStorage.getItem("ped:" + k) || padrao; } catch (e) { return padrao; } }
   function gravarPref(k, v) { try { localStorage.setItem("ped:" + k, v); } catch (e) { /* sem armazenamento */ } }
+  function normalizar(d) {
+    const base = D.vazio();
+    return Object.assign(base, d, { empresa: Object.assign(base.empresa, d.empresa), ajustes: Object.assign(base.ajustes, d.ajustes) });
+  }
   function carregar() {
     const s = U.ler(CHAVE, null);
-    if (s && s.versao) {
-      const base = D.vazio();
-      return Object.assign(base, s, { empresa: Object.assign(base.empresa, s.empresa), ajustes: Object.assign(base.ajustes, s.ajustes) });
-    }
-    return D.criar();
+    return s && s.versao ? normalizar(s) : D.criar();
   }
   function aplicarConfig() {
     U.config.pontosFacultativos = !!S.ajustes.pontosFacultativos;
@@ -71,7 +74,8 @@
     termos = A.termosEmpresa(S.empresa);
     cacheMsg = new WeakMap();
   }
-  function salvar() { U.gravar(CHAVE, S); }
+  const chaveLocal = () => (nuvem.usuario ? CHAVE + ":" + nuvem.usuario.id : CHAVE);
+  function salvar() { U.gravar(chaveLocal(), S); if (nuvem.usuario) agendarNuvem(); }
   function atualizar() { salvar(); aplicarConfig(); render(); }
   function registrar(texto, rota) { S.atividade.unshift({ quando: U.agoraISO(), texto, rota }); S.atividade = S.atividade.slice(0, 80); }
   const apelido = () => S.empresa.apelido || S.empresa.nome || "empresa";
@@ -280,7 +284,7 @@
     if (f.tipo === "textarea") inp = '<textarea id="' + id + '" name="' + f.nome + '" rows="' + (f.linhas || 3) + '" placeholder="' + h(f.ph || "") + '">' + h(val) + "</textarea>";
     else if (f.tipo === "select") inp = '<select id="' + id + '" name="' + f.nome + '">' + f.opcoes.map(o => { const [ov, ol] = Array.isArray(o) ? o : [o, o]; return '<option value="' + h(ov) + '"' + (String(ov) === String(val) ? " selected" : "") + ">" + h(ol) + "</option>"; }).join("") + "</select>";
     else if (f.tipo === "money") inp = '<input id="' + id + '" name="' + f.nome + '" inputmode="decimal" placeholder="0,00" value="' + (val === "" ? "" : h(Number(val).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }))) + '">';
-    else inp = '<input id="' + id + '" name="' + f.nome + '" type="' + ({ datetime: "datetime-local", date: "date", url: "url", number: "number" }[f.tipo] || "text") + '" value="' + h(val) + '" placeholder="' + h(f.ph || "") + '"' + (f.tipo === "number" ? ' min="0" step="1"' : "") + ">";
+    else inp = '<input id="' + id + '" name="' + f.nome + '" type="' + ({ datetime: "datetime-local", date: "date", url: "url", number: "number", password: "password" }[f.tipo] || "text") + '" value="' + h(val) + '" placeholder="' + h(f.ph || "") + '"' + (f.tipo === "number" ? ' min="0" step="1"' : "") + ">";
     return '<div class="campo' + (f.span === 2 ? " span-2" : "") + '"><label for="' + id + '">' + f.rotulo + (f.req ? ' <b class="req">*</b>' : "") + "</label>" + inp + (f.dica ? "<small>" + f.dica + "</small>" : "") + "</div>";
   }
   function lerForm(form, campos) {
@@ -363,9 +367,11 @@
      ================================================================= */
   async function api(caminho, ms) {
     if (!/^https?:$/.test(location.protocol) && !S.ajustes.apiBase) throw new Error("Abra o portal pelo endereço publicado na Vercel para usar a leitura automática.");
+    const cab = { accept: "application/json" };
+    if (nuvem.cliente) { const { data } = await nuvem.cliente.auth.getSession(); if (data && data.session) cab.authorization = "Bearer " + data.session.access_token; }
     const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), ms || 30000);
     try {
-      const r = await fetch((S.ajustes.apiBase || "").replace(/\/+$/, "") + caminho, { signal: ctrl.signal, headers: { accept: "application/json" } });
+      const r = await fetch((S.ajustes.apiBase || "").replace(/\/+$/, "") + caminho, { signal: ctrl.signal, headers: cab });
       if (!(r.headers.get("content-type") || "").includes("json")) throw new Error("A API do portal não respondeu neste endereço. Confira o endereço em Ajustes → Integrações.");
       const j = await r.json();
       if (!r.ok) throw new Error(j.erro || "Erro " + r.status);
@@ -1261,7 +1267,9 @@
       (ui.roboErro ? '<p class="nota" style="color:var(--crit)">' + h(ui.roboErro) + "</p>" : "") +
       '<button class="btn ghost peq" data-acao="sincRobo" style="align-self:flex-start">' + ic("atualizar") + "Sincronizar com o robô agora</button>" +
       '<button class="btn ghost peq" data-acao="testarApi" style="align-self:flex-start">' + ic("raio") + "Testar conexão</button></section>" +
-      '<section class="card" style="grid-column:1/-1"><h2>Seus dados</h2><p>Tudo fica salvo neste navegador. Faça um backup de vez em quando e use-o para levar os dados para outro computador.</p>' +
+      '<section class="card" style="grid-column:1/-1"><h2>Seus dados</h2>' +
+      (nuvem.usuario ? "<p>Seus dados ficam guardados na nuvem, na conta <b>" + h(nuvem.usuario.email) + "</b>, e aparecem em qualquer computador ou celular em que você entrar. " + h(textoNuvem()) + '.</p><div class="linha-acoes"><button class="btn ghost peq" data-acao="sair">Sair do portal</button><button class="btn ghost peq" data-acao="trocarSenha">Trocar a senha</button></div>'
+        : "<p>Tudo fica salvo neste navegador. Faça um backup de vez em quando e use-o para levar os dados para outro computador.</p>") +
       '<div class="linha-acoes"><button class="btn ghost" data-acao="backup">' + ic("download") + 'Exportar backup</button><label class="btn ghost" for="aj-importar">' + ic("upload") + 'Importar backup<input type="file" id="aj-importar" accept=".json,application/json" class="sr" data-mudar="importar"></label>' +
       '<span style="flex:1"></span><button class="btn ghost" data-acao="recarregarExemplo">Recarregar dados de exemplo</button><button class="btn perigo" data-acao="zerar">' + ic("lixo") + "Apagar tudo e começar do zero</button></div></section></div>";
   }
@@ -1276,6 +1284,7 @@
   };
   const rotaAtual = () => { const r = location.hash.replace("#", ""); return PAGINAS[r] ? r : "painel"; };
   function render() {
+    if (nuvem.bloqueado) return;
     const r = rotaAtual();
     const el = $("#pagina");
     el.innerHTML = PAGINAS[r].html();
@@ -1291,6 +1300,7 @@
     else atualizarNav();
   }
   function atualizarNav() {
+    if (nuvem.bloqueado) return;
     const al = gerarAlertas();
     const cont = {
       editais: S.editais.filter(ativo).length,
@@ -1304,7 +1314,8 @@
     Object.keys(cont).forEach(k => { const b = $('[data-cont="' + k + '"]'); if (b) { b.textContent = cont[k]; b.hidden = !cont[k]; } });
     const sino = $("#sino");
     sino.textContent = cont.alertas; sino.hidden = !cont.alertas;
-    $("#side-empresa").innerHTML = "<b>" + h(S.empresa.nome || "Sua empresa") + "</b><br>" + (S.exemplo ? "Dados de exemplo (fictícios)" : "Dados salvos neste navegador");
+    $("#side-empresa").innerHTML = "<b>" + h(S.empresa.nome || "Sua empresa") + '</b><br><span id="side-nuvem">' + h(textoNuvem()) + "</span>" +
+      (nuvem.usuario ? '<br><button class="link-btn" data-acao="sair">Sair</button>' : "");
   }
   function irPara(rota, ref) {
     fecharMenu();
@@ -1348,6 +1359,19 @@
     zerar: () => confirmar("Começar do zero?", "Todos os editais, chats, recursos, documentos e portais deste navegador serão apagados. Se quiser guardar algo, exporte um backup em Ajustes antes.", "Apagar e começar", () => {
       const emp = S.exemplo ? D.vazio().empresa : S.empresa;
       S = D.vazio(); S.empresa = emp; atualizar(); location.hash = "#ajustes"; toast("Tudo pronto", "Comece pelos dados da empresa e depois cadastre os editais.");
+    }),
+    sair: () => confirmar("Sair do portal?", "Seus dados continuam guardados na nuvem. Para voltar, entre com seu e-mail e senha.", "Sair", async () => {
+      clearTimeout(nuvem.timer);
+      if (nuvem.pendente) await enviarNuvem();
+      try { localStorage.removeItem(chaveLocal()); } catch (e) { /* sem armazenamento */ }
+      await nuvem.cliente.auth.signOut();
+      location.hash = ""; location.reload();
+    }, false),
+    trocarSenha: () => abrirForm({
+      titulo: "Trocar a senha", tamanho: "estreito", botao: "Salvar nova senha",
+      campos: [{ nome: "senha", rotulo: "Nova senha", tipo: "password", req: true, dica: "Pelo menos 8 caracteres." }, { nome: "confirmar", rotulo: "Repita a nova senha", tipo: "password", req: true }],
+      validar: v => (v.senha.length < 8 ? "A senha precisa ter pelo menos 8 caracteres." : v.senha !== v.confirmar ? "As duas senhas não são iguais." : ""),
+      salvar: async v => { const { error } = await nuvem.cliente.auth.updateUser({ password: v.senha }); toast(error ? "Não consegui trocar a senha" : "Senha alterada", error ? traduzirErro(error) : "Use a nova senha no próximo acesso.", error ? "crit" : ""); }
     }),
     recarregarExemplo: () => confirmar("Recarregar exemplos?", "Os dados atuais serão substituídos pelos dados de exemplo (fictícios).", "Recarregar", () => { S = D.criar(); atualizar(); toast("Dados de exemplo carregados"); }),
 
@@ -1508,29 +1532,212 @@
   }
 
   /* =================================================================
+     Login e nuvem (Supabase)
+     ================================================================= */
+  function textoNuvem() {
+    if (!nuvem.usuario) return S.exemplo ? "Dados de exemplo (fictícios)" : "Dados salvos neste navegador";
+    if (nuvem.status === "erro") return "Sem conexão com a nuvem: salvo neste navegador";
+    if (nuvem.pendente || nuvem.enviando) return "Salvando na nuvem…";
+    if (!nuvem.salvoEm) return "Salvo na nuvem";
+    return "Salvo na nuvem " + (Date.now() - nuvem.salvoEm < 60000 ? "agora" : U.desde(U.isoDataHora(new Date(nuvem.salvoEm))));
+  }
+  function atualizarStatusNuvem() { const el = $("#side-nuvem"); if (el) el.textContent = textoNuvem(); }
+  function agendarNuvem() {
+    if (JSON.stringify(S) === nuvem.ultimoEnviado) return;
+    nuvem.pendente = true;
+    clearTimeout(nuvem.timer);
+    nuvem.timer = setTimeout(enviarNuvem, 1500);
+    atualizarStatusNuvem();
+  }
+  async function enviarNuvem() {
+    if (!nuvem.usuario) return;
+    if (nuvem.enviando) { clearTimeout(nuvem.timer); nuvem.timer = setTimeout(enviarNuvem, 1500); return; }
+    const json = JSON.stringify(S);
+    nuvem.enviando = true;
+    let r;
+    try { r = await nuvem.cliente.from("portal_estado").upsert({ user_id: nuvem.usuario.id, dados: JSON.parse(json) }).select("atualizado_em").single(); }
+    catch (e) { r = { error: e }; }
+    nuvem.enviando = false;
+    if (r.error) {
+      nuvem.status = "erro"; nuvem.erro = r.error.message || String(r.error);
+      clearTimeout(nuvem.timer); nuvem.timer = setTimeout(enviarNuvem, 30000);
+    } else {
+      nuvem.status = "ok"; nuvem.ultimoEnviado = json; nuvem.remotoEm = r.data.atualizado_em; nuvem.salvoEm = Date.now();
+      nuvem.pendente = JSON.stringify(S) !== json;
+      if (nuvem.pendente) agendarNuvem();
+    }
+    atualizarStatusNuvem();
+  }
+  // Traz alterações feitas em outro computador (quando não há nada pendente aqui)
+  async function puxarNuvem() {
+    if (!nuvem.usuario || nuvem.pendente || nuvem.enviando) return;
+    try {
+      const v = await nuvem.cliente.from("portal_estado").select("atualizado_em").maybeSingle();
+      if (v.error || !v.data || (nuvem.remotoEm && v.data.atualizado_em <= nuvem.remotoEm)) return;
+      const r = await nuvem.cliente.from("portal_estado").select("dados, atualizado_em").maybeSingle();
+      if (r.error || !r.data || nuvem.pendente) return;
+      S = normalizar(r.data.dados); nuvem.remotoEm = r.data.atualizado_em; nuvem.ultimoEnviado = JSON.stringify(S);
+      U.gravar(chaveLocal(), S); aplicarConfig(); renderSeLivre();
+      toast("Dados atualizados", "Chegaram alterações feitas em outro computador.");
+    } catch (e) { /* tenta na próxima */ }
+  }
+  function traduzirErro(e) {
+    const m = String((e && (e.message || e.msg)) || e);
+    if (/invalid login credentials/i.test(m)) return "E-mail ou senha incorretos.";
+    if (/não autorizado|nao autorizado|database error|saving new user|unexpected_failure/i.test(m)) return "Este e-mail não está autorizado a usar o portal.";
+    if (/already registered|already been registered|already exists/i.test(m)) return "Este e-mail já tem conta. Use a opção Entrar.";
+    if (/rate limit|too many|security purposes/i.test(m)) return "Muitas tentativas seguidas. Espere um minuto e tente de novo.";
+    if (/password should|weak password|weak_password/i.test(m)) return "Senha fraca. Use pelo menos 8 caracteres, misturando letras e números.";
+    if (/same.*password|different from the old/i.test(m)) return "A nova senha precisa ser diferente da atual.";
+    if (/failed to fetch|network|load failed/i.test(m)) return "Sem conexão com o servidor de login. Confira a internet.";
+    return "Não deu certo: " + m;
+  }
+  const ENTRADA = {
+    entrar: ["Entrar", "Use o e-mail e a senha do portal.", "Entrar"],
+    criar: ["Primeiro acesso", "Crie a sua senha. Só e-mails autorizados conseguem criar conta.", "Criar senha e entrar"],
+    esqueci: ["Esqueci a senha", "Enviamos um link para você criar uma senha nova.", "Enviar link"],
+    nova: ["Nova senha", "Escolha a nova senha de acesso.", "Salvar nova senha"]
+  };
+  function cascaEntrada(conteudo) {
+    nuvem.bloqueado = true;
+    document.body.classList.add("trancado");
+    let el = $("#entrada");
+    if (!el) { el = document.createElement("div"); el.id = "entrada"; document.body.insertBefore(el, document.body.firstChild); }
+    el.innerHTML = '<div class="entrada-marca"><span class="marca-logo"><svg viewBox="0 0 24 24"><path d="M4 12.5 9 17.5 20 6.5"/><path d="M14 17.5h6"/></svg></span>' +
+      "<h1>Pregão em Dia</h1><p>Editais, propostas, chats dos pregões e prazos num lugar só.</p>" +
+      "<ul><li>Chat do e-compras lido a cada 5 minutos</li><li>Prazos de recurso em dias úteis, com feriados</li><li>Certidões e portais sempre em dia</li></ul></div>" +
+      '<div class="entrada-lado">' + conteudo + "</div>";
+    return el;
+  }
+  function telaEntrada(modo, aviso, ok) {
+    modo = modo || "entrar";
+    const t = ENTRADA[modo];
+    const campo = (id, rot, tipo, extra) => '<div class="campo"><label for="' + id + '">' + rot + '</label><input id="' + id + '" name="' + id.replace("e-", "") + '" type="' + tipo + '" ' + (extra || "") + "></div>";
+    cascaEntrada('<form class="entrada-form" id="form-entrada" novalidate><h2>' + t[0] + '</h2><p class="muted">' + t[1] + "</p>" +
+      (modo !== "nova" ? campo("e-email", "E-mail", "email", 'autocomplete="username" required') : "") +
+      (modo !== "esqueci" ? campo("e-senha", modo === "entrar" ? "Senha" : "Nova senha", "password", 'autocomplete="' + (modo === "entrar" ? "current-password" : "new-password") + '" required') : "") +
+      (modo === "criar" || modo === "nova" ? campo("e-confirmar", "Repita a senha", "password", 'autocomplete="new-password" required') : "") +
+      '<p class="entrada-msg' + (ok ? " ok" : "") + '" id="entrada-msg" role="alert">' + h(aviso || "") + "</p>" +
+      '<button class="btn primario" type="submit" id="entrada-btn">' + t[2] + "</button>" +
+      '<div class="entrada-links">' + (modo === "entrar" ? '<button type="button" class="link-btn" data-modo="criar">Primeiro acesso? Criar senha</button><button type="button" class="link-btn" data-modo="esqueci">Esqueci a senha</button>'
+        : modo === "nova" ? "" : '<button type="button" class="link-btn" data-modo="entrar">Voltar para Entrar</button>') + "</div></form>");
+    const form = $("#form-entrada");
+    $$("[data-modo]", form).forEach(b => b.addEventListener("click", () => { const em = form.elements.email ? form.elements.email.value : ""; telaEntrada(b.dataset.modo); if (em && $("#e-email")) $("#e-email").value = em; }));
+    form.addEventListener("submit", ev => { ev.preventDefault(); enviarEntrada(modo, form); });
+    const f = $("input", form); if (f) f.focus();
+  }
+  async function enviarEntrada(modo, form) {
+    const msg = (texto, ok) => { const m = $("#entrada-msg"); m.textContent = texto; m.classList.toggle("ok", !!ok); };
+    const email = form.elements.email ? form.elements.email.value.trim().toLowerCase() : "";
+    const senha = form.elements.senha ? form.elements.senha.value : "";
+    const conf = form.elements.confirmar ? form.elements.confirmar.value : "";
+    if (modo !== "nova" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return msg("Digite um e-mail válido.");
+    if (modo === "entrar" && !senha) return msg("Digite a senha.");
+    if ((modo === "criar" || modo === "nova") && senha.length < 8) return msg("A senha precisa ter pelo menos 8 caracteres.");
+    if ((modo === "criar" || modo === "nova") && senha !== conf) return msg("As duas senhas não são iguais.");
+    const btn = $("#entrada-btn"); btn.disabled = true; btn.textContent = "Aguarde…"; msg("");
+    const auth = nuvem.cliente.auth;
+    let r;
+    try {
+      if (modo === "entrar") r = await auth.signInWithPassword({ email, password: senha });
+      else if (modo === "criar") r = await auth.signUp({ email, password: senha });
+      else if (modo === "esqueci") r = await auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+      else r = await auth.updateUser({ password: senha });
+    } catch (e) { r = { error: e }; }
+    btn.disabled = false; btn.textContent = ENTRADA[modo][2];
+    if (r.error) return msg(traduzirErro(r.error));
+    if (modo === "esqueci") return msg("Se o e-mail estiver cadastrado, o link chega em alguns minutos. Confira também a caixa de spam.", true);
+    if (modo === "nova") { nuvem.recuperando = false; history.replaceState(null, "", location.pathname + "#painel"); }
+    const sessao = (r.data && r.data.session) || (await auth.getSession()).data.session;
+    if (!sessao) return telaEntrada("entrar", "Conta criada. Agora entre com o e-mail e a senha.", true);
+    await entrarComSessao(sessao);
+    if (modo === "nova") toast("Senha alterada", "Use a nova senha nos próximos acessos.");
+  }
+  async function entrarComSessao(sessao) {
+    nuvem.usuario = sessao.user;
+    let r;
+    try { r = await nuvem.cliente.from("portal_estado").select("dados, atualizado_em").maybeSingle(); } catch (e) { r = { error: e }; }
+    if (r.error) {
+      const cache = U.ler(chaveLocal(), null);
+      if (cache && cache.versao) { S = normalizar(cache); nuvem.status = "erro"; abrirPortal(); toast("Sem conexão com a nuvem", "Mostrando a última cópia salva neste navegador.", "crit"); return; }
+      nuvem.usuario = null;
+      return telaEntrada("entrar", "Não consegui carregar seus dados agora. Confira a internet e tente de novo.");
+    }
+    if (r.data) {
+      S = normalizar(r.data.dados); nuvem.remotoEm = r.data.atualizado_em; nuvem.ultimoEnviado = JSON.stringify(S); nuvem.status = "ok"; nuvem.salvoEm = Date.now();
+      return abrirPortal();
+    }
+    escolherInicio();
+  }
+  // Primeiro login: de onde vêm os dados
+  function escolherInicio() {
+    const local = U.ler(CHAVE, null);
+    const n = local && local.versao ? (local.editais || []).length + (local.chats || []).length + (local.documentos || []).length + (local.recursos || []).length : 0;
+    const opcao = (id, titulo, texto) => '<button type="button" class="opcao-inicio" data-inicio="' + id + '"><b>' + titulo + "</b><span>" + texto + "</span></button>";
+    cascaEntrada('<div class="entrada-form"><h2>Tudo pronto!</h2><p class="muted">Sua conta foi criada. Como você quer começar?</p>' +
+      (n ? opcao("local", "Levar os dados deste navegador", U.plural((local.editais || []).length, "edital", "editais") + ", " + U.plural((local.chats || []).length, "chat", "chats") + " e " + U.plural((local.documentos || []).length, "documento", "documentos") + (local.exemplo ? " (são os dados de exemplo)" : "") + ".") : "") +
+      opcao("vazio", "Começar com o portal vazio", "Cadastre seus editais, documentos e portais do zero.") +
+      opcao("exemplo", "Explorar com dados de exemplo", "Dados fictícios para conhecer o portal. Dá para apagar depois em Ajustes.") + "</div>");
+    $$("[data-inicio]").forEach(b => b.addEventListener("click", () => {
+      const k = b.dataset.inicio;
+      S = k === "local" ? normalizar(local) : k === "exemplo" ? D.criar() : D.vazio();
+      abrirPortal();
+      if (k === "vazio") location.hash = "#ajustes";
+      toast("Bem-vinda ao Pregão em Dia!", "Seus dados agora ficam salvos na nuvem.");
+    }));
+  }
+  let rotinasLigadas = false;
+  function abrirPortal() {
+    nuvem.bloqueado = false;
+    document.body.classList.remove("trancado");
+    const el = $("#entrada"); if (el) el.remove();
+    aplicarConfig(); render(); salvar(); ligarRotinas();
+  }
+
+  /* =================================================================
      Início
      ================================================================= */
-  const temaSalvo = lerPref("tema", "");
-  if (temaSalvo) document.documentElement.dataset.theme = temaSalvo;
-  iconeTema();
-  aplicarConfig();
-  render();
-  salvar();
+  function ligarRotinas() {
+    if (rotinasLigadas) return;
+    rotinasLigadas = true;
+    // Aviso de abertura: um resumo só dos alertas críticos, uma vez por dia
+    setTimeout(() => {
+      const criticos = gerarAlertas().filter(a => a.nivel === "critico");
+      if (criticos.length && lerPref("avisado", "") !== U.hojeISO()) {
+        gravarPref("avisado", U.hojeISO());
+        toast(U.plural(criticos.length, "alerta crítico", "alertas críticos") + " hoje", criticos.slice(0, 2).map(a => a.titulo).join(" · "), "pop", { rotulo: "Ver alertas", rota: "alertas" });
+      }
+      verificarChats();
+      sincronizarRobo();
+    }, 900);
+    // A cada minuto: atualiza contadores, lê chats automáticos e redesenha telas sem formulário aberto
+    let minuto = 0;
+    setInterval(() => {
+      minuto++;
+      verificarChats();
+      sincronizarRobo();
+      if (minuto % 2 === 0) puxarNuvem();
+      if (["painel", "alertas", "propostas"].includes(rotaAtual())) renderSeLivre(); else atualizarNav();
+      atualizarStatusNuvem();
+    }, 60000);
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") puxarNuvem(); });
+  }
 
-  // Aviso de abertura: um resumo só dos alertas críticos, uma vez por dia
-  setTimeout(() => {
-    const criticos = gerarAlertas().filter(a => a.nivel === "critico");
-    if (criticos.length && lerPref("avisado", "") !== U.hojeISO()) {
-      gravarPref("avisado", U.hojeISO());
-      toast(U.plural(criticos.length, "alerta crítico", "alertas críticos") + " hoje", criticos.slice(0, 2).map(a => a.titulo).join(" · "), "pop", { rotulo: "Ver alertas", rota: "alertas" });
-    }
-    verificarChats();
-    sincronizarRobo();
-  }, 900);
-  // A cada minuto: atualiza contadores, lê chats automáticos e redesenha telas sem formulário aberto
-  setInterval(() => {
-    verificarChats();
-    sincronizarRobo();
-    if (["painel", "alertas", "propostas"].includes(rotaAtual())) renderSeLivre(); else atualizarNav();
-  }, 60000);
+  async function iniciar() {
+    const temaSalvo = lerPref("tema", "");
+    if (temaSalvo) document.documentElement.dataset.theme = temaSalvo;
+    iconeTema();
+    if (!CFG.supabaseUrl) { aplicarConfig(); render(); salvar(); ligarRotinas(); return; }
+    nuvem.bloqueado = true;
+    document.body.classList.add("trancado");
+    if (!window.supabase || !window.supabase.createClient) { cascaEntrada('<div class="entrada-form"><h2>Não consegui abrir o login</h2><p class="muted">Confira a internet e recarregue a página.</p><button class="btn primario" onclick="location.reload()">Recarregar</button></div>'); return; }
+    const recuperacao = /type=recovery/.test(location.hash);
+    nuvem.cliente = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseChave, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: "pregao-em-dia-login" } });
+    nuvem.cliente.auth.onAuthStateChange(ev => { if (ev === "PASSWORD_RECOVERY") { nuvem.recuperando = true; telaEntrada("nova"); } });
+    const { data } = await nuvem.cliente.auth.getSession();
+    if (recuperacao || nuvem.recuperando) return telaEntrada("nova");
+    if (data && data.session) await entrarComSessao(data.session);
+    else telaEntrada("entrar");
+  }
+  iniciar();
 })();

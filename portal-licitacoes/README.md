@@ -57,9 +57,18 @@ O robô do GitHub grava as mensagens dos chats em `alerta-csc/chats.json` a cada
 
 O endereço do arquivo fica em **Ajustes → Integrações → Arquivo do robô**. Funciona no portal publicado na Vercel, no `servidor-local.js` e até abrindo o `index.html` direto. Na versão publicada no Claude o navegador bloqueia acesso a outros sites, então ela mostra a cópia das mensagens feita no momento da publicação.
 
-## Onde ficam os dados
+## Login e onde ficam os dados
 
-No navegador de quem usa (localStorage). Cada pessoa e cada computador têm a sua cópia. Use **Ajustes → Exportar backup** para guardar e **Importar backup** para levar a outro computador.
+O portal tem **login com e-mail e senha** (Supabase, projeto "Pregão em Dia"). Só e-mails da lista de autorizados conseguem criar conta; hoje, somente gyovannaflores4@gmail.com.
+
+- **Primeiro acesso:** na tela de entrada, clique em **Primeiro acesso? Criar senha**, use o e-mail autorizado e escolha uma senha (mínimo 8 caracteres). Depois escolha começar vazio, com dados de exemplo ou levando o que já estava no navegador.
+- **Dados na nuvem:** editais, chats, recursos, documentos, portais e ajustes ficam no banco, na sua conta, e aparecem em qualquer computador ou celular em que você entrar. Cada conta só lê e grava os próprios dados (regras de segurança do banco). Uma cópia fica no navegador para abrir rápido.
+- **API protegida:** `/api/chat` e `/api/pncp` só respondem para quem está logado.
+- **Liberar outra pessoa:** no Supabase, SQL Editor: `insert into public.portal_permitidos (email) values ('nome@empresa.com.br');`
+- **Esqueci a senha:** o link de recuperação usa o endereço configurado no Supabase em **Authentication → URL Configuration → Site URL**. Coloque ali o endereço do portal na Vercel.
+- A estrutura do banco está em `supabase/estrutura.sql`. Sem o arquivo `assets/config.js`, o portal volta a funcionar sem login, só com o navegador.
+
+O backup (Ajustes → Exportar backup) continua disponível como cópia extra.
 
 ## Arquivos
 
@@ -72,6 +81,9 @@ No navegador de quem usa (localStorage). Cada pessoa e cada computador têm a su
 - `api/chat.js`: lê o chat público de um pregão no e-compras.AM (mesma lógica de `alerta-csc/alerta_chat.py`).
 - `api/pncp.js`: importa um edital do PNCP pelo link.
 - `servidor-local.js`: roda o portal e as APIs no seu computador.
+- `assets/config.js`: endereço e chave pública do Supabase (login e dados na nuvem).
+- `api/_auth.js`: confere o login antes de responder nas APIs.
+- `supabase/estrutura.sql`: tabelas e regras de segurança do banco.
 
 ## Observações
 

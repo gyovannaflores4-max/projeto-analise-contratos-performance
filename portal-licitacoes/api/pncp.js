@@ -39,8 +39,10 @@ function modalidade(nome) {
 }
 function sigla(mod) { return { "Pregão eletrônico": "PE", "Concorrência eletrônica": "CE", "Dispensa eletrônica": "DE", "Credenciamento": "CH" }[mod] || "ED"; }
 
+const { exigirLogin } = require("./_auth.js");
+
 module.exports = async (req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  if (!(await exigirLogin(req, res))) return;
   const entrada = String((req.query && req.query.url) || "");
   const m = entrada.match(/(\d{14})[\/-](\d{4})[\/-](\d{1,7})/);
   if (!m) { res.status(400).json({ erro: "Cole o link do edital no PNCP, no formato pncp.gov.br/app/editais/CNPJ/ANO/NÚMERO." }); return; }
