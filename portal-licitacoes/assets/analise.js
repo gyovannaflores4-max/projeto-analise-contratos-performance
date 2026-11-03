@@ -77,7 +77,7 @@
        1 / FISIOTERAPIA ... (várias linhas) / 189111 30030 (códigos) / HORA / 240 / [R$ unit] [R$ total] */
   const UNIDADES = /^(hora|horas|m[êe]s|meses|unidade|unidades|un|und|sess[ãa]o|sess[õo]es|servi[çc]o|servi[çc]os|plant[ãa]o|plant[õo]es|di[áa]ria|di[áa]rias|exame|exames|procedimento|procedimentos|consulta|consultas|m[óo]dulo|m[óo]dulos|paciente|pacientes|kit|global)\b\.?(?:\s+(\d[\d.,]*))?$/i;
   function tabelaEmColunas(o) {
-    const L = o.replace(/\r/g, "").split("\n").map(x => x.replace(/\s+/g, " ").trim()).filter(Boolean);
+    const L = o.replace(/\r/g, "").replace(/[\ue000-\uf8ff\u2022\u25aa\u25cf]/g, " ").split("\n").map(x => x.replace(/\s+/g, " ").trim()).filter(Boolean);
     const itens = [];
     for (let i = 0; i < L.length && itens.length < 30; i++) {
       if (!/^ITEM\b/i.test(L[i])) continue;
@@ -107,6 +107,35 @@
         if (item.descricao.length >= 5) itens.push(item);
         j = k;
       }
+      if (itens.length) break;
+    }
+    return itens;
+  }
+
+  /* Tabela "ITEM | QTE. ESTIMADA | UNID | DESCRIÇÃO" (quantidade e unidade antes da descrição):
+       1. / 960 UNID / Atendimento Neurologista ... / 40 consultas mensais / 20 atendimentos por dia
+       2. 960 UNID. Atendimento Pediatria / 40 consultas mensais ... */
+  const UN = "(UNID(?:ADES?)?|UN|UND|HORAS?|M[ÊE]S(?:ES)?|SERVI[ÇC]OS?|CONSULTAS?|PLANT[ÃA]O|PLANT[ÕO]ES|EXAMES?|SESS[ÃA]O|SESS[ÕO]ES|PROCEDIMENTOS?|DI[ÁA]RIAS?)\\.?";
+  function tabelaQtdAntes(o) {
+    const L = o.replace(/\r/g, "").replace(/[\ue000-\uf8ff\u2022\u25aa\u25cf]/g, " ").split("\n").map(x => x.replace(/\s+/g, " ").trim()).filter(Boolean);
+    const reJunto = new RegExp("^(\\d{1,3})[.)]?\\s+(\\d[\\d.]*)\\s+" + UN + "\\s+(.+)$", "i");
+    const reQtd = new RegExp("^(\\d[\\d.]*)\\s+" + UN + "$", "i");
+    const fim = /^(?:\d{1,2}\s*[-–]\s*\S|observa[çc][ãa]o|valor total|total geral|anexo|justificativa)/i;
+    const itens = [];
+    for (let i = 0; i < L.length; i++) {
+      if (!/^ITEM\b/i.test(L[i])) continue;
+      const cab = L.slice(i, i + 5).join(" ");
+      if (!/QT|QUANT/i.test(cab) || !/UNID|UN\b/i.test(cab)) continue;
+      let k = i + 1, atual = null;
+      const fecha = () => { if (atual && atual.desc.length) { atual.item.descricao = (atual.desc[0] + (atual.desc.length > 1 ? " – " + atual.desc.slice(1).join("; ") : "")).replace(/[\s\u00a0\u2000-\u200b]+/g, " ").trim(); if (/^(?:unid|un|und)$/i.test(atual.item.unidade)) atual.item.unidade = "Unid."; itens.push(atual.item); } atual = null; };
+      for (; k < L.length && k < i + 400; k++) {
+        let m;
+        if ((m = reJunto.exec(L[k]))) { fecha(); atual = { item: { item: m[1], unidade: m[3].charAt(0) + m[3].slice(1).toLowerCase(), qtd: numeroBR(m[2]), valorUnit: null, valorTotal: null }, desc: [m[4]] }; continue; }
+        if (/^\d{1,3}[.)]?$/.test(L[k]) && (m = reQtd.exec(L[k + 1] || ""))) { fecha(); atual = { item: { item: L[k].replace(/\D/g, ""), unidade: m[2].charAt(0) + m[2].slice(1).toLowerCase(), qtd: numeroBR(m[1]), valorUnit: null, valorTotal: null }, desc: [] }; k++; continue; }
+        if (fim.test(L[k]) || /^[A-ZÀ-Ú ]{12,}$/.test(L[k])) { if (atual || itens.length) break; continue; }
+        if (atual) atual.desc.push(L[k]);
+      }
+      fecha();
       if (itens.length) break;
     }
     return itens;
@@ -226,7 +255,7 @@
       if (!campos.uf) { const ms = new RegExp("(?:/|–|- )\\s*(" + SIGLAS + ")\\b").exec(o.slice(0, 4000)); if (ms) campos.uf = ms[1]; }
     }
     const ml = /\b(?:n[oa]s?)\s+((?:Unidade Hospitalar|Hospital|UPA|Unidade de Pronto Atendimento|Pronto[- ]Socorro|Pronto Atendimento|Unidade B[áa]sica de Sa[úu]de|UBS|Centro de Sa[úu]de|Policl[íi]nica|Maternidade|Santa Casa|Ambulat[óo]rio|Centro Cir[úu]rgico|Unidade de Terapia Intensiva|UTI)\b[^.;:\n]{0,110})/i.exec(o);
-    const mlc = /servi[çc]os ser[ãa]o (?:prestados|executados|realizados)\s+((?:n[oa]s?|em)\s+(?!seguinte hor)[^.;]{5,220})/i.exec(o);
+    const mlc = /servi[çc]os (?:solicitados |contratados )?(?:ser[ãa]o|dever[ãa]o ser) (?:prestados|executados|realizados)\s+((?:n[oa]s?|em)\s+(?!seguinte hor)[^.;]{5,220})/i.exec(o);
     if (mlc) campos.local = (mlc[1].charAt(0).toUpperCase() + mlc[1].slice(1)).replace(/\s+/g, " ").trim();
     else if (ml) campos.local = ml[1].charAt(0).toUpperCase() + ml[1].slice(1).replace(/\s*,?\s*(?:conforme|de acordo|mediante|contemplando|para|com|sendo)\b.*$/i, "").replace(/[,\s]+$/, "").trim();
     const frases = o.replace(/\r/g, "").split(/(?<=[.;])\s+|\n+/).map(x => x.replace(/^\s*(?:\d+(?:\.\d+)*\.?|[a-z]\))\s*/i, "").replace(/\s+/g, " ").trim());
@@ -254,8 +283,14 @@
       campos.itens.push({ item: mi[1], descricao: desc, unidade: mi[3].charAt(0).toUpperCase() + mi[3].slice(1).toLowerCase(), qtd: numeroBR(mi[4]), valorUnit: numeroBR(mi[5]), valorTotal: mi[6] ? numeroBR(mi[6]) : null });
     }
     if (!campos.itens.length) campos.itens = tabelaEmColunas(o);
+    if (!campos.itens.length) campos.itens = tabelaQtdAntes(o);
     // Termo de Referência publicado em arquivo separado: itens, local e horários ficam nele
     campos.trSeparado = !campos.itens.length && /termo de refer[êe]ncia\s*\((?:em )?anexo\)|termo de refer[êe]ncia (?:segue )?em (?:arquivo|anexo) (?:separado|pr[óo]prio)|termo de refer[êe]ncia[^.\n]{0,40}(?:dispon[íi]vel|publicado) (?:em arquivo|separadamente)/i.test(o);
+    // Sem cláusula de horário: usa a rotina descrita nos itens ("20 atendimentos por dia; 1 médico no período")
+    if (!campos.horarios.length && campos.itens.length) {
+      const rotina = [...new Set(campos.itens.flatMap(i => i.descricao.split(/;|–/).map(x => x.trim())).filter(x => /por dia|no per[íi]odo|por m[êe]s|mensais|semanais|por semana|h\/dia|horas/i.test(x)))];
+      if (rotina.length) campos.horarios = ["Conforme os itens: " + rotina.slice(0, 4).join("; ")];
+    }
     // A descrição do item da tabela não é cláusula de horário
     campos.horarios = campos.horarios.filter(x => !campos.itens.some(i => i.descricao.includes(x.slice(0, 50))));
     if (!campos.valorEstimado && campos.itens.length && campos.itens.every(x => x.valorTotal || (x.qtd && x.valorUnit))) campos.valorEstimado = Math.round(campos.itens.reduce((s, x) => s + (x.valorTotal || x.qtd * x.valorUnit), 0) * 100) / 100;
@@ -283,7 +318,7 @@
       const mv = /R\$\s*([\d.]+,\d{2})/.exec(jan);
       if (mv) { campos.valorEstimado = numeroBR(mv[1]); break; }
     }
-    if ((p = primeiro(t, /orcamento (?:estimado )?(?:da contratacao )?(?:sera |tera |e )?(?:de )?carater sigiloso|orcamento sigiloso|valor estimado (?:e |sera )?sigiloso|(?:custo|valor) estimado da contratacao (?:possui|tera|tem) carater sigiloso/))) {
+    if ((p = primeiro(t, /orcamento (?:estimado )?(?:da contratacao )?(?:sera |tera |e )?(?:de )?carater sigiloso|orcamento sigiloso|valor estimado (?:e |sera )?sigiloso|(?:custo|valor) estimado da contratacao (?:possui|tera|tem) carater sigiloso|(?:orcamento|valor|custo) estimado[^.]{0,60}(?:sera|serao) (?:divulgad[oa]s?|tornad[oa] public[oa]) (?:somente |apenas |imediatamente )?(?:apos|depois)/))) {
       campos.orcamentoSigiloso = true;
       risco("info", "Orçamento sigiloso", "O valor estimado só é divulgado depois da fase de lances (art. 24 da Lei 14.133).", p);
     }
