@@ -45,7 +45,9 @@ Igual ao Radar de Licitações: em **Add New… → Project**, escolha este repo
 
 ## Monitorar um pregão do e-compras.AM
 
-Em **Chats dos pregões → Monitorar pregão**: escolha o portal **e-compras AM**, marque **Ler o chat automaticamente** e informe o número/ano (por exemplo `408/26`). Com o portal aberto, o chat é lido a cada 5 minutos (ajustável) e chega aviso na tela, com som e notificação do navegador, sempre que aparece mensagem nova ou a situação do pregão muda.
+Em **Chats dos pregões → Monitorar pregão**: escolha o portal **e-compras AM**, marque **Ler o chat automaticamente** e informe o número/ano (por exemplo `408/26`) **ou cole o link de acompanhamento** copiado da barra de endereço (por exemplo `https://www.e-compras.am.gov.br/publico/licitacoes_acompanhamento.asp?ident=256066`).
+
+O link precisa terminar com o número interno do pregão. Um link com `ident=undefined` está quebrado (o próprio e-compras responde com erro): abra o pregão de novo pela lista do e-compras.AM e copie o endereço, ou use o número/ano. Com o portal aberto, o chat é lido a cada 5 minutos (ajustável) e chega aviso na tela, com som e notificação do navegador, sempre que aparece mensagem nova ou a situação do pregão muda.
 
 O portal só lê enquanto está aberto. Para receber e-mail mesmo com o computador desligado, continua valendo o robô de `../alerta-csc` (GitHub Actions).
 

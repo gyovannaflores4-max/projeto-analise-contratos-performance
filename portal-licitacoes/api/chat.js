@@ -1,5 +1,7 @@
 // Função da Vercel: lê o chat público de acompanhamento de um pregão no e-compras.AM.
 // GET /api/chat?processo=408/26  -> { pregao: {id, edital, status, objeto, link}, mensagens: [{hora, autor, texto}] }
+// GET /api/chat?ident=256066     -> o mesmo, pelo número interno do e-compras
+// GET /api/chat?url=<link de acompanhamento> -> aceita o link copiado do navegador (…acompanhamento.asp?ident=256066)
 // GET /api/chat?ping=1           -> teste de conexão usado na tela de Ajustes
 // Mesma lógica de alerta-csc/alerta_chat.py, que roda no GitHub Actions.
 
@@ -27,8 +29,11 @@ async function requisitar(url, dados, tentativas = 3) {
   }
 }
 
+const ACENTO = { acute: "\u0301", grave: "\u0300", tilde: "\u0303", circ: "\u0302", cedil: "\u0327", uml: "\u0308" };
 const decodificar = s => s
   .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n))
+  .replace(/&([a-zA-Z])(acute|grave|tilde|circ|cedil|uml);/g, (_, l, a) => (l + ACENTO[a]).normalize("NFC"))
+  .replace(/&ordm;/g, "º").replace(/&ordf;/g, "ª")
   .replace(/&nbsp;/g, " ").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'")
   .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
 const limpar = html => decodificar(html.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
@@ -45,7 +50,7 @@ async function buscarPregao(processo) {
   const resposta = JSON.parse(await requisitar(BASE + "qry/qry_licitacoes_todas.asp", dados));
   const alvo = new RegExp("^PE\\s+0*" + numero + "/(20)?" + ano + "$");
   const linha = (resposta.data || []).find(l => alvo.test(String(l.edital || "").trim()));
-  if (!linha) return null;
+  if (!linha || !/^\d+$/.test(String(linha.id_edital))) return null;
   return {
     id: String(linha.id_edital),
     edital: String(linha.edital).trim(),
@@ -53,6 +58,16 @@ async function buscarPregao(processo) {
     objeto: String(linha.objeto || "").trim(),
     link: BASE + "licitacoes_acompanhamento.asp?ident=" + linha.id_edital
   };
+}
+
+// Pelo número interno: lê o cabeçalho da página de acompanhamento
+// ("Acompanhamento de Licitações PE 408/26 - OBJETO (Situação) ÓRGÃO HORÁRIO LOCAL…")
+async function pregaoPorIdent(ident) {
+  const link = BASE + "licitacoes_acompanhamento.asp?ident=" + ident;
+  const texto = limpar((await requisitar(link)).replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, " "));
+  const m = texto.match(/Acompanhamento de Licita\S*\s+(.+?\d+\/\d+)\s+-\s+(.+?)\s+\(([^()]+)\)\s+(.+?)\s+HOR[ÁA]RIO/i);
+  if (!m) return null;
+  return { id: ident, edital: m[1].trim(), objeto: m[2].trim(), status: m[3].trim(), orgao: m[4].trim(), link };
 }
 
 async function lerChat(ident) {
@@ -75,11 +90,15 @@ module.exports = async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   const q = req.query || {};
   if (q.ping) { res.status(200).json({ ok: true, mensagem: "A API do portal está no ar." }); return; }
+  const url = String(q.url || "");
+  if (/ident=(?!\d)/i.test(url)) { res.status(400).json({ erro: "Esse link está sem o número do pregão (ident=" + (url.match(/ident=([^&#]*)/i) || [])[1] + "). Abra o pregão de novo no e-compras.AM e copie o link, ou informe o número/ano, por exemplo 408/26." }); return; }
+  const ident = String(q.ident || (url.match(/ident=(\d+)/i) || [])[1] || "");
   const processo = String(q.processo || "").replace(/\s/g, "");
-  if (!/^\d{1,5}\/\d{2,4}$/.test(processo)) { res.status(400).json({ erro: "Informe o pregão como número/ano, por exemplo 408/26." }); return; }
+  if (q.ident && !/^\d+$/.test(ident)) { res.status(400).json({ erro: "O ident do e-compras.AM precisa ser um número, por exemplo 256066." }); return; }
+  if (!ident && !/^\d{1,5}\/\d{2,4}$/.test(processo)) { res.status(400).json({ erro: "Informe o pregão como número/ano (ex.: 408/26) ou cole o link de acompanhamento do e-compras.AM." }); return; }
   try {
-    const pregao = await buscarPregao(processo);
-    if (!pregao) { res.status(404).json({ erro: "Não encontrei o PE " + processo + " no e-compras.AM." }); return; }
+    const pregao = ident ? await pregaoPorIdent(ident) : await buscarPregao(processo);
+    if (!pregao) { res.status(404).json({ erro: ident ? "Não encontrei o pregão com ident " + ident + " no e-compras.AM." : "Não encontrei o PE " + processo + " no e-compras.AM." }); return; }
     const mensagens = await lerChat(pregao.id);
     res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=120");
     res.status(200).json({ fonte: "e-compras.AM", consultadoEm: new Date().toISOString(), pregao, mensagens });

@@ -388,7 +388,7 @@
       ui.lendo[c.id] = true;
       if (soEste) render();
       try {
-        mesclarChat(c, await api("/api/chat?processo=" + encodeURIComponent(c.processo)));
+        mesclarChat(c, await api("/api/chat?" + consultaChat(c.processo)));
         c.erro = "";
       } catch (e) {
         c.erro = e.message;
@@ -400,6 +400,18 @@
       mudou = true;
     }
     if (mudou) { salvar(); if (soEste || ["chats", "painel", "alertas"].includes(rotaAtual())) renderSeLivre(); else atualizarNav(); }
+  }
+  // "408/26" -> processo=408/26; link de acompanhamento ou número interno -> ident=256066
+  function consultaChat(ref) {
+    ref = String(ref || "").trim();
+    const ident = (ref.match(/ident=(\d+)/i) || [])[1] || (/^\d{5,}$/.test(ref) ? ref : "");
+    return ident ? "ident=" + ident : /ident=/i.test(ref) ? "url=" + encodeURIComponent(ref) : "processo=" + encodeURIComponent(ref);
+  }
+  function validarRefChat(ref) {
+    ref = String(ref || "").trim();
+    if (/ident=(?!\d)/i.test(ref)) return "Esse link está sem o número do pregão (ident=" + (ref.match(/ident=([^&#]*)/i) || [])[1] + "). Abra o pregão de novo no e-compras.AM e copie o link da barra de endereço, ou informe o número/ano (ex.: 408/26).";
+    if (/ident=\d+/i.test(ref) || /^\d{5,}$/.test(ref) || /^\d{1,5}\/\d{2,4}$/.test(ref)) return "";
+    return "Informe o número/ano (ex.: 408/26) ou cole o link de acompanhamento do e-compras.AM.";
   }
   function mesclarChat(c, j) {
     const primeira = !c.mensagens.length;
@@ -418,8 +430,8 @@
         notificar(c.titulo + ": " + st, "A situação do pregão mudou (antes: " + c.status + ").", "pop", { rotulo: "Ver chat", rota: "chats", ref: c.id });
       }
       if (st) c.status = st;
-      if (!c.orgao && j.pregao.objeto) c.orgao = U.corta(j.pregao.objeto, 90);
-      if (!c.link && j.pregao.link) c.link = j.pregao.link;
+      if (!c.orgao && (j.pregao.orgao || j.pregao.objeto)) c.orgao = U.corta(j.pregao.orgao || j.pregao.objeto, 90);
+      if (j.pregao.link && /ident=\d+/.test(j.pregao.link) && (!c.link || /ident=(?!\d)/i.test(c.link))) c.link = j.pregao.link;
     }
     if (novas.length && !primeira) avisarNovas(c, novas);
   }
@@ -900,14 +912,19 @@
     { nome: "portal", rotulo: "Portal", tipo: "select", opcoes: PORTAIS },
     { nome: "status", rotulo: "Situação atual", ph: "Em disputa, Suspenso, Em habilitação…" },
     { nome: "auto", rotulo: "Ler o chat automaticamente (e-compras.AM, com o portal publicado na Vercel)", tipo: "check" },
-    { nome: "processo", rotulo: "Número/ano no e-compras.AM", ph: "408/26", dica: "Usado só na leitura automática." },
+    { nome: "processo", rotulo: "Número/ano ou link de acompanhamento", ph: "408/26 ou https://www.e-compras.am.gov.br/publico/licitacoes_acompanhamento.asp?ident=256066", span: 2, dica: "Para a leitura automática do e-compras.AM. O link precisa ter o número no final (ident=256066)." },
     { nome: "link", rotulo: "Link da sala de disputa", tipo: "url", ph: "https://" }
   ];
   function formChat(id, preset) {
     const c = id ? S.chats.find(x => x.id === id) : null;
     abrirForm({
       titulo: c ? "Editar monitoramento" : "Monitorar pregão", campos: camposChat(), valores: c || Object.assign({ portal: "Compras.gov.br" }, preset || {}),
-      validar: v => (v.auto && !/^\d{1,5}\/\d{2,4}$/.test(v.processo) ? "Informe o número/ano do e-compras.AM, ex.: 408/26" : v.auto && v.portal !== "e-compras AM" ? "A leitura automática funciona para pregões do e-compras.AM. Mude o portal ou desmarque a opção." : ""),
+      validar: v => {
+        if (v.link && /e-compras\.am/i.test(v.link) && /ident=(?!\d)/i.test(v.link)) return validarRefChat(v.link);
+        if (v.auto && !v.processo && /ident=\d+/i.test(v.link)) v.processo = v.link;
+        if (v.auto && v.portal !== "e-compras AM") return "A leitura automática funciona para pregões do e-compras.AM. Mude o portal ou desmarque a opção.";
+        return v.auto ? validarRefChat(v.processo) : "";
+      },
       salvar: v => {
         let alvo = c;
         if (c) Object.assign(c, v);
