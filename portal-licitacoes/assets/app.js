@@ -401,6 +401,56 @@
     }
     if (mudou) { salvar(); if (soEste || ["chats", "painel", "alertas"].includes(rotaAtual())) renderSeLivre(); else atualizarNav(); }
   }
+  /* ---------- Robô do GitHub (alerta-csc/chats.json) ----------
+     O robô lê o e-compras.AM a cada 5 minutos, manda o e-mail e grava as mensagens nesse arquivo.
+     O portal junta essas mensagens nos chats, então o que chega por e-mail aparece aqui também. */
+  const numAno = t => { const m = String(t || "").match(/(\d+)\s*\/\s*(?:20)?(\d{2})\b/); return m ? (+m[1]) + "/" + m[2] : ""; };
+  function aplicarRobo(dados, origem) {
+    if (!dados || !dados.pregoes) return 0;
+    let novos = 0;
+    Object.keys(dados.pregoes).forEach(ident => {
+      const p = dados.pregoes[ident];
+      let c = S.chats.find(x => x.ident === ident || new RegExp("ident=" + ident + "\\b").test((x.processo || "") + " " + (x.link || "")))
+        || S.chats.find(x => (x.portal === "e-compras AM" || x.robo) && numAno(x.titulo) && numAno(x.titulo) === numAno(p.edital));
+      if (!c) {
+        c = { id: "robo-" + ident, titulo: p.edital, orgao: "", portal: "e-compras AM", status: "", processo: p.link, link: p.link, auto: false, mensagens: [] };
+        S.chats.push(c);
+        registrar("Chat do " + p.edital + " trazido do robô do GitHub.", "chats");
+        novos++;
+      }
+      c.ident = ident; c.robo = true; c.roboEm = dados.atualizado_em || null; c.roboOrigem = origem;
+      mesclarChat(c, { pregao: { status: p.status, objeto: p.objeto, link: p.link }, mensagens: p.mensagens || [] });
+    });
+    return novos;
+  }
+  async function sincronizarRobo(forcar) {
+    const url = (S.ajustes.arquivoRobo || "").trim();
+    if (!url && !window.ROBO_FOTO) return;
+    const intervalo = Math.max(2, +S.ajustes.intervaloChat || 5) * 60000;
+    if (!forcar && ui.roboLidoEm && Date.now() - ui.roboLidoEm < intervalo) return;
+    ui.roboLidoEm = Date.now();
+    let dados = null, origem = "ao vivo";
+    try {
+      if (!url) throw new Error("sem endereço");
+      const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 20000);
+      const r = await fetch(url + (url.includes("?") ? "&" : "?") + "t=" + Math.floor(Date.now() / 60000), { signal: ctrl.signal, cache: "no-store" });
+      clearTimeout(t);
+      if (!r.ok) throw new Error("O arquivo do robô respondeu com erro " + r.status + ".");
+      dados = await r.json();
+      ui.roboErro = "";
+    } catch (e) {
+      ui.roboErro = e.name === "AbortError" ? "O GitHub demorou para responder." : e.message === "sem endereço" ? "" : "Não consegui ler o arquivo do robô neste endereço.";
+      // Versão publicada no Claude: o navegador bloqueia acesso externo; usa a cópia embutida na publicação.
+      if (window.ROBO_FOTO && !ui.fotoAplicada) { dados = window.ROBO_FOTO; origem = "cópia de " + U.fmtDataHora(U.isoDataHora(new Date(dados.atualizado_em))); ui.fotoAplicada = true; }
+    }
+    if (dados) {
+      const novos = aplicarRobo(dados, origem);
+      salvar();
+      if (forcar) toast("Chats sincronizados com o robô", novos ? U.plural(novos, "pregão novo", "pregões novos") + " na lista." : "Mensagens atualizadas.");
+      if (["chats", "painel", "alertas"].includes(rotaAtual())) renderSeLivre(); else atualizarNav();
+    } else if (forcar) toast("Não consegui ler o arquivo do robô", ui.roboErro || "Confira o endereço em Ajustes → Integrações.", "crit");
+  }
+
   // "408/26" -> processo=408/26; link de acompanhamento ou número interno -> ident=256066
   function consultaChat(ref) {
     ref = String(ref || "").trim();
@@ -875,8 +925,8 @@
     const filtros = [["todas", "Todas"], ["importantes", "Importantes"], ["empresa", "Citam a " + apelido()], ["pregoeiro", "Só pregoeiro"]].concat(A.CATEGORIAS.filter(k => c.mensagens.some(m => infoMsg(m).tags.includes(k.id))).map(k => [k.id, k.nome]));
     const lendo = ui.lendo[c.id];
     return cab + '<div class="chat-app"><aside class="chat-lista" aria-label="Pregões monitorados"><div class="chat-lista-h"><b>' + U.plural(S.chats.length, "pregão", "pregões") + "</b>" +
-      (S.chats.some(x => x.auto) ? '<button class="icon-btn" data-acao="lerTodos" aria-label="Atualizar todos">' + ic("atualizar") + "</button>" : "") + '</div><div class="chat-itens">' +
-      ordenados.map(x => { const u = ultimaMsg(x), nl = naoLidas(x).length, cit = naoLidas(x).some(m => infoMsg(m).citaEmpresa); return '<button class="chat-item" data-acao="selChat" data-id="' + x.id + '" aria-current="' + (x.id === c.id) + '"><b>' + h(x.titulo) + '</b><span class="q">' + (u ? U.desde(u.hora) : "") + '</span><span class="o">' + h(x.orgao || "") + '</span><span class="st">' + (x.status ? '<span class="pill neutral sem-ponto">' + h(x.status) + "</span>" : "") + (nl ? '<span class="badge">' + nl + "</span>" : "") + (cit ? '<span class="pill pop sem-ponto">Citou a ' + h(apelido()) + "</span>" : "") + (x.auto ? '<span class="pill ok sem-ponto">Automático</span>' : "") + "</span></button>"; }).join("") + "</div></aside>" +
+      '<button class="icon-btn" data-acao="lerTodos" aria-label="Atualizar todos os chats">' + ic("atualizar") + "</button>" + '</div><div class="chat-itens">' +
+      ordenados.map(x => { const u = ultimaMsg(x), nl = naoLidas(x).length, cit = naoLidas(x).some(m => infoMsg(m).citaEmpresa); return '<button class="chat-item" data-acao="selChat" data-id="' + x.id + '" aria-current="' + (x.id === c.id) + '"><b>' + h(x.titulo) + '</b><span class="q">' + (u ? U.desde(u.hora) : "") + '</span><span class="o">' + h(x.orgao || "") + '</span><span class="st">' + (x.status ? '<span class="pill neutral sem-ponto">' + h(x.status) + "</span>" : "") + (nl ? '<span class="badge">' + nl + "</span>" : "") + (cit ? '<span class="pill pop sem-ponto">Citou a ' + h(apelido()) + "</span>" : "") + (x.auto ? '<span class="pill ok sem-ponto">Automático</span>' : x.robo ? '<span class="pill ok sem-ponto">Robô</span>' : "") + "</span></button>"; }).join("") + "</div></aside>" +
       '<section class="conversa" aria-label="Conversa"><div class="conversa-h"><div class="tit"><h2>' + h(c.titulo) + "</h2><p>" + h([c.orgao, c.portal].filter(Boolean).join(" · ")) + (c.status ? ' · <span class="pill info sem-ponto">' + h(c.status) + "</span>" : "") + "</p></div>" + movimentoHTML(c) +
       '<div class="linha-acoes">' + (c.auto ? '<button class="btn peq ghost" data-acao="lerChat" data-id="' + c.id + '"' + (lendo ? " disabled" : "") + ">" + ic("atualizar") + (lendo ? "Lendo…" : "Atualizar") + "</button>" : "") +
       '<button class="btn peq ghost" data-acao="colarChat" data-id="' + c.id + '">' + ic("colar") + 'Colar mensagens</button><button class="btn peq ghost" data-acao="lerTudo" data-id="' + c.id + '">' + ic("check") + "Marcar como lidas</button>" +
@@ -886,6 +936,7 @@
       (c.erro ? '<div class="retomada-box" style="background:var(--crit-soft);color:var(--crit)">' + ic("aviso") + h(c.erro) + "</div>" : "") +
       '<div class="conversa-f"><div class="chips" role="group" aria-label="Filtrar mensagens">' + filtros.map(([id, nome]) => '<button class="chip" data-acao="filtroChat" data-f="' + id + '" aria-pressed="' + (ui.chatFiltro === id) + '">' + h(nome) + "</button>").join("") + '</div><label class="sr" for="busca-chat">Buscar no chat</label><input type="search" id="busca-chat" data-digitar="buscaChat" placeholder="Buscar no chat…" value="' + h(ui.chatBusca) + '"></div>' +
       '<div class="mensagens" id="msgs" aria-live="polite">' + mensagensHTML(c) + "</div>" +
+      (c.robo && !c.auto ? '<div class="conversa-f" style="border-top:1px solid var(--line);border-bottom:0;font-size:12.5px;color:var(--ink-3)">Mensagens do robô do GitHub (as mesmas dos e-mails)' + (c.roboEm ? " · robô atualizou " + U.desde(U.isoDataHora(new Date(c.roboEm))) : "") + (c.roboOrigem && c.roboOrigem !== "ao vivo" ? " · " + h(c.roboOrigem) : " · o portal confere a cada " + (S.ajustes.intervaloChat || 5) + " min") + ' · <button class="link-btn" data-acao="sincRobo">sincronizar agora</button></div>' : "") +
       (c.auto ? '<div class="conversa-f" style="border-top:1px solid var(--line);border-bottom:0;font-size:12.5px;color:var(--ink-3)">Leitura automática do e-compras.AM a cada ' + (S.ajustes.intervaloChat || 5) + " min enquanto o portal estiver aberto" + (c.consultadoEm ? " · última leitura " + U.desde(U.isoDataHora(new Date(c.consultadoEm))) : "") + "</div>" : "") +
       "</section></div>";
   }
@@ -1206,6 +1257,9 @@
       '<section class="card"><h2>Integrações</h2><p>Com o portal publicado na Vercel, o chat do e-compras.AM é lido sozinho e os editais do PNCP são importados pelo link.</p>' +
       campo("aj-api", "Endereço da API", a.apiBase, "ajustes.apiBase", 'placeholder="Vazio = mesmo endereço do portal"', "Preencha só se a API estiver em outro endereço.") +
       campo("aj-int", "Ler os chats a cada (minutos)", a.intervaloChat, "ajustes.intervaloChat", 'type="number" min="2" max="60"') +
+      campo("aj-robo", "Arquivo do robô do GitHub (chats.json)", a.arquivoRobo, "ajustes.arquivoRobo", 'type="url"', "As mensagens que o robô manda por e-mail entram nos chats do portal. Deixe vazio para desligar.") +
+      (ui.roboErro ? '<p class="nota" style="color:var(--crit)">' + h(ui.roboErro) + "</p>" : "") +
+      '<button class="btn ghost peq" data-acao="sincRobo" style="align-self:flex-start">' + ic("atualizar") + "Sincronizar com o robô agora</button>" +
       '<button class="btn ghost peq" data-acao="testarApi" style="align-self:flex-start">' + ic("raio") + "Testar conexão</button></section>" +
       '<section class="card" style="grid-column:1/-1"><h2>Seus dados</h2><p>Tudo fica salvo neste navegador. Faça um backup de vez em quando e use-o para levar os dados para outro computador.</p>' +
       '<div class="linha-acoes"><button class="btn ghost" data-acao="backup">' + ic("download") + 'Exportar backup</button><label class="btn ghost" for="aj-importar">' + ic("upload") + 'Importar backup<input type="file" id="aj-importar" accept=".json,application/json" class="sr" data-mudar="importar"></label>' +
@@ -1335,7 +1389,8 @@
     colarChat: d => colarChat(d.id),
     lerTudo: d => { const c = S.chats.find(x => x.id === d.id); c.mensagens.forEach(m => { m.lida = true; }); atualizar(); },
     lerChat: d => verificarChats(d.id),
-    lerTodos: () => { S.chats.forEach(c => { c.consultadoEm = null; }); ui.apiFalhouEm = 0; verificarChats(); },
+    lerTodos: () => { S.chats.forEach(c => { c.consultadoEm = null; }); ui.apiFalhouEm = 0; verificarChats(); sincronizarRobo(true); },
+    sincRobo: () => sincronizarRobo(true),
     simularMsg,
 
     novoRecurso: d => formRecurso(null, d.edital), editarRecurso: d => formRecurso(d.id),
@@ -1470,10 +1525,12 @@
       toast(U.plural(criticos.length, "alerta crítico", "alertas críticos") + " hoje", criticos.slice(0, 2).map(a => a.titulo).join(" · "), "pop", { rotulo: "Ver alertas", rota: "alertas" });
     }
     verificarChats();
+    sincronizarRobo();
   }, 900);
   // A cada minuto: atualiza contadores, lê chats automáticos e redesenha telas sem formulário aberto
   setInterval(() => {
     verificarChats();
+    sincronizarRobo();
     if (["painel", "alertas", "propostas"].includes(rotaAtual())) renderSeLivre(); else atualizarNav();
   }, 60000);
 })();

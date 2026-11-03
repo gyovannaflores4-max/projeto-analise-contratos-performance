@@ -13,7 +13,9 @@
     ajustes: {
       diasProposta: 3, diasDoc: [30, 15, 7], diasPortal: 30,
       pontosFacultativos: true, feriadosLocais: "",
-      apiBase: "", intervaloChat: 5, notificacoes: false, som: true
+      apiBase: "", intervaloChat: 5, notificacoes: false, som: true,
+      // Arquivo que o robô do GitHub (alerta-csc) atualiza com as mensagens dos chats
+      arquivoRobo: "https://raw.githubusercontent.com/gyovannaflores4-max/projeto-analise-contratos-performance/main/alerta-csc/chats.json"
     },
     editais: [], recursos: [], documentos: [], portais: [], chats: [],
     resolvidos: {}, atividade: []

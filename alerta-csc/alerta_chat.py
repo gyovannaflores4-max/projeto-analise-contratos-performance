@@ -28,6 +28,8 @@ from alerta_resenhas import PROCESSOS_PADRAO, USER_AGENT, abrir_issue, enviar_em
 
 BASE = "https://www.e-compras.am.gov.br/publico/"
 ESTADO = Path(__file__).with_name("estado_chat.json")
+# Cópia das mensagens para o portal Pregão em Dia mostrar o mesmo conteúdo dos e-mails.
+ARQUIVO_CHATS = Path(__file__).with_name("chats.json")
 COLUNAS = [
     "null", "edital", "cod_ug", "objeto", "status", "processo", "rp",
     "tipo_edital", "id_edital", "id_modalidade", "id_status", "modalidade",
@@ -220,12 +222,39 @@ def avisar(assunto, corpo, corpo_md):
         return False
 
 
+def salvar_chats(lidos):
+    """Grava chats.json (lido pelo portal). Só reescreve quando algo mudou, para não gerar commit à toa.
+
+    lidos: {ident: (pregao, mensagens)}; pregões que não responderam nesta rodada mantêm o conteúdo anterior.
+    """
+    antigo = json.loads(ARQUIVO_CHATS.read_text()) if ARQUIVO_CHATS.exists() else {"pregoes": {}}
+    pregoes = dict(antigo.get("pregoes", {}))
+    for ident, (pregao, mensagens) in lidos.items():
+        pregoes[ident] = {
+            "edital": pregao["edital"],
+            "status": pregao["status"],
+            "objeto": pregao["objeto"],
+            "link": BASE + f"licitacoes_acompanhamento.asp?ident={ident}",
+            "mensagens": [{"hora": m["hora"], "autor": m["autor"], "texto": m["texto"]} for m in mensagens],
+        }
+    if pregoes == antigo.get("pregoes"):
+        return False
+    novo = {
+        "fonte": "e-compras.AM (robô alerta-csc)",
+        "atualizado_em": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "pregoes": pregoes,
+    }
+    ARQUIVO_CHATS.write_text(json.dumps(novo, ensure_ascii=False, indent=1) + "\n")
+    return True
+
+
 def main():
     processos = [p for p in (os.environ.get("PROCESSOS") or PROCESSOS_PADRAO).split(",") if p.strip()]
     teste = os.environ.get("TESTE_CHAT", "").strip() == "1"
+    so_arquivo = "--so-arquivo" in sys.argv  # só atualiza chats.json, sem e-mail e sem mexer no estado
     estado = json.loads(ESTADO.read_text()) if ESTADO.exists() else {"pregoes": {}}
 
-    movimentos, parados, atualizacoes = [], [], {}
+    movimentos, parados, atualizacoes, lidos = [], [], {}, {}
     for processo in processos:
         try:
             pregao = buscar_pregao(processo)
@@ -237,6 +266,9 @@ def main():
             log(f"PE {processo}: e-compras.AM indisponível agora ({erro}); tento de novo depois.")
             continue
 
+        lidos[pregao["id"]] = (pregao, mensagens)
+        if so_arquivo:
+            continue
         salvo = estado["pregoes"].get(pregao["id"])
         vistas = set(salvo["vistas"]) if salvo else {m["chave"] for m in mensagens}
         status_antes = salvo["status"] if salvo else pregao["status"]
@@ -254,6 +286,11 @@ def main():
             "status": pregao["status"],
             "vistas": sorted(vistas | {m["chave"] for m in mensagens}),
         }
+
+    if lidos and salvar_chats(lidos):
+        log("chats.json atualizado para o portal.")
+    if so_arquivo:
+        return 0
 
     if movimentos:
         enviado = avisar(*montar_alerta(movimentos, parados, teste))
