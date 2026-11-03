@@ -51,6 +51,12 @@ O link precisa terminar com o número interno do pregão. Um link com `ident=und
 
 O portal só lê enquanto está aberto. Para receber e-mail mesmo com o computador desligado, continua valendo o robô de `../alerta-csc` (GitHub Actions).
 
+## Mensagens do robô (as mesmas dos e-mails) dentro do portal
+
+O robô do GitHub grava as mensagens dos chats em `alerta-csc/chats.json` a cada verificação. O portal lê esse arquivo ao abrir e a cada 5 minutos, e junta tudo nos **Chats dos pregões**, com os mesmos destaques e alertas. Os pregões do robô aparecem com a etiqueta **Robô**; mensagem nova ou mudança de situação gera aviso na tela.
+
+O endereço do arquivo fica em **Ajustes → Integrações → Arquivo do robô**. Funciona no portal publicado na Vercel, no `servidor-local.js` e até abrindo o `index.html` direto. Na versão publicada no Claude o navegador bloqueia acesso a outros sites, então ela mostra a cópia das mensagens feita no momento da publicação.
+
 ## Onde ficam os dados
 
 No navegador de quem usa (localStorage). Cada pessoa e cada computador têm a sua cópia. Use **Ajustes → Exportar backup** para guardar e **Importar backup** para levar a outro computador.
