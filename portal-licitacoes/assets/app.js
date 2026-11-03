@@ -779,7 +779,7 @@
     const r = ui.analise;
     return '<div class="cab"><div><span class="eyebrow">Análise e jurídico</span><h1>Análise de edital</h1><p>Cole o texto ou envie o PDF. O portal lê o edital no seu navegador, separa os dados principais, confere a habilitação com a sua pasta de documentos e aponta exigências que merecem atenção.</p></div></div>' +
       '<div class="analise"><section class="card entrada"><div class="card-h"><h2>Edital</h2><button class="link-btn" data-acao="exemploEdital">Usar edital de exemplo</button></div>' +
-      '<label class="soltar" id="soltar">' + ic("upload") + '<span><b>Arraste o PDF ou TXT aqui</b> ou <span class="link-btn">escolha o arquivo</span><br><small class="muted">O arquivo não sai do seu computador.</small></span><input type="file" id="arquivo-edital" accept=".pdf,.txt,application/pdf,text/plain" class="sr"></label>' +
+      '<label class="soltar" id="soltar">' + ic("upload") + '<span><b>Arraste o edital (PDF ou TXT) aqui</b> ou <span class="link-btn">escolha os arquivos</span><br><small class="muted">Pode enviar o edital e o Termo de Referência juntos. Os arquivos não saem do seu computador.</small></span><input type="file" id="arquivo-edital" accept=".pdf,.txt,application/pdf,text/plain" class="sr" multiple></label>' +
       '<label class="sr" for="texto-edital">Texto do edital</label><textarea id="texto-edital" placeholder="…ou cole aqui o texto do edital (Ctrl+V)">' + h(ui.analiseTexto) + "</textarea>" +
       '<div class="linha-acoes" style="margin-top:12px"><button class="btn primario" data-acao="analisar">' + ic("analise") + 'Analisar edital</button><button class="btn ghost" data-acao="limparAnalise">Limpar</button><span class="muted" id="status-analise" style="font-size:13px"></span></div></section>' +
       '<div class="pilha" id="resultado-analise">' + (r ? resultadoAnalise(r) : '<section class="card">' + vazio("analise", "O resultado aparece aqui: dados do certame, prazos de impugnação, checklist de habilitação e pontos de atenção.") + "</section>") + "</div></div>";
@@ -792,6 +792,7 @@
   function tempoViagem(min) { if (!min) return ""; const r = Math.round(min / 10) * 10, hh = Math.floor(r / 60), mm = r % 60; return hh ? hh + "h" + (mm ? String(mm).padStart(2, "0") : "") : mm + " min"; }
   function resumoEmailHTML(r) {
     const c = r.campos, m = ui.cidade || {};
+    const tr = t => c.trSeparado ? falta(t + " – ver Termo de Referência (arquivo separado)") : falta(t);
     const dest = S.ajustes.resumoDestinatario || "Dra. Cláudia";
     const hora = new Date().getHours();
     const saudacao = hora < 12 ? "Bom dia" : hora < 18 ? "Boa tarde" : "Boa noite";
@@ -822,7 +823,7 @@
     const th = 'style="border:1px solid #9AA9AB;padding:6px 8px;background:#E3EEEC;text-align:left;font-weight:700"';
     const itens = c.itens && c.itens.length ? c.itens : [{ item: "1", descricao: null, unidade: null, qtd: null, valorUnit: null }];
     const tabela = '<table style="border-collapse:collapse;margin:0 0 12px;font-size:inherit"><thead><tr><th ' + th + ">ITEM</th><th " + th + ">DESCRIÇÃO / EQUIPE MÍNIMA</th><th " + th + ">UNIDADE</th><th " + th + ">QTDE.</th><th " + th + ">VALOR UNIT</th></tr></thead><tbody>" +
-      itens.map(i => "<tr><td " + td + ">" + h(i.item) + "</td><td " + td + ">" + (i.descricao ? h(i.descricao) : falta("descrição")) + "</td><td " + td + ">" + (i.unidade ? h(i.unidade) : falta("unid.")) + "</td><td " + td + ">" + (i.qtd !== null && i.qtd !== undefined ? i.qtd.toLocaleString("pt-BR") : falta("qtde.")) + '</td><td ' + td + ' nowrap>' + (i.valorUnit ? U.moeda(i.valorUnit) : c.orcamentoSigiloso ? "Sigiloso" : falta("valor")) + "</td></tr>").join("") + "</tbody></table>";
+      itens.map(i => "<tr><td " + td + ">" + h(i.item) + "</td><td " + td + ">" + (i.descricao ? h(i.descricao) : tr("descrição")) + "</td><td " + td + ">" + (i.unidade ? h(i.unidade) : falta("unid.")) + "</td><td " + td + ">" + (i.qtd !== null && i.qtd !== undefined ? i.qtd.toLocaleString("pt-BR") : falta("qtde.")) + '</td><td ' + td + ' nowrap>' + (i.valorUnit ? U.moeda(i.valorUnit) : c.orcamentoSigiloso ? "Sigiloso" : falta("valor")) + "</td></tr>").join("") + "</tbody></table>";
     const imp = c.impugnacaoInformada || c.impugnacaoAte;
     const sessao = c.sessao ? U.fmtData(c.sessao) + (U.temHora(c.sessao) ? " " + c.sessao.slice(11, 16) : "") : "";
     const portal = c.plataforma ? PORTAL_RESUMO[c.plataforma] || c.plataforma.toUpperCase() : /presencial/i.test(c.modalidade || "") ? "Presencial" : "";
@@ -830,9 +831,9 @@
     return p(h(dest) + ",") + p(saudacao + ",") +
       p("Este processo trata-se da " + (mod ? "<b>" + h(mod) + "</b> " : falta("modalidade") + " ") + (c.objetoCompleto ? h(minusculaInicial(c.objetoCompleto).replace(/[\s,;:]*$/, "").replace(/([^.])$/, "$1.")) : falta("objeto"))) +
       p("<b>Informações sobre " + (/^(?:departamento|fundo|hospital|munic[íi]pio|cons[óo]rcio|tribunal|instituto|governo|centro|minist[ée]rio|servi[çc]o|conselho|comando|ex[ée]rcito|n[úu]cleo)/i.test(c.orgao || "") ? "o " : "a ") + orgao + ":</b>", ";margin-bottom:4px") + lista(infoCidade) +
-      p("<b>Execução do Serviço:</b>", ";margin-bottom:4px") + lista(["Local: " + (c.local ? h(c.local.replace(/\.$/, "")) + "." : falta("local de execução")), "Horários: " + (horarios ? horarios + "." : falta("dias e horários"))]) +
+      p("<b>Execução do Serviço:</b>", ";margin-bottom:4px") + lista(["Local: " + (c.local ? h(c.local.replace(/\.$/, "")) + "." : tr("local de execução")), "Horários: " + (horarios ? horarios + "." : tr("dias e horários"))]) +
       tabela +
-      p("<b>Valor Global Estimado:</b> " + (c.valorEstimado ? U.moeda(c.valorEstimado) + "." : c.orcamentoSigiloso ? "sigiloso (o órgão divulga o valor só depois da fase de lances)." : falta("valor"))) +
+      p("<b>Valor Global Estimado:</b> " + (c.valorEstimado ? U.moeda(c.valorEstimado) + "." : c.orcamentoSigiloso ? "sigiloso (o órgão divulga o valor só depois da fase de lances)." : tr("valor"))) +
       p("<b>Data e Hora da Licitação:</b> " + (sessao || falta("data e hora"))) +
       p("<b>Prazo para Impugnação/Esclarecimentos:</b> " + (imp ? U.fmtData(imp) : falta("prazo"))) +
       p("<b>Portal:</b> " + (portal ? h(portal) : falta("portal"))) +
@@ -848,6 +849,7 @@
       '<div class="campo"><label for="resumo-cidade">Cidade do órgão</label><div class="importar-linha"><input id="resumo-cidade" value="' + h((m.dados && m.dados.nome) || c.municipio || "") + '" placeholder="Digite a cidade"><input id="resumo-uf" value="' + h((m.dados && m.dados.uf) || c.uf || "") + '" placeholder="UF" maxlength="2" aria-label="UF"><button class="btn peq ghost" data-acao="buscarCidade">Buscar</button></div></div>' +
       '<div class="campo"><label for="resumo-ass">Assinatura (opcional)</label><input id="resumo-ass" data-mudar="resumoOpcao" data-chave="resumoAssinatura" value="' + h(S.ajustes.resumoAssinatura || "") + '" placeholder="Seu nome"></div></div>' +
       '<div class="linha-acoes" style="margin:4px 0 10px">' + status + "</div>" +
+      (c.trSeparado ? '<p class="faixa" style="margin:0 0 10px;font-size:13.5px"><span>Este edital diz que o <b>Termo de Referência está em arquivo separado</b>. É nele que ficam itens, quantidades, valores, local e horários. Envie o edital e o Termo de Referência juntos (pode selecionar os dois arquivos) que o resumo sai completo.</span></p>' : "") +
       '<div class="resumo-email" id="resumo-email" contenteditable="true" spellcheck="true" aria-label="Resumo editável">' + resumoEmailHTML(r) + "</div>" +
       '<p class="nota" style="margin-top:8px">Clique no texto para editar antes de copiar. Os trechos em amarelo não foram encontrados no edital: complete à mão. Ao colar no Outlook ou Gmail, a tabela vai formatada. População: IBGE (estimativa mais recente). Distância: rota de carro até a capital (OpenStreetMap).</p></section>';
   }
@@ -936,12 +938,26 @@
       document.head.appendChild(s);
     });
   }
-  async function lerArquivo(arq) {
+  // Lê um ou vários arquivos (ex.: edital + Termo de Referência) e analisa tudo junto
+  async function lerArquivo(lista) {
     const st = $("#status-analise");
-    if (!arq) return;
+    const arquivos = Array.from(lista && lista.length !== undefined ? lista : [lista]).filter(Boolean);
+    if (!arquivos.length) return;
     try {
-      if (/\.txt$/i.test(arq.name) || arq.type === "text/plain") { $("#texto-edital").value = await arq.text(); }
-      else {
+      const partes = [];
+      for (const arq of arquivos) {
+        st.textContent = "Lendo " + arq.name + "…";
+        partes.push(await textoDoArquivo(arq, st));
+      }
+      $("#texto-edital").value = partes.join("\n\n==========\n\n");
+      st.textContent = arquivos.length > 1 ? arquivos.length + " arquivos carregados." : arquivos[0].name + " carregado.";
+      analisarAgora();
+    } catch (e) { st.textContent = ""; toast("Não consegui ler o arquivo", e.message, "crit"); }
+  }
+  async function textoDoArquivo(arq, st) {
+    {
+      if (/\.txt$/i.test(arq.name) || arq.type === "text/plain") return await arq.text();
+      {
         st.textContent = "Lendo o PDF…";
         const base = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
         await carregarScript(base + "pdf.min.js");
@@ -951,16 +967,14 @@
         const doc = await pdfjs.getDocument({ data: new Uint8Array(await arq.arrayBuffer()), isEvalSupported: false }).promise;
         let texto = "";
         for (let i = 1; i <= doc.numPages; i++) {
-          st.textContent = "Lendo página " + i + " de " + doc.numPages + "…";
+          st.textContent = "Lendo " + arq.name + ": página " + i + " de " + doc.numPages + "…";
           const conteudo = await (await doc.getPage(i)).getTextContent();
           texto += conteudo.items.map(it => it.str + (it.hasEOL ? "\n" : "")).join("") + "\n\n";
         }
-        if (texto.replace(/\s/g, "").length < 100) throw new Error("O PDF parece ser uma imagem escaneada (sem texto). Use um PDF pesquisável ou copie o texto.");
-        $("#texto-edital").value = texto;
+        if (texto.replace(/\s/g, "").length < 100) throw new Error(arq.name + " parece ser uma imagem escaneada (sem texto). Use um PDF pesquisável ou copie o texto.");
+        return texto;
       }
-      st.textContent = arq.name + " carregado.";
-      analisarAgora();
-    } catch (e) { st.textContent = ""; toast("Não consegui ler o arquivo", e.message, "crit"); }
+    }
   }
   function textoAnalise(r) {
     const c = r.campos;
@@ -1437,10 +1451,10 @@
   function ligarAnalise() {
     const zona = $("#soltar"), inp = $("#arquivo-edital"), ta = $("#texto-edital");
     if (!zona) return;
-    inp.addEventListener("change", () => lerArquivo(inp.files[0]));
+    inp.addEventListener("change", () => lerArquivo(inp.files));
     ["dragenter", "dragover"].forEach(t => zona.addEventListener(t, ev => { ev.preventDefault(); zona.classList.add("sobre"); }));
     ["dragleave", "drop"].forEach(t => zona.addEventListener(t, () => zona.classList.remove("sobre")));
-    zona.addEventListener("drop", ev => { ev.preventDefault(); lerArquivo(ev.dataTransfer.files[0]); });
+    zona.addEventListener("drop", ev => { ev.preventDefault(); lerArquivo(ev.dataTransfer.files); });
     ta.addEventListener("input", () => { ui.analiseTexto = ta.value; });
   }
 
