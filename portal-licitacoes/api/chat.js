@@ -86,8 +86,10 @@ async function lerChat(ident) {
   return mensagens; // da mais nova para a mais antiga, como o e-compras mostra
 }
 
+const { exigirLogin } = require("./_auth.js");
+
 module.exports = async (req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  if (!(await exigirLogin(req, res))) return;
   const q = req.query || {};
   if (q.ping) { res.status(200).json({ ok: true, mensagem: "A API do portal está no ar." }); return; }
   const url = String(q.url || "");

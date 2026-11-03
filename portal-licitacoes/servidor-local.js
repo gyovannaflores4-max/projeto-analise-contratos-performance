@@ -19,7 +19,7 @@ http.createServer(async (req, res) => {
       status(c) { res.statusCode = c; return this; },
       json(j) { res.setHeader("content-type", "application/json; charset=utf-8"); res.end(JSON.stringify(j)); }
     };
-    return require("./api/" + api[1] + ".js")({ query: Object.fromEntries(url.searchParams) }, resposta);
+    return require("./api/" + api[1] + ".js")({ method: req.method, headers: req.headers, query: Object.fromEntries(url.searchParams) }, resposta);
   }
   const arquivo = path.normalize(path.join(RAIZ, url.pathname === "/" ? "index.html" : decodeURIComponent(url.pathname)));
   if (!arquivo.startsWith(RAIZ) || arquivo.includes(`${path.sep}api${path.sep}`)) { res.statusCode = 403; return res.end(); }
