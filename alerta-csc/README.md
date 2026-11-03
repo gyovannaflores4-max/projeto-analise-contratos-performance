@@ -1,6 +1,6 @@
 # Alerta de resenhas do CSC/AM
 
-> **Alerta desligado em 21/10/2026.** O agendamento `.github/workflows/alerta-resenhas-csc.yml` foi removido, então nada roda mais e nenhum e-mail é enviado. Para religar, restaure esse arquivo do histórico do Git (commit anterior a este) na branch `main`.
+> **Alerta religado em 03/11/2026.** Os e-mails vão somente para **gyovannaflores4@gmail.com** (definido em `.github/workflows/alerta-resenhas-csc.yml`, no lugar da secret `EMAIL_TO`). Para mudar o destinatário, edite a linha `EMAIL_TO` desse arquivo.
 
 Verifica a página de [resenhas do CSC/AM](https://www.csc.am.gov.br/site/resenhas) a cada 5 minutos. Quando sai uma resenha nova que cita um dos processos monitorados, ele:
 
