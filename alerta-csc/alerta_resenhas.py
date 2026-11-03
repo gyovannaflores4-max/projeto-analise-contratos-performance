@@ -230,7 +230,7 @@ def montar_mensagem(resenha, achados, texto_completo):
     return assunto, "\n".join(texto), "\n".join(md)
 
 
-def enviar_email(assunto, corpo):
+def enviar_email(assunto, corpo, html=None):
     usuario = os.environ.get("SMTP_USER", "").strip()
     senha = os.environ.get("SMTP_PASS", "").strip()
     if not usuario or not senha:
@@ -245,6 +245,8 @@ def enviar_email(assunto, corpo):
     msg["From"] = usuario
     msg["To"] = destino
     msg.set_content(corpo)
+    if html:
+        msg.add_alternative(html, subtype="html")
 
     contexto = ssl.create_default_context()
     if porta == 465:

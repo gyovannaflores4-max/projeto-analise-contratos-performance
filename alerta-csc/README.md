@@ -51,3 +51,17 @@ Em **Settings → Secrets and variables → Actions → Variables**, crie a vari
 - O GitHub pode atrasar alguns minutos as execuções agendadas em horários de pico.
 - Se o repositório ficar 60 dias sem nenhum commit, o GitHub pausa o agendamento e avisa por e-mail; basta reativar em **Actions**.
 - O processo é encontrado em qualquer formato usado nas resenhas: `408/2026`, `408/26`, `PE nº 408/2026–CSC` etc.
+
+## Resumo diário do portal Pregão em Dia (`resumo_diario.py`)
+
+Todo dia útil, a partir das 7h de Brasília (variável `HORA_RESUMO`), manda **um** e-mail para gyovannaflores4@gmail.com com o que pede ação no portal: sessões dos próximos 7 dias, propostas a cadastrar, último dia para impugnar, prazos de recurso e contrarrazões, documentos e portais vencendo e as mensagens dos chats nas últimas 24 horas. Os prazos seguem as regras do portal (dias úteis da Lei 14.133, feriados nacionais e os feriados locais cadastrados em Ajustes). O que foi marcado como resolvido na Central de alertas não entra.
+
+Como ligar:
+
+1. No portal, em **Ajustes → Resumo diário por e-mail**, clique em **Gerar chave do robô** e copie a chave.
+2. No GitHub: **Settings → Secrets and variables → Actions → New repository secret**, nome `PORTAL_CHAVE_ROBO`, cole a chave.
+3. Para testar na hora: **Actions → Alerta de resenhas do CSC → Run workflow**, marque "Mandar agora o resumo diário do portal".
+
+A chave só dá leitura aos dados do portal; no banco fica apenas o hash dela. Gerar outra invalida a anterior. `estado_resumo.json` guarda o dia do último envio, para não repetir.
+
+Pré-visualizar sem mandar e-mail: `python resumo_diario.py --dados dados.json --previa resumo.html` (o `dados.json` é um backup exportado do portal).

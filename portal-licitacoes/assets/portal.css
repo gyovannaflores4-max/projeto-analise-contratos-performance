@@ -595,3 +595,5 @@ body.trancado #app,body.trancado .toasts{display:none}
 @media (max-width:640px){.preco-grade{grid-template-columns:repeat(2,minmax(0,1fr))}.preco-grade .campo[style]{grid-column:1 / -1 !important}.preco-custo{grid-template-columns:minmax(0,1fr) 110px;}.preco-custo .campo-check{grid-column:1}}
 .preco-lado table.tabela{min-width:0}
 .preco-lado .tabela td,.preco-lado .tabela th{padding:9px 12px}
+.passos{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em;background:var(--surface-2);padding:1px 5px;border-radius:5px}
