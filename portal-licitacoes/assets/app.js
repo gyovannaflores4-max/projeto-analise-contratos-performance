@@ -1912,6 +1912,8 @@
         if (apagados.has(x.id)) return;
         const m = ids.get(x.id);
         if (!m) { meus.push(x); return; }
+        // Mesmo item dos dois lados: completa os campos que estão vazios aqui (ex.: edital vinculado ao chat)
+        Object.keys(x).forEach(c => { if (c !== "mensagens" && (m[c] === undefined || m[c] === null || m[c] === "") && x[c] !== undefined && x[c] !== null && x[c] !== "") m[c] = x[c]; });
         if (k === "chats") { // une as mensagens dos dois lados
           const vistas = new Map((m.mensagens || []).map(msg => [A.chaveMensagem(msg), msg]));
           (x.mensagens || []).forEach(msg => { const c = A.chaveMensagem(msg); if (!vistas.has(c)) vistas.set(c, msg); else if (msg.lida) vistas.get(c).lida = true; });
