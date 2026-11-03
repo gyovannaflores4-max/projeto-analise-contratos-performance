@@ -91,7 +91,13 @@
     if (p) campos.processo = o.substr(p.i + p.m[0].length - p.m[1].length, p.m[1].length);
     // Órgão: primeira linha com cara de nome de órgão
     const linhas = o.split(/\n/).slice(0, 40);
-    const linhaOrgao = linhas.find(l => /prefeitura|secretaria|tribunal|hospital|fundo (?:municipal|estadual|nacional)|minist[eé]rio|universidade|instituto|cons[oó]rcio|governo|empresa brasileira|centro de servi[cç]os|funda[cç][aã]o|ag[eê]ncia|c[aâ]mara municipal|assembleia/i.test(l) && l.trim().length < 140);
+    // Órgão: linha que COMEÇA com o nome de um órgão (ignora rodapés de modelo, como "aprovado pela secretaria…")
+    const ORG = [/^(?:prefeitura|munic[íi]pio d|c[âa]mara municipal)/i, /^(?:fundo (?:municipal|estadual|nacional)|cons[óo]rcio)/i,
+      /^(?:secretaria|hospital|tribunal|minist[ée]rio|universidade|instituto|governo|empresa brasileira|centro de servi[çc]os|funda[çc][ãa]o|ag[êe]ncia|assembleia|companhia|servi[çc]o aut[ôo]nomo|autarquia)/i];
+    const candidatasOrgao = o.split(/\n/).slice(0, 80).map(l => l.replace(/\s+/g, " ").trim())
+      .filter(l => l.length >= 8 && l.length < 140 && !/aprovad|minuta|modelo|padr[ãa]o|p[áa]gina \d|^anexo|edital|preg[ãa]o|processo|cnpj/i.test(l));
+    let linhaOrgao = null;
+    for (const re of ORG) { linhaOrgao = candidatasOrgao.find(l => re.test(l)); if (linhaOrgao) break; }
     if (linhaOrgao) campos.orgao = linhaOrgao.replace(/\s+/g, " ").trim().replace(/[–-]\s*$/, "");
     // Objeto: "tem por objeto ...", "o objeto da presente licitação é ..." ou uma linha "OBJETO: ..."
     p = primeiro(t, /(?:tem (?:como|por) objeto|o objeto (?:da presente licitacao|desta licitacao|deste (?:pregao|edital|certame)|do presente (?:pregao|certame|edital)) (?:e|consiste (?:em|na|no)|sera))\s+(?:a\s+|o\s+)?/)
@@ -126,9 +132,36 @@
     /* ---- Cidade, local e horários (para o resumo) ---- */
     const UF_NOMES = { acre: "AC", alagoas: "AL", amapa: "AP", amazonas: "AM", bahia: "BA", ceara: "CE", "distrito federal": "DF", "espirito santo": "ES", goias: "GO", maranhao: "MA", "mato grosso do sul": "MS", "mato grosso": "MT", "minas gerais": "MG", paraiba: "PB", parana: "PR", para: "PA", pernambuco: "PE", piaui: "PI", "rio de janeiro": "RJ", "rio grande do norte": "RN", "rio grande do sul": "RS", rondonia: "RO", roraima: "RR", "santa catarina": "SC", "sao paulo": "SP", sergipe: "SE", tocantins: "TO" };
     const SIGLAS = "AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO";
-    let mc = /munic[íi]pio de ([A-ZÀ-Ú][A-Za-zÀ-ú'’ ]{2,40}?)\s*(?:\/|–|-|\()\s*(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)\b/.exec(o);
-    if (mc) { campos.municipio = mc[1].trim(); campos.uf = mc[2]; }
-    else {
+    // Cidades candidatas, da pista mais forte para a mais fraca; o portal confere cada uma na lista do IBGE.
+    const cidades = [];
+    const addCidade = (nome, uf) => {
+      nome = String(nome || "").replace(/\s+/g, " ").trim().replace(/^(?:a|o|de|do|da)\s+/i, "").replace(/\s+(?:estado|secretaria|fundo|em|no|na|sp|rj|mg)$/i, "");
+      if (nome.length < 3 || nome.split(" ").length > 6 || /\d|^(?:sua|seu|esta|este|cada|todo|qualquer|outro|referido|presente|contratante)\b/i.test(nome)) return;
+      if (/^[A-ZÀ-Ú' ]+$/.test(nome)) nome = nome.toLowerCase().replace(/(^|\s)(\S)/g, (x, e, l) => e + l.toUpperCase()).replace(/\s(De|Do|Da|Dos|Das|E)\s/g, x => x.toLowerCase());
+      uf = uf ? uf.toUpperCase() : "";
+      if (!cidades.some(c => c.nome.toLowerCase() === nome.toLowerCase() && (c.uf === uf || !uf || !c.uf))) cidades.push({ nome, uf });
+    };
+    const UFRE = "(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)";
+    // Nome próprio: palavras com inicial maiúscula (ou tudo maiúsculo), ligadas por de/do/da
+    const NOME = "([A-ZÀ-Ú][A-Za-zÀ-ú'’]+(?: (?:d[eoa]s?|D[EOA]S?|[A-ZÀ-Ú][A-Za-zÀ-ú'’]+)){0,5})";
+    const ci = txt => txt.replace(/[a-zà-úç]/g, c => "[" + c + c.toUpperCase() + "]"); // sem flag "i", para o NOME continuar exigindo maiúscula
+    const DE = "(?:[Dd][EeOoAa][Ss]?)";
+    const PRE = "(?:" + ci("prefeitura municipal") + "|" + ci("prefeitura") + "|" + ci("câmara municipal") + "|" + ci("camara municipal") + "|" + ci("fundo municipal de saúde") + ")";
+    const MUN = "(?:" + ci("município") + "|" + ci("municipio") + ") " + DE + " ";
+    const SUF_UF = "(?:\\s*(?:/|–|-|\\()\\s*" + UFRE + "\\b)?";
+    const achar = (re, fn) => { for (const m of o.matchAll(new RegExp(re, "g"))) fn(m); };
+    achar(MUN + NOME + "\\s*(?:/|–|-|\\()\\s*" + UFRE + "\\b", m => addCidade(m[1], m[2]));
+    const mo0 = new RegExp(PRE + " " + DE + " (?:" + MUN + ")?" + NOME + SUF_UF).exec(linhaOrgao || "");
+    if (mo0) addCidade(mo0[1], mo0[2]);
+    achar(PRE + " " + DE + " (?:" + MUN + ")?" + NOME + SUF_UF, m => addCidade(m[1], m[2]));
+    achar(ci("foro") + " (?:" + ci("da comarca") + " )?" + DE + " " + NOME + SUF_UF, m => addCidade(m[1], m[2]));
+    achar("CEP[:\\s]*\\d{2}\\.?\\d{3}-?\\d{3}[\\s,–-]*" + NOME + "\\s*(?:/|–|-)\\s*" + UFRE + "\\b", m => addCidade(m[1], m[2]));
+    achar(NOME + "\\s*(?:/|–|-)\\s*" + UFRE + "[\\s,–-]*CEP", m => addCidade(m[1], m[2]));
+    achar("(?:^|\\n)\\s*" + NOME + "\\s*(?:(?:/|–|-)\\s*" + UFRE + ")?\\s*,\\s*(?:em\\s+)?\\d{1,2}º? de (?:janeiro|fevereiro|março|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro) de \\d{4}", m => addCidade(m[1], m[2]));
+    achar(MUN + NOME, m => addCidade(m[1], ""));
+    campos.cidades = cidades.slice(0, 8);
+    if (cidades.length) { campos.municipio = cidades[0].nome; if (cidades[0].uf) campos.uf = cidades[0].uf; }
+    if (!campos.municipio) {
       const mo = /(?:prefeitura municipal|c[âa]mara municipal|fundo municipal de sa[úu]de|secretaria municipal de sa[úu]de|munic[íi]pio) d[eoa]s? ([A-ZÀ-Úa-zà-ú'’ ]{3,40}?)(?:\s*(?:\/|–|-|,|\(|\n|$)\s*(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)?)/i.exec(campos.orgao || o.slice(0, 3000));
       if (mo) { campos.municipio = mo[1].trim().replace(/\s+(estado|secretaria|fundo)\b.*$/i, ""); if (mo[2]) campos.uf = mo[2].toUpperCase(); }
     }
@@ -143,8 +176,8 @@
     const frases = o.replace(/\r/g, "").split(/(?<=[.;])\s+|\n+/).map(x => x.replace(/^\s*(?:\d+(?:\.\d+)*\.?|[a-z]\))\s*/i, "").replace(/\s+/g, " ").trim());
     // Horários: frases com dias, turnos, escalas ou carga horária. Primeiro nas cláusulas de execução;
     // se não houver, nos trechos do objeto (ex.: "atendimento regular de segunda a sexta-feira e sobreaviso 24 horas").
-    const RE_HORARIO = /segunda[- ]feira a sexta|segunda a sexta|segunda a s[áa]bado|segunda a domingo|todos os dias|ininterrupt|s[áa]bados?,|domingos|finais de semana|fins de semana|sobreaviso|plant[ãa]o de \d|plant[õo]es de \d|plant[õo]es? (?:diurnos?|noturnos?|presenciais?)|horas di[áa]rias|horas semanais|horas mensais|carga hor[áa]ria|h\/dia|h\/semana|per[íi]odo (?:da )?(?:manh|tarde|noite|diurno|noturno)|turnos?|escala|\b12 ?x ?36\b|\b24 ?x ?(?:48|72)\b|\bdas \d{1,2} ?(?:h|:\d{2}|horas)(?:\d{2})? (?:[àa]s|até) \d{1,2}|\b24 ?(?:h|horas)\b|\b12 ?(?:h|horas)\b|\b6 ?(?:h|horas) di|\b4 ?(?:h|horas) di/i;
-    const EXCLUI_HORARIO = /valor|R\$|multa|pagamento|prazo de|licita[çc][ãa]o [ée]|ser[ãa]o (?:prestados|executados) n|ap[óo]s a assinatura|sess[ãa]o p[úu]blica|impugna|proposta|habilita|recurso|nota fiscal/i;
+    const RE_HORARIO = /segunda[- ]feira a sexta|segunda a sexta|segunda a s[áa]bado|segunda a domingo|todos os dias|ininterrupt|s[áa]bados?,|domingos|finais de semana|fins de semana|sobreaviso|plant[ãa]o de \d|plant[õo]es de \d|plant[õo]es? (?:diurnos?|noturnos?|presenciais?)|horas di[áa]rias|horas semanais|horas mensais|carga hor[áa]ria|h\/dia|h\/semana|per[íi]odo (?:da )?(?:manh|tarde|noite|diurno|noturno)|\\bturnos?\\b|\\bescala de|\\bescalas? (?:de trabalho|mensal|semanal)|\b12 ?x ?36\b|\b24 ?x ?(?:48|72)\b|\bdas \d{1,2} ?(?:h|:\d{2}|horas)(?:\d{2})? (?:[àa]s|até) \d{1,2}|\b24 ?(?:h|horas)\b|\b12 ?(?:h|horas)\b|\b6 ?(?:h|horas) di|\b4 ?(?:h|horas) di/i;
+    const EXCLUI_HORARIO = /menor(?:es)? de (?:18|dezoito|16|dezesseis)|trabalho noturno, perigoso|insalubre|n[ãa]o emprega|declara|valor|R\$|multa|pagamento|prazo de|licita[çc][ãa]o [ée]|ser[ãa]o (?:prestados|executados) n|ap[óo]s a assinatura|sess[ãa]o p[úu]blica|impugna|proposta|habilita|recurso|nota fiscal/i;
     let horarios = frases.filter(f => f.length >= 20 && f.length <= 320 && RE_HORARIO.test(f) && !EXCLUI_HORARIO.test(f) && !/objeto/i.test(f));
     if (!horarios.length && campos.objetoCompleto) {
       const pedacos = campos.objetoCompleto.split(/,\s*(?=contemplando|incluindo|com |sendo|em regime|nos? (?:per[íi]odos?|turnos?|hor[áa]rios?))|;\s*/i);

@@ -845,20 +845,29 @@
       : m.erro ? '<span class="pill warn sem-ponto">' + h(m.erro) + "</span>" : "";
     return '<section class="card" id="cartao-resumo"><div class="card-h"><h2>Resumo para e-mail</h2><div class="linha-acoes"><button class="btn peq ghost" data-acao="refazerResumo">' + ic("atualizar") + 'Refazer</button><button class="btn peq primario" data-acao="copiarResumoEmail">' + ic("copiar") + "Copiar resumo</button></div></div>" +
       '<div class="resumo-opcoes"><div class="campo"><label for="resumo-dest">Para</label><input id="resumo-dest" data-mudar="resumoOpcao" data-chave="resumoDestinatario" value="' + h(S.ajustes.resumoDestinatario || "Dra. Cláudia") + '"></div>' +
-      '<div class="campo"><label for="resumo-cidade">Cidade do órgão</label><div class="importar-linha"><input id="resumo-cidade" value="' + h((m.dados && m.dados.nome) || c.municipio || "") + '" placeholder="Florestópolis"><input id="resumo-uf" value="' + h((m.dados && m.dados.uf) || c.uf || "") + '" placeholder="UF" maxlength="2" aria-label="UF"><button class="btn peq ghost" data-acao="buscarCidade">Buscar</button></div></div>' +
+      '<div class="campo"><label for="resumo-cidade">Cidade do órgão</label><div class="importar-linha"><input id="resumo-cidade" value="' + h((m.dados && m.dados.nome) || c.municipio || "") + '" placeholder="Digite a cidade"><input id="resumo-uf" value="' + h((m.dados && m.dados.uf) || c.uf || "") + '" placeholder="UF" maxlength="2" aria-label="UF"><button class="btn peq ghost" data-acao="buscarCidade">Buscar</button></div></div>' +
       '<div class="campo"><label for="resumo-ass">Assinatura (opcional)</label><input id="resumo-ass" data-mudar="resumoOpcao" data-chave="resumoAssinatura" value="' + h(S.ajustes.resumoAssinatura || "") + '" placeholder="Seu nome"></div></div>' +
       '<div class="linha-acoes" style="margin:4px 0 10px">' + status + "</div>" +
       '<div class="resumo-email" id="resumo-email" contenteditable="true" spellcheck="true" aria-label="Resumo editável">' + resumoEmailHTML(r) + "</div>" +
       '<p class="nota" style="margin-top:8px">Clique no texto para editar antes de copiar. Os trechos em amarelo não foram encontrados no edital: complete à mão. Ao colar no Outlook ou Gmail, a tabela vai formatada. População: IBGE (estimativa mais recente). Distância: rota de carro até a capital (OpenStreetMap).</p></section>';
   }
-  async function buscarCidade(nome, uf) {
-    if (!nome) { ui.cidade = { erro: "Cidade não identificada no edital: digite e clique em Buscar." }; atualizarResumo(); return; }
+  // Tenta as cidades candidatas encontradas no edital, na ordem, até uma existir na lista do IBGE
+  async function buscarCidade(nome, uf, candidatas) {
+    const lista = (candidatas && candidatas.length ? candidatas : [{ nome, uf }]).filter(c => c && c.nome);
+    if (!lista.length) { ui.cidade = { erro: "Cidade não identificada no edital: digite a cidade e a UF e clique em Buscar." }; atualizarResumo(); return; }
     ui.cidade = { carregando: true };
     atualizarResumo();
-    try {
-      const d = await api("/api/municipio?nome=" + encodeURIComponent(nome) + "&uf=" + encodeURIComponent(uf || ""), 25000);
-      ui.cidade = { dados: d };
-    } catch (e) { ui.cidade = { erro: "Distância e população não carregaram: " + e.message }; }
+    let ultimoErro = "";
+    for (const c of lista) {
+      try {
+        const d = await api("/api/municipio?nome=" + encodeURIComponent(c.nome) + "&uf=" + encodeURIComponent(c.uf || uf || ""), 25000);
+        ui.cidade = { dados: d }; atualizarResumo(); return;
+      } catch (e) {
+        ultimoErro = e.message;
+        if (!/não encontrei|mais de uma/i.test(e.message)) break; // falha de conexão: não adianta tentar as outras
+      }
+    }
+    ui.cidade = { erro: /não encontrei|mais de uma/i.test(ultimoErro) ? "Não achei a cidade do órgão no edital (" + lista.map(c => c.nome + (c.uf ? "/" + c.uf : "")).join(", ") + "): digite e clique em Buscar." : "Distância e população não carregaram: " + ultimoErro };
     atualizarResumo();
   }
   function atualizarResumo() { const el = $("#cartao-resumo"); if (el && ui.analise) el.outerHTML = resumoCartao(ui.analise); }
@@ -915,7 +924,7 @@
     ui.analise = A.analisarEdital(ui.analiseTexto, { porte: S.empresa.porte });
     ui.cidade = null;
     $("#resultado-analise").innerHTML = resultadoAnalise(ui.analise);
-    buscarCidade(ui.analise.campos.municipio, ui.analise.campos.uf);
+    buscarCidade(ui.analise.campos.municipio, ui.analise.campos.uf, ui.analise.campos.cidades);
     toast("Edital analisado", ui.analise.preenchidos + " de 7 dados principais encontrados · " + U.plural(ui.analise.riscos.length, "ponto de atenção", "pontos de atenção"));
     if (window.innerWidth < 1180) $("#resultado-analise").scrollIntoView({ behavior: "smooth", block: "start" });
   }
