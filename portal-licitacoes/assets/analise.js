@@ -141,7 +141,18 @@
     const ml = /\b(?:n[oa]s?)\s+((?:Unidade Hospitalar|Hospital|UPA|Unidade de Pronto Atendimento|Pronto[- ]Socorro|Pronto Atendimento|Unidade B[áa]sica de Sa[úu]de|UBS|Centro de Sa[úu]de|Policl[íi]nica|Maternidade|Santa Casa|Ambulat[óo]rio|Centro Cir[úu]rgico|Unidade de Terapia Intensiva|UTI)\b[^.;:\n]{0,110})/i.exec(o);
     if (ml) campos.local = ml[1].charAt(0).toUpperCase() + ml[1].slice(1).replace(/\s*,?\s*(?:conforme|de acordo|mediante|contemplando|para|com|sendo)\b.*$/i, "").replace(/[,\s]+$/, "").trim();
     const frases = o.replace(/\r/g, "").split(/(?<=[.;])\s+|\n+/).map(x => x.replace(/^\s*(?:\d+(?:\.\d+)*\.?|[a-z]\))\s*/i, "").replace(/\s+/g, " ").trim());
-    campos.horarios = [...new Set(frases.filter(f => f.length >= 25 && f.length <= 320 && /segunda a sexta|s[áa]bados?,|domingos|finais de semana|sobreaviso|plant[ãa]o de \d|plant[õo]es de \d|horas di[áa]rias|h\/dia|per[íi]odo da (?:manh|tarde|noite)|\b24 ?(?:h|horas)\b|\b12 ?(?:h|horas)\b/i.test(f) && !/valor|R\$|multa|pagamento|prazo de|objeto|licita[çc][ãa]o [ée]|ser[ãa]o (?:prestados|executados)/i.test(f)))].slice(0, 2);
+    // Horários: frases com dias, turnos, escalas ou carga horária. Primeiro nas cláusulas de execução;
+    // se não houver, nos trechos do objeto (ex.: "atendimento regular de segunda a sexta-feira e sobreaviso 24 horas").
+    const RE_HORARIO = /segunda[- ]feira a sexta|segunda a sexta|segunda a s[áa]bado|segunda a domingo|todos os dias|ininterrupt|s[áa]bados?,|domingos|finais de semana|fins de semana|sobreaviso|plant[ãa]o de \d|plant[õo]es de \d|plant[õo]es? (?:diurnos?|noturnos?|presenciais?)|horas di[áa]rias|horas semanais|horas mensais|carga hor[áa]ria|h\/dia|h\/semana|per[íi]odo (?:da )?(?:manh|tarde|noite|diurno|noturno)|turnos?|escala|\b12 ?x ?36\b|\b24 ?x ?(?:48|72)\b|\bdas \d{1,2} ?(?:h|:\d{2}|horas)(?:\d{2})? (?:[àa]s|até) \d{1,2}|\b24 ?(?:h|horas)\b|\b12 ?(?:h|horas)\b|\b6 ?(?:h|horas) di|\b4 ?(?:h|horas) di/i;
+    const EXCLUI_HORARIO = /valor|R\$|multa|pagamento|prazo de|licita[çc][ãa]o [ée]|ser[ãa]o (?:prestados|executados) n|ap[óo]s a assinatura|sess[ãa]o p[úu]blica|impugna|proposta|habilita|recurso|nota fiscal/i;
+    let horarios = frases.filter(f => f.length >= 20 && f.length <= 320 && RE_HORARIO.test(f) && !EXCLUI_HORARIO.test(f) && !/objeto/i.test(f));
+    if (!horarios.length && campos.objetoCompleto) {
+      const pedacos = campos.objetoCompleto.split(/,\s*(?=contemplando|incluindo|com |sendo|em regime|nos? (?:per[íi]odos?|turnos?|hor[áa]rios?))|;\s*/i);
+      horarios = pedacos.map(x => x.replace(/^(?:contemplando|incluindo|sendo)\s+/i, "").trim()).filter(x => x.length >= 15 && RE_HORARIO.test(x) && !/^contrata[çc][ãa]o/i.test(x));
+      if (!horarios.length) { const m = RE_HORARIO.exec(campos.objetoCompleto); if (m) horarios = [campos.objetoCompleto.slice(Math.max(0, campos.objetoCompleto.lastIndexOf(",", m.index) + 1), (campos.objetoCompleto.indexOf(",", m.index) + 1 || campos.objetoCompleto.length + 1) - 1).trim()]; }
+      horarios = horarios.map(x => x.charAt(0).toUpperCase() + x.slice(1).replace(/\.$/, ""));
+    }
+    campos.horarios = [...new Set(horarios)].slice(0, 3);
 
     /* ---- Itens (tabela de preços) ---- */
     const UNID = "m[eê]s(?:es)?|unid(?:ade)?s?|und|un|hora(?:s)?|plant(?:ão|ões|ao|oes)|servi[cç]os?|exames?|di[áa]rias?|sv|procedimentos?|consultas?|sess(?:ão|ões)";
@@ -153,6 +164,8 @@
       if (/^\d+(?:\.\d+)+/.test(desc) || /^(?:item|descri|do pre|dos pre)/i.test(desc) || desc.length > 520) continue;
       campos.itens.push({ item: mi[1], descricao: desc, unidade: mi[3].charAt(0).toUpperCase() + mi[3].slice(1).toLowerCase(), qtd: numeroBR(mi[4]), valorUnit: numeroBR(mi[5]), valorTotal: mi[6] ? numeroBR(mi[6]) : null });
     }
+    // A descrição do item da tabela não é cláusula de horário
+    campos.horarios = campos.horarios.filter(x => !campos.itens.some(i => i.descricao.includes(x.slice(0, 50))));
     if (!campos.valorEstimado && campos.itens.length) campos.valorEstimado = Math.round(campos.itens.reduce((s, x) => s + (x.valorTotal || x.qtd * x.valorUnit), 0) * 100) / 100;
 
     /* ---- Disputa ---- */
