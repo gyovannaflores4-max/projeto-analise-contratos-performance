@@ -1,0 +1,13 @@
+{
+  "regions": [
+    "gru1"
+  ],
+  "functions": {
+    "api/chat.js": {
+      "maxDuration": 30
+    },
+    "api/pncp.js": {
+      "maxDuration": 30
+    }
+  }
+}
