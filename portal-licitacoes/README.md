@@ -54,6 +54,8 @@ O portal só lê enquanto está aberto. Para receber e-mail mesmo com o computad
 
 ## Mensagens do robô (as mesmas dos e-mails) dentro do portal
 
+Pregões do **Compras.gov.br** não têm chat público (o site pede captcha ou login gov.br), então o portal não lê as mensagens do pregoeiro sozinho. O robô acompanha esses pregões pelo **PNCP**: situação, documentos publicados e resultado de cada item entram no chat do pregão, marcados como "PNCP", e chegam por e-mail. As mensagens do pregoeiro continuam entrando por **Colar mensagens**.
+
 O robô do GitHub grava as mensagens dos chats em `alerta-csc/chats.json` a cada verificação. O portal lê esse arquivo ao abrir e a cada 5 minutos, e junta tudo nos **Chats dos pregões**, com os mesmos destaques e alertas. Os pregões do robô aparecem com a etiqueta **Robô**; mensagem nova ou mudança de situação gera aviso na tela.
 
 O endereço do arquivo fica em **Ajustes → Integrações → Arquivo do robô**. Funciona no portal publicado na Vercel, no `servidor-local.js` e até abrindo o `index.html` direto. Na versão publicada no Claude o navegador bloqueia acesso a outros sites, então ela mostra a cópia das mensagens feita no momento da publicação.

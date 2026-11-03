@@ -67,10 +67,25 @@ jobs:
           TESTE_CHAT: ${{ inputs.teste_chat && '1' || '' }}
         run: python -u alerta-csc/alerta_chat.py
 
+      - name: Acompanhar pregões pelo PNCP (situação, documentos, resultado)
+        if: always()
+        timeout-minutes: 4
+        continue-on-error: true
+        env:
+          PNCP_COMPRAS: ${{ vars.PNCP_COMPRAS || '24039073000155-2026-664=PE 90086/2026' }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          # Todos os alertas vão só para este endereço.
+          EMAIL_TO: gyovannaflores4@gmail.com
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python -u alerta-csc/monitor_pncp.py
+
       - name: Salvar o que já foi verificado
         if: always()
         run: |
-          git add alerta-csc/estado.json alerta-csc/estado_chat.json alerta-csc/chats.json
+          git add alerta-csc/estado.json alerta-csc/estado_chat.json alerta-csc/chats.json alerta-csc/estado_pncp.json
           if git diff --cached --quiet; then exit 0; fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

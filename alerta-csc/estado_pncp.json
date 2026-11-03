@@ -1,0 +1,23 @@
+{
+ "compras": {
+  "24039073000155-2026-664": {
+   "situacao": "Divulgada no PNCP",
+   "valorHomologado": null,
+   "arquivos": {
+    "2": {
+     "titulo": "93205905900862026001",
+     "tipo": "Edital",
+     "data": "2026-07-13T07:03",
+     "url": "https://pncp.gov.br/pncp-api/v1/orgaos/24039073000155/compras/2026/664/arquivos/2"
+    }
+   },
+   "itens": {
+    "1": {
+     "descricao": "Nefrologia - Hemodiálise",
+     "situacao": "Em andamento",
+     "resultados": []
+    }
+   }
+  }
+ }
+}

@@ -417,9 +417,9 @@
     Object.keys(dados.pregoes).forEach(ident => {
       const p = dados.pregoes[ident];
       let c = S.chats.find(x => x.ident === ident || new RegExp("ident=" + ident + "\\b").test((x.processo || "") + " " + (x.link || "")))
-        || S.chats.find(x => (x.portal === "e-compras AM" || x.robo) && numAno(x.titulo) && numAno(x.titulo) === numAno(p.edital));
+        || S.chats.find(x => (x.portal === "e-compras AM" || x.robo || p.fonte === "PNCP") && numAno(x.titulo) && numAno(x.titulo) === numAno(p.edital));
       if (!c) {
-        c = { id: "robo-" + ident, titulo: p.edital, orgao: "", portal: "e-compras AM", status: "", processo: p.link, link: p.link, auto: false, mensagens: [] };
+        c = { id: "robo-" + ident, titulo: p.edital, orgao: "", portal: p.fonte === "PNCP" ? "PNCP" : "e-compras AM", status: "", processo: p.fonte === "PNCP" ? "" : p.link, link: p.link, auto: false, mensagens: [] };
         S.chats.push(c);
         registrar("Chat do " + p.edital + " trazido do robô do GitHub.", "chats");
         novos++;
@@ -1063,7 +1063,7 @@
       (c.erro ? '<div class="retomada-box" style="background:var(--crit-soft);color:var(--crit)">' + ic("aviso") + h(c.erro) + "</div>" : "") +
       '<div class="conversa-f"><div class="chips" role="group" aria-label="Filtrar mensagens">' + filtros.map(([id, nome]) => '<button class="chip" data-acao="filtroChat" data-f="' + id + '" aria-pressed="' + (ui.chatFiltro === id) + '">' + h(nome) + "</button>").join("") + '</div><label class="sr" for="busca-chat">Buscar no chat</label><input type="search" id="busca-chat" data-digitar="buscaChat" placeholder="Buscar no chat…" value="' + h(ui.chatBusca) + '"></div>' +
       '<div class="mensagens" id="msgs" aria-live="polite">' + mensagensHTML(c) + "</div>" +
-      (c.robo && !c.auto ? '<div class="conversa-f" style="border-top:1px solid var(--line);border-bottom:0;font-size:12.5px;color:var(--ink-3)">Mensagens do robô do GitHub (as mesmas dos e-mails)' + (c.roboEm ? " · robô atualizou " + U.desde(U.isoDataHora(new Date(c.roboEm))) : "") + (c.roboOrigem && c.roboOrigem !== "ao vivo" ? " · " + h(c.roboOrigem) : " · o portal confere a cada " + (S.ajustes.intervaloChat || 5) + " min") + ' · <button class="link-btn" data-acao="sincRobo">sincronizar agora</button></div>' : "") +
+      (c.robo && !c.auto ? '<div class="conversa-f" style="border-top:1px solid var(--line);border-bottom:0;font-size:12.5px;color:var(--ink-3)">' + (/^pncp-/.test(c.ident || "") ? "Movimentações oficiais do PNCP (situação, documentos e resultado), lidas pelo robô do GitHub. As mensagens do pregoeiro no Compras.gov.br entram por Colar mensagens" : "Mensagens do robô do GitHub (as mesmas dos e-mails)") + (c.roboEm ? " · robô atualizou " + U.desde(U.isoDataHora(new Date(c.roboEm))) : "") + (c.roboOrigem && c.roboOrigem !== "ao vivo" ? " · " + h(c.roboOrigem) : " · o portal confere a cada " + (S.ajustes.intervaloChat || 5) + " min") + ' · <button class="link-btn" data-acao="sincRobo">sincronizar agora</button></div>' : "") +
       (c.auto ? '<div class="conversa-f" style="border-top:1px solid var(--line);border-bottom:0;font-size:12.5px;color:var(--ink-3)">Leitura automática do e-compras.AM a cada ' + (S.ajustes.intervaloChat || 5) + " min enquanto o portal estiver aberto" + (c.consultadoEm ? " · última leitura " + U.desde(U.isoDataHora(new Date(c.consultadoEm))) : "") + "</div>" : "") +
       "</section></div>";
   }
