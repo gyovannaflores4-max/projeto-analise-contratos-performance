@@ -565,3 +565,5 @@ body.trancado #app,body.trancado .toasts{display:none}
 .resumo-email:focus{outline:2px solid var(--brand);outline-offset:2px}
 .resumo-email table{min-width:520px}
 @media (max-width:820px){.resumo-opcoes{grid-template-columns:minmax(0,1fr)}}
+.resumo-docs button:not(.crit):not(.warn):not(.ok) b{color:var(--ink-2)}
+.tabela .sub a{color:var(--brand)}
