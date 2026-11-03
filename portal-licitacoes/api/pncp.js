@@ -41,45 +41,53 @@ function sigla(mod) { return { "Pregão eletrônico": "PE", "Concorrência eletr
 
 const { exigirLogin } = require("./_auth.js");
 
+// Dados de uma compra do PNCP no formato do formulário de edital (null se não existir)
+async function dadosPncp(cnpj, ano, seq) {
+  const [d, arquivos] = await Promise.all([
+    getJson(PNCP + "/api/consulta/v1/orgaos/" + cnpj + "/compras/" + ano + "/" + seq, 15000),
+    getJson(PNCP + "/api/pncp/v1/orgaos/" + cnpj + "/compras/" + ano + "/" + seq + "/arquivos", 12000).catch(() => [])
+  ]);
+  if (!d) return null;
+  const uo = d.unidadeOrgao || {}, oe = d.orgaoEntidade || {};
+  const mod = modalidade(d.modalidadeNome);
+  const origem = [d.usuarioNome, d.linkSistemaOrigem].filter(Boolean).join(" ");
+  const portal = (PORTAIS.find(([re]) => re.test(origem)) || [null, "PNCP"])[1];
+  const valor = Number(d.valorTotalEstimado);
+  return {
+    id: cnpj + "-" + ano + "-" + seq,
+    numero: sigla(mod) + " " + (d.numeroCompra || seq) + "/" + ano,
+    modalidade: mod,
+    orgao: oe.razaoSocial || "",
+    municipio: uo.municipioNome || "",
+    uf: uo.ufSigla || "",
+    objeto: String(d.objetoCompra || "").replace(/\s+/g, " ").trim(),
+    sessao: dataHora(d.dataEncerramentoProposta || d.dataAberturaProposta),
+    limiteProposta: dataHora(d.dataEncerramentoProposta),
+    valorEstimado: valor > 0 ? valor : null,
+    srp: !!d.srp,
+    portal,
+    processo: d.processo || "",
+    uasg: /^\d{6}$/.test(String(uo.codigoUnidade || "")) ? String(uo.codigoUnidade) : "",
+    link: /^https?:\/\//i.test(String(d.linkSistemaOrigem || "")) ? d.linkSistemaOrigem : PNCP + "/app/editais/" + cnpj + "/" + ano + "/" + seq,
+    pncp: PNCP + "/app/editais/" + cnpj + "/" + ano + "/" + seq,
+    arquivos: (Array.isArray(arquivos) ? arquivos : []).filter(a => a && a.statusAtivo !== false).map(a => ({ titulo: a.titulo || a.tipoDocumentoNome || "Documento", url: a.url || a.uri || "" }))
+  };
+}
+
 module.exports = async (req, res) => {
   if (!(await exigirLogin(req, res))) return;
   const entrada = String((req.query && req.query.url) || "");
   const m = entrada.match(/(\d{14})[\/-](\d{4})[\/-](\d{1,7})/);
   if (!m) { res.status(400).json({ erro: "Cole o link do edital no PNCP, no formato pncp.gov.br/app/editais/CNPJ/ANO/NÚMERO." }); return; }
-  const [, cnpj, ano, seq] = m;
   try {
-    const [d, arquivos] = await Promise.all([
-      getJson(PNCP + "/api/consulta/v1/orgaos/" + cnpj + "/compras/" + ano + "/" + seq, 15000),
-      getJson(PNCP + "/api/pncp/v1/orgaos/" + cnpj + "/compras/" + ano + "/" + seq + "/arquivos", 12000).catch(() => [])
-    ]);
-    if (!d) { res.status(404).json({ erro: "Não encontrei esse edital no PNCP." }); return; }
-    const uo = d.unidadeOrgao || {}, oe = d.orgaoEntidade || {};
-    const mod = modalidade(d.modalidadeNome);
-    const origem = [d.usuarioNome, d.linkSistemaOrigem].filter(Boolean).join(" ");
-    const portal = (PORTAIS.find(([re]) => re.test(origem)) || [null, "PNCP"])[1];
-    const valor = Number(d.valorTotalEstimado);
+    const dados = await dadosPncp(m[1], m[2], m[3]);
+    if (!dados) { res.status(404).json({ erro: "Não encontrei esse edital no PNCP." }); return; }
     res.setHeader("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
-    res.status(200).json({
-      id: cnpj + "-" + ano + "-" + seq,
-      numero: sigla(mod) + " " + (d.numeroCompra || seq) + "/" + ano,
-      modalidade: mod,
-      orgao: oe.razaoSocial || "",
-      municipio: uo.municipioNome || "",
-      uf: uo.ufSigla || "",
-      objeto: String(d.objetoCompra || "").replace(/\s+/g, " ").trim(),
-      sessao: dataHora(d.dataEncerramentoProposta || d.dataAberturaProposta),
-      limiteProposta: dataHora(d.dataEncerramentoProposta),
-      valorEstimado: valor > 0 ? valor : null,
-      srp: !!d.srp,
-      portal,
-      processo: d.processo || "",
-      uasg: /^\d{6}$/.test(String(uo.codigoUnidade || "")) ? String(uo.codigoUnidade) : "",
-      link: /^https?:\/\//i.test(String(d.linkSistemaOrigem || "")) ? d.linkSistemaOrigem : PNCP + "/app/editais/" + cnpj + "/" + ano + "/" + seq,
-      pncp: PNCP + "/app/editais/" + cnpj + "/" + ano + "/" + seq,
-      arquivos: (Array.isArray(arquivos) ? arquivos : []).filter(a => a && a.statusAtivo !== false).map(a => ({ titulo: a.titulo || a.tipoDocumentoNome || "Documento", url: a.url || a.uri || "" }))
-    });
+    res.status(200).json(dados);
   } catch (e) {
     res.setHeader("Cache-Control", "no-store");
     res.status(502).json({ erro: "O PNCP não respondeu agora. Tente de novo em alguns minutos." });
   }
 };
+module.exports.dadosPncp = dadosPncp;
+module.exports.getJson = getJson;

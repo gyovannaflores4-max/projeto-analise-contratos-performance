@@ -12,7 +12,7 @@ const TIPOS = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; ch
 
 http.createServer(async (req, res) => {
   const url = new URL(req.url, "http://localhost");
-  const api = url.pathname.match(/^\/api\/(chat|pncp|municipio)$/);
+  const api = url.pathname.match(/^\/api\/(chat|pncp|municipio|importar)$/);
   if (api) {
     const resposta = {
       setHeader: (k, v) => res.setHeader(k, v),
