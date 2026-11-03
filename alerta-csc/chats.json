@@ -1,6 +1,6 @@
 {
  "fonte": "e-compras.AM (robô alerta-csc)",
- "atualizado_em": "2026-11-03T01:50:14+00:00",
+ "atualizado_em": "2026-11-03T18:14:53+00:00",
  "pregoes": {
   "255223": {
    "edital": "PE 328/26",
@@ -2625,6 +2625,30 @@
      "texto": "ABERTURA DA SESSÃO REALIZADA."
     }
    ]
+  },
+  "pncp-24039073000155-2026-664": {
+   "edital": "PE 90086/2026",
+   "status": "Divulgada no PNCP",
+   "objeto": "",
+   "link": "https://pncp.gov.br/app/editais/24039073000155/2026/664",
+   "mensagens": [
+    {
+     "hora": "03/11/2026 15:14:52",
+     "autor": "PNCP",
+     "texto": "Item 1 (Nefrologia - Hemodiálise): Em andamento."
+    },
+    {
+     "hora": "03/11/2026 15:14:52",
+     "autor": "PNCP",
+     "texto": "Documento publicado: Edital – 93205905900862026001 (13/07/2026). https://pncp.gov.br/pncp-api/v1/orgaos/24039073000155/compras/2026/664/arquivos/2"
+    },
+    {
+     "hora": "03/11/2026 15:14:52",
+     "autor": "PNCP",
+     "texto": "Acompanhamento pelo PNCP iniciado. Situação atual: Divulgada no PNCP."
+    }
+   ],
+   "fonte": "PNCP"
   }
  }
 }

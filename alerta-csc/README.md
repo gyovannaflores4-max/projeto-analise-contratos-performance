@@ -12,6 +12,7 @@ Processos monitorados hoje: **PE 328/2026, PE 400/2026 e PE 408/2026**.
 - `alerta_resenhas.py`: lê a página, baixa o PDF de cada resenha nova e procura os processos.
 - `alerta_chat.py`: lê o chat público de cada pregão no e-compras.AM (veja abaixo).
 - `estado.json` e `estado_chat.json`: o que já foi verificado (o robô atualiza sozinho).
+- `monitor_pncp.py` e `estado_pncp.json`: acompanham no **PNCP** pregões que não têm chat público (como os do Compras.gov.br, cujo chat exige captcha ou login gov.br). Avisam por e-mail quando muda a situação da compra, sai documento novo (retificação, esclarecimento, decisão, ata, homologação) ou é publicado o resultado de um item (vencedor, CNPJ, valor). As movimentações também entram no chat do pregão no portal. Pregões monitorados: variável `PNCP_COMPRAS` (`CNPJ-ANO-SEQUENCIAL=Nome`, separados por vírgula); sem ela, vale o PE 90086/2026 da FUNEAS-PR (`24039073000155-2026-664`).
 - `chats.json`: cópia das mensagens de cada pregão, lida pelo portal [Pregão em Dia](../portal-licitacoes/) para mostrar nos chats o mesmo conteúdo dos e-mails. Para gerar só esse arquivo, sem e-mail: `python alerta-csc/alerta_chat.py --so-arquivo`.
 - `../.github/workflows/alerta-resenhas-csc.yml`: agenda a verificação no GitHub Actions.
 
