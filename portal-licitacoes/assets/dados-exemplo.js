@@ -140,6 +140,7 @@
     const sessao = U.proximoDiaUtil(U.addDias(U.hojeISO(), 12));
     const [a, m, dia] = sessao.split("-");
     return `PREFEITURA MUNICIPAL DE SANTA AURORA DO NORTE
+ESTADO DO PARÁ
 SECRETARIA MUNICIPAL DE SAÚDE
 EDITAL DE PREGÃO ELETRÔNICO Nº 112/${a}
 PROCESSO ADMINISTRATIVO Nº 2026.04.1187-SMS
@@ -170,11 +171,18 @@ PROCESSO ADMINISTRATIVO Nº 2026.04.1187-SMS
 5.5. A visita técnica é obrigatória e deverá ser agendada com a Secretaria até 2 dias úteis antes da sessão.
 
 6. DA EXECUÇÃO E DO PAGAMENTO
+6.0. Os serviços serão prestados no Hospital Municipal de Santa Aurora do Norte e na UPA 24h do Município.
+6.0.1. Haverá 02 médicos plantonistas presenciais 24 horas por dia, de segunda a domingo, inclusive feriados, em plantões de 12 horas.
 6.1. A contratada deverá iniciar a prestação dos serviços em até 5 (cinco) dias após a assinatura do contrato.
 6.2. O pagamento será efetuado em até 45 (quarenta e cinco) dias após o atesto da nota fiscal.
 6.3. A vigência do contrato será de 12 (doze) meses, prorrogável na forma da Lei nº 14.133/2021.
 6.4. Será exigida garantia contratual de 5% (cinco por cento) do valor do contrato.
 6.5. O descumprimento injustificado sujeitará a contratada à multa de até 30% (trinta por cento) sobre o valor da parcela inadimplida.
+
+QUADRO DE PREÇOS ESTIMADOS
+ITEM DESCRIÇÃO UNIDADE QTDE. VALOR UNIT. VALOR TOTAL
+1 Plantão médico presencial de 12 horas em urgência e emergência – Hospital Municipal Plantão 1460 R$ 2.950,00 R$ 4.307.000,00
+2 Plantão médico presencial de 12 horas em pediatria – UPA 24h Plantão 1095 R$ 2.720,00 R$ 2.978.400,00
 
 7. DA IMPUGNAÇÃO
 7.1. Qualquer pessoa é parte legítima para impugnar este edital, devendo protocolar o pedido até 3 (três) dias úteis antes da data de abertura do certame.`;

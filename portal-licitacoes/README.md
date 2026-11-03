@@ -13,6 +13,7 @@ Portal para a equipe de licitações acompanhar, num lugar só, tudo o que tem p
 | **Propostas** | Contagem regressiva para cadastrar cada proposta, com checklist (planilha de custos, proposta assinada, declarações, documentos, conferência). Fica laranja com menos de 48 h. |
 | **Chats dos pregões** | Conversa de cada pregão com destaque para retomada, suspensão, convocação, recurso, habilitação, diligência, resultado e desclassificação. Avisa quando o pregoeiro **cita a empresa** (nome, apelido ou CNPJ) e mostra a data de retomada informada. Pregões do **e-compras.AM** são lidos sozinhos; dos outros portais, cole as mensagens. |
 | **Análise de edital** | Cole o texto ou envie o PDF. Extrai número, órgão, objeto, sessão, critério, modo de disputa, plataforma, valor, vigência, pagamento; calcula o prazo de impugnação; compara a habilitação exigida com a pasta de documentos (válido no dia da sessão?) e lista pontos de atenção (atestado acima de 50%, visita obrigatória, índices acima de 1, garantia, multa alta, prazo curto de convocação, falta de reajuste…). Tudo roda no navegador. |
+| **Resumo para e-mail** (dentro da Análise de edital) | Monta o resumo no formato da equipe ("Dra. Cláudia, Boa tarde, Este processo trata-se da…"): modalidade e objeto; cidade, capital, distância por rodovia e tempo de viagem até a capital, e população (IBGE, estimativa mais recente); local e horários de execução; tabela de itens (item, descrição/equipe mínima, unidade, quantidade, valor unitário); valor global; data e hora; prazo de impugnação; portal. O texto é editável, o que não foi achado fica em amarelo, e o botão **Copiar resumo** cola no Outlook ou Gmail com a tabela formatada. |
 | **Recursos e contrarrazões** | Linha do tempo de cada recurso com prazos em dias úteis (Lei 14.133/2021, art. 165) ou corridos (Lei 10.520/2002), descontando feriados. Calculadora de prazos de recurso e de impugnação. |
 | **Documentos** | Certidões e documentos de habilitação com validade, aviso em 30/15/7 dias (ajustável), aviso quando algo vence **antes de uma sessão marcada** e botão **Renovar**. |
 | **Portais** | Cadastros nos portais (SICAF, BLL, BNC, Licitações-e, Portal de Compras Públicas…), validade do cadastro e do plano. Não guarda senhas. |
@@ -80,6 +81,7 @@ O backup (Ajustes → Exportar backup) continua disponível como cópia extra.
 - `assets/dados-exemplo.js`: dados fictícios e o edital de exemplo.
 - `api/chat.js`: lê o chat público de um pregão no e-compras.AM (mesma lógica de `alerta-csc/alerta_chat.py`).
 - `api/pncp.js`: importa um edital do PNCP pelo link.
+- `api/municipio.js` e `api/_municipios.json`: dados da cidade do órgão para o resumo (população pelo IBGE/SIDRA, rota até a capital pelo OSRM, coordenadas dos 5.571 municípios).
 - `servidor-local.js`: roda o portal e as APIs no seu computador.
 - `assets/config.js`: endereço e chave pública do Supabase (login e dados na nuvem).
 - `api/_auth.js`: confere o login antes de responder nas APIs.

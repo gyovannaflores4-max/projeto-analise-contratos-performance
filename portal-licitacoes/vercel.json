@@ -8,6 +8,9 @@
     },
     "api/pncp.js": {
       "maxDuration": 30
+    },
+    "api/municipio.js": {
+      "maxDuration": 30
     }
   }
 }

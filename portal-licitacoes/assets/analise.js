@@ -80,12 +80,12 @@
     const risco = (nivel, titulo, detalhe, pos) => riscos.push({ nivel, titulo, detalhe: detalhe || "", trecho: pos ? recorte(o, pos.i, pos.m[0].length) : "" });
 
     /* ---- Identificação ---- */
-    let p = primeiro(t, /\b(pregao eletronico|pregao|concorrencia eletronica|concorrencia|dispensa eletronica|credenciamento|chamamento publico)\s*(?:srp\s*)?(?:n[º°o.]*|numero)?\s*[:\-]?\s*(\d{1,5}\s*\/\s*\d{2,4})/);
+    let p = primeiro(t, /\b(pregao eletronico|pregao presencial|pregao|concorrencia eletronica|concorrencia|dispensa eletronica|credenciamento|chamamento publico)\s*(?:srp\s*)?(?:n[º°o.]*|numero)?\s*[:\-]?\s*(\d{1,5}\s*\/\s*\d{2,4})/);
     if (p) {
       const mod = p.m[1];
-      const sigla = /pregao/.test(mod) ? "PE" : /concorrencia/.test(mod) ? "CE" : /dispensa/.test(mod) ? "DE" : "CH";
+      const sigla = /pregao/.test(mod) ? (/presencial/.test(mod) ? "PP" : "PE") : /concorrencia/.test(mod) ? "CE" : /dispensa/.test(mod) ? "DE" : "CH";
       campos.numero = sigla + " " + p.m[2].replace(/\s/g, "");
-      campos.modalidade = /pregao/.test(mod) ? "Pregão eletrônico" : /concorrencia/.test(mod) ? "Concorrência eletrônica" : /dispensa/.test(mod) ? "Dispensa eletrônica" : "Credenciamento";
+      campos.modalidade = /pregao/.test(mod) ? (/presencial/.test(mod) || (!/eletronico/.test(mod) && /pregao presencial/.test(t)) ? "Pregão presencial" : "Pregão eletrônico") : /concorrencia/.test(mod) ? "Concorrência eletrônica" : /dispensa/.test(mod) ? "Dispensa eletrônica" : "Credenciamento";
     }
     p = primeiro(t, /processo(?: administrativo| licitatorio| sei)?\s*(?:n[º°o.]*|numero)?\s*[:\-]?\s*([\d][\d.\/-]{5,30}\d)/);
     if (p) campos.processo = o.substr(p.i + p.m[0].length - p.m[1].length, p.m[1].length);
@@ -101,11 +101,12 @@
       let trecho = o.slice(ini, ini + 600);
       const fim = trecho.search(/\.\s*\n|\n\s*\n|\.\s+\d+(?:\.\d+)+\.?\s/);
       trecho = (fim > 30 ? trecho.slice(0, fim + 1) : trecho).replace(/\s+/g, " ").trim();
-      campos.objeto = U.corta(trecho.charAt(0).toUpperCase() + trecho.slice(1), 360);
+      campos.objetoCompleto = U.corta(trecho.charAt(0).toUpperCase() + trecho.slice(1), 900);
+      campos.objeto = U.corta(campos.objetoCompleto, 360);
     }
 
     /* ---- Datas ---- */
-    const chavesSessao = [/data (?:e hora )?(?:da |de )?(?:abertura|realizacao|inicio)(?: da sessao| do certame| das propostas)?/, /sessao publica/, /abertura da sessao|abertura das propostas/, /inicio da (?:sessao|disputa)/, /data da sessao/];
+    const chavesSessao = [/data (?:e hora )?(?:da |de |do )?(?:licitacao|abertura|realizacao|inicio|disputa|certame)(?: da sessao| do certame| das propostas)?/, /sessao publica/, /abertura da sessao|abertura das propostas/, /inicio da (?:sessao|disputa)/, /data da sessao/];
     for (const re of chavesSessao) {
       for (const x of todos(t, re)) { const d = dataPerto(t, x.i); if (d) { campos.sessao = d; achados.sessao = x; break; } }
       if (campos.sessao) break;
@@ -117,6 +118,42 @@
       campos.impugnacaoAte = U.subtrairDiasUteis(campos.sessao, 3);
       campos.esclarecimentoAte = campos.impugnacaoAte;
     }
+    // Prazo de impugnação escrito no próprio edital (vale mais que o calculado)
+    for (const x of todos(t, /(?:prazo|data|ate)[^.\n]{0,25}(?:impugnac|esclarecimento)[^\n]{0,15}/)) {
+      const d = dataPerto(t, x.i, 120); if (d) { campos.impugnacaoInformada = U.soData(d); break; }
+    }
+
+    /* ---- Cidade, local e horários (para o resumo) ---- */
+    const UF_NOMES = { acre: "AC", alagoas: "AL", amapa: "AP", amazonas: "AM", bahia: "BA", ceara: "CE", "distrito federal": "DF", "espirito santo": "ES", goias: "GO", maranhao: "MA", "mato grosso do sul": "MS", "mato grosso": "MT", "minas gerais": "MG", paraiba: "PB", parana: "PR", para: "PA", pernambuco: "PE", piaui: "PI", "rio de janeiro": "RJ", "rio grande do norte": "RN", "rio grande do sul": "RS", rondonia: "RO", roraima: "RR", "santa catarina": "SC", "sao paulo": "SP", sergipe: "SE", tocantins: "TO" };
+    const SIGLAS = "AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO";
+    let mc = /munic[íi]pio de ([A-ZÀ-Ú][A-Za-zÀ-ú'’ ]{2,40}?)\s*(?:\/|–|-|\()\s*(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)\b/.exec(o);
+    if (mc) { campos.municipio = mc[1].trim(); campos.uf = mc[2]; }
+    else {
+      const mo = /(?:prefeitura municipal|c[âa]mara municipal|fundo municipal de sa[úu]de|secretaria municipal de sa[úu]de|munic[íi]pio) d[eoa]s? ([A-ZÀ-Úa-zà-ú'’ ]{3,40}?)(?:\s*(?:\/|–|-|,|\(|\n|$)\s*(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)?)/i.exec(campos.orgao || o.slice(0, 3000));
+      if (mo) { campos.municipio = mo[1].trim().replace(/\s+(estado|secretaria|fundo)\b.*$/i, ""); if (mo[2]) campos.uf = mo[2].toUpperCase(); }
+    }
+    if (campos.municipio && /^[A-ZÀ-Ú' ]+$/.test(campos.municipio)) campos.municipio = campos.municipio.toLowerCase().replace(/(^|\s)(\S)/g, (x, e, l) => e + l.toUpperCase()).replace(/\s(De|Do|Da|Dos|Das|E)\s/g, x => x.toLowerCase());
+    if (!campos.uf) {
+      const me = /estado d[oea] ([a-z ]{4,22})/.exec(t);
+      if (me) { const nome = Object.keys(UF_NOMES).find(k => me[1].startsWith(k)); if (nome) campos.uf = UF_NOMES[nome]; }
+      if (!campos.uf) { const ms = new RegExp("(?:/|–|- )\\s*(" + SIGLAS + ")\\b").exec(o.slice(0, 4000)); if (ms) campos.uf = ms[1]; }
+    }
+    const ml = /\b(?:n[oa]s?)\s+((?:Unidade Hospitalar|Hospital|UPA|Unidade de Pronto Atendimento|Pronto[- ]Socorro|Pronto Atendimento|Unidade B[áa]sica de Sa[úu]de|UBS|Centro de Sa[úu]de|Policl[íi]nica|Maternidade|Santa Casa|Ambulat[óo]rio|Centro Cir[úu]rgico|Unidade de Terapia Intensiva|UTI)\b[^.;:\n]{0,110})/i.exec(o);
+    if (ml) campos.local = ml[1].charAt(0).toUpperCase() + ml[1].slice(1).replace(/\s*,?\s*(?:conforme|de acordo|mediante|contemplando|para|com|sendo)\b.*$/i, "").replace(/[,\s]+$/, "").trim();
+    const frases = o.replace(/\r/g, "").split(/(?<=[.;])\s+|\n+/).map(x => x.replace(/^\s*(?:\d+(?:\.\d+)*\.?|[a-z]\))\s*/i, "").replace(/\s+/g, " ").trim());
+    campos.horarios = [...new Set(frases.filter(f => f.length >= 25 && f.length <= 320 && /segunda a sexta|s[áa]bados?,|domingos|finais de semana|sobreaviso|plant[ãa]o de \d|plant[õo]es de \d|horas di[áa]rias|h\/dia|per[íi]odo da (?:manh|tarde|noite)|\b24 ?(?:h|horas)\b|\b12 ?(?:h|horas)\b/i.test(f) && !/valor|R\$|multa|pagamento|prazo de|objeto|licita[çc][ãa]o [ée]|ser[ãa]o (?:prestados|executados)/i.test(f)))].slice(0, 2);
+
+    /* ---- Itens (tabela de preços) ---- */
+    const UNID = "m[eê]s(?:es)?|unid(?:ade)?s?|und|un|hora(?:s)?|plant(?:ão|ões|ao|oes)|servi[cç]os?|exames?|di[áa]rias?|sv|procedimentos?|consultas?|sess(?:ão|ões)";
+    const reItem = new RegExp("(?:^|\\n)[ \\t]*(\\d{1,3})[ \\t]*[.)–-]?[ \\t]+(?=[A-Za-zÀ-ú])((?:(?!\\n[ \\t]*\\d{1,3}(?:[ \\t.)–-]))[\\s\\S]){8,600}?)\\s+(" + UNID + ")\\s+(\\d{1,7}(?:[.,]\\d+)?)\\s+(?:R\\$\\s*)?(\\d{1,3}(?:\\.\\d{3})*,\\d{2})(?:\\s+(?:R\\$\\s*)?(\\d{1,3}(?:\\.\\d{3})*,\\d{2}))?", "gi");
+    campos.itens = [];
+    let mi;
+    while ((mi = reItem.exec(o)) && campos.itens.length < 30) {
+      const desc = mi[2].replace(/\s+/g, " ").trim();
+      if (/^\d+(?:\.\d+)+/.test(desc) || /^(?:item|descri|do pre|dos pre)/i.test(desc) || desc.length > 520) continue;
+      campos.itens.push({ item: mi[1], descricao: desc, unidade: mi[3].charAt(0).toUpperCase() + mi[3].slice(1).toLowerCase(), qtd: numeroBR(mi[4]), valorUnit: numeroBR(mi[5]), valorTotal: mi[6] ? numeroBR(mi[6]) : null });
+    }
+    if (!campos.valorEstimado && campos.itens.length) campos.valorEstimado = Math.round(campos.itens.reduce((s, x) => s + (x.valorTotal || x.qtd * x.valorUnit), 0) * 100) / 100;
 
     /* ---- Disputa ---- */
     if ((p = primeiro(t, /menor preco (?:global|por item|por lote|por grupo|unitario)?|maior desconto|tecnica e preco|melhor tecnica|maior retorno economico/))) {

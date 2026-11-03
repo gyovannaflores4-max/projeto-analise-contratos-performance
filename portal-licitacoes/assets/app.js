@@ -784,6 +784,95 @@
       '<div class="linha-acoes" style="margin-top:12px"><button class="btn primario" data-acao="analisar">' + ic("analise") + 'Analisar edital</button><button class="btn ghost" data-acao="limparAnalise">Limpar</button><span class="muted" id="status-analise" style="font-size:13px"></span></div></section>' +
       '<div class="pilha" id="resultado-analise">' + (r ? resultadoAnalise(r) : '<section class="card">' + vazio("analise", "O resultado aparece aqui: dados do certame, prazos de impugnação, checklist de habilitação e pontos de atenção.") + "</section>") + "</div></div>";
   }
+  /* ---------- Resumo para e-mail (formato da equipe) ---------- */
+  const PORTAL_RESUMO = { "Compras.gov.br": "COMPRASGOV", "BLL": "BLL", "BNC": "BNC", "Licitações-e": "LICITAÇÕES-E", "Portal de Compras Públicas": "PORTAL DE COMPRAS PÚBLICAS", "Licitanet": "LICITANET", "Licitar Digital": "LICITAR DIGITAL", "e-compras AM": "E-COMPRAS AM" };
+  const falta = t => '<mark style="background:#FFE7A3;color:#5A3D00;padding:0 3px;border-radius:3px">[' + h(t) + "]</mark>";
+  const minusculaInicial = t => t ? t.charAt(0).toLowerCase() + t.slice(1) : t;
+  function tempoViagem(min) { if (!min) return ""; const r = Math.round(min / 10) * 10, hh = Math.floor(r / 60), mm = r % 60; return hh ? hh + "h" + (mm ? String(mm).padStart(2, "0") : "") : mm + " min"; }
+  function resumoEmailHTML(r) {
+    const c = r.campos, m = ui.cidade || {};
+    const dest = S.ajustes.resumoDestinatario || "Dra. Cláudia";
+    const hora = new Date().getHours();
+    const saudacao = hora < 12 ? "Bom dia" : hora < 18 ? "Boa tarde" : "Boa noite";
+    const p = (html, extra) => '<p style="margin:0 0 10px' + (extra || "") + '">' + html + "</p>";
+    const lista = itens => '<ol style="margin:0 0 12px;padding-left:22px">' + itens.map(x => '<li style="margin:2px 0">' + x + "</li>").join("") + "</ol>";
+    const mod = (c.modalidade || "").toUpperCase();
+    const cidade = m.dados ? m.dados.nome : c.municipio;
+    const uf = m.dados ? m.dados.uf : c.uf;
+    const orgao = c.orgao ? h(c.orgao.toUpperCase().replace(/\s*[–-]\s*[A-Z]{2}$/, "")) + (uf ? " – " + uf : "") : falta("órgão");
+    let infoCidade;
+    if (m.dados) {
+      const d = m.dados;
+      infoCidade = [
+        "Cidade: " + h(d.nome) + " – " + d.uf + (d.ehCapital ? " (capital do estado)." : " (capital – " + h(d.capital) + ")."),
+        d.ehCapital ? "Localização: é a própria capital do estado." : d.distanciaKm ? "Localização: aproximadamente " + tempoViagem(d.tempoMin) + " da capital, cerca de " + d.distanciaKm.toLocaleString("pt-BR") + " km por rodovia." : "Localização: " + falta("distância até a capital"),
+        d.populacao ? "População: aproximadamente " + d.populacao.toLocaleString("pt-BR") + " habitantes, conforme estimativa do IBGE para " + d.anoPopulacao + "." : "População: " + falta("população (IBGE)")
+      ];
+    } else {
+      infoCidade = ["Cidade: " + (cidade ? h(cidade) + (uf ? " – " + uf : "") : falta("cidade")) + " (capital – " + falta("capital") + ").",
+        "Localização: aproximadamente " + falta("tempo") + " da capital, cerca de " + falta("km") + " por rodovia.",
+        "População: aproximadamente " + falta("habitantes") + ", conforme estimativa do IBGE."];
+    }
+    const horarios = (c.horarios || []).map((x, i) => h((i ? minusculaInicial(x) : x).replace(/\.$/, ""))).join("; ");
+    const td = 'style="border:1px solid #9AA9AB;padding:6px 8px;vertical-align:top"';
+    const th = 'style="border:1px solid #9AA9AB;padding:6px 8px;background:#E3EEEC;text-align:left;font-weight:700"';
+    const itens = c.itens && c.itens.length ? c.itens : [{ item: "1", descricao: null, unidade: null, qtd: null, valorUnit: null }];
+    const tabela = '<table style="border-collapse:collapse;margin:0 0 12px;font-size:inherit"><thead><tr><th ' + th + ">ITEM</th><th " + th + ">DESCRIÇÃO / EQUIPE MÍNIMA</th><th " + th + ">UNIDADE</th><th " + th + ">QTDE.</th><th " + th + ">VALOR UNIT</th></tr></thead><tbody>" +
+      itens.map(i => "<tr><td " + td + ">" + h(i.item) + "</td><td " + td + ">" + (i.descricao ? h(i.descricao) : falta("descrição")) + "</td><td " + td + ">" + (i.unidade ? h(i.unidade) : falta("unid.")) + "</td><td " + td + ">" + (i.qtd !== null && i.qtd !== undefined ? i.qtd.toLocaleString("pt-BR") : falta("qtde.")) + '</td><td ' + td + ' nowrap>' + (i.valorUnit ? U.moeda(i.valorUnit) : falta("valor")) + "</td></tr>").join("") + "</tbody></table>";
+    const imp = c.impugnacaoInformada || c.impugnacaoAte;
+    const sessao = c.sessao ? U.fmtData(c.sessao) + (U.temHora(c.sessao) ? " " + c.sessao.slice(11, 16) : "") : "";
+    const portal = c.plataforma ? PORTAL_RESUMO[c.plataforma] || c.plataforma.toUpperCase() : /presencial/i.test(c.modalidade || "") ? "Presencial" : "";
+    const ass = S.ajustes.resumoAssinatura || "";
+    return p(h(dest) + ",") + p(saudacao + ",") +
+      p("Este processo trata-se da " + (mod ? "<b>" + h(mod) + "</b> " : falta("modalidade") + " ") + (c.objetoCompleto ? h(minusculaInicial(c.objetoCompleto)) : falta("objeto"))) +
+      p("<b>Informações sobre a " + orgao + ":</b>", ";margin-bottom:4px") + lista(infoCidade) +
+      p("<b>Execução do Serviço:</b>", ";margin-bottom:4px") + lista(["Local: " + (c.local ? h(c.local.replace(/\.$/, "")) + "." : falta("local de execução")), "Horários: " + (horarios ? horarios + "." : falta("dias e horários"))]) +
+      tabela +
+      p("<b>Valor Global Estimado:</b> " + (c.valorEstimado ? U.moeda(c.valorEstimado) + "." : c.orcamentoSigiloso ? "sigiloso." : falta("valor"))) +
+      p("<b>Data e Hora da Licitação:</b> " + (sessao || falta("data e hora"))) +
+      p("<b>Prazo para Impugnação/Esclarecimentos:</b> " + (imp ? U.fmtData(imp) : falta("prazo"))) +
+      p("<b>Portal:</b> " + (portal ? h(portal) : falta("portal"))) +
+      p("Atenciosamente," + (ass ? "<br>" + h(ass).replace(/\n/g, "<br>") : ""), ";margin-top:16px");
+  }
+  function resumoCartao(r) {
+    const c = r.campos, m = ui.cidade || {};
+    const status = m.carregando ? '<span class="muted">Buscando a cidade no IBGE e a rota até a capital…</span>'
+      : m.dados ? '<span class="pill ok">Cidade encontrada: ' + h(m.dados.nome + "/" + m.dados.uf) + "</span>"
+      : m.erro ? '<span class="pill warn sem-ponto">' + h(m.erro) + "</span>" : "";
+    return '<section class="card" id="cartao-resumo"><div class="card-h"><h2>Resumo para e-mail</h2><div class="linha-acoes"><button class="btn peq ghost" data-acao="refazerResumo">' + ic("atualizar") + 'Refazer</button><button class="btn peq primario" data-acao="copiarResumoEmail">' + ic("copiar") + "Copiar resumo</button></div></div>" +
+      '<div class="resumo-opcoes"><div class="campo"><label for="resumo-dest">Para</label><input id="resumo-dest" data-mudar="resumoOpcao" data-chave="resumoDestinatario" value="' + h(S.ajustes.resumoDestinatario || "Dra. Cláudia") + '"></div>' +
+      '<div class="campo"><label for="resumo-cidade">Cidade do órgão</label><div class="importar-linha"><input id="resumo-cidade" value="' + h((m.dados && m.dados.nome) || c.municipio || "") + '" placeholder="Florestópolis"><input id="resumo-uf" value="' + h((m.dados && m.dados.uf) || c.uf || "") + '" placeholder="UF" maxlength="2" aria-label="UF"><button class="btn peq ghost" data-acao="buscarCidade">Buscar</button></div></div>' +
+      '<div class="campo"><label for="resumo-ass">Assinatura (opcional)</label><input id="resumo-ass" data-mudar="resumoOpcao" data-chave="resumoAssinatura" value="' + h(S.ajustes.resumoAssinatura || "") + '" placeholder="Seu nome"></div></div>' +
+      '<div class="linha-acoes" style="margin:4px 0 10px">' + status + "</div>" +
+      '<div class="resumo-email" id="resumo-email" contenteditable="true" spellcheck="true" aria-label="Resumo editável">' + resumoEmailHTML(r) + "</div>" +
+      '<p class="nota" style="margin-top:8px">Clique no texto para editar antes de copiar. Os trechos em amarelo não foram encontrados no edital: complete à mão. Ao colar no Outlook ou Gmail, a tabela vai formatada. População: IBGE (estimativa mais recente). Distância: rota de carro até a capital (OpenStreetMap).</p></section>';
+  }
+  async function buscarCidade(nome, uf) {
+    if (!nome) { ui.cidade = { erro: "Cidade não identificada no edital: digite e clique em Buscar." }; atualizarResumo(); return; }
+    ui.cidade = { carregando: true };
+    atualizarResumo();
+    try {
+      const d = await api("/api/municipio?nome=" + encodeURIComponent(nome) + "&uf=" + encodeURIComponent(uf || ""), 25000);
+      ui.cidade = { dados: d };
+    } catch (e) { ui.cidade = { erro: /Vercel|API|conexão|Entre no portal/.test(e.message) ? "Dados da cidade disponíveis no portal publicado (com login)." : e.message }; }
+    atualizarResumo();
+  }
+  function atualizarResumo() { const el = $("#cartao-resumo"); if (el && ui.analise) el.outerHTML = resumoCartao(ui.analise); }
+  async function copiarResumoEmail() {
+    const el = $("#resumo-email");
+    if (!el) return;
+    const html = '<div style="font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#1F2A2C">' + el.innerHTML + "</div>";
+    const texto = el.innerText.replace(/\n{3,}/g, "\n\n");
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ "text/html": new Blob([html], { type: "text/html" }), "text/plain": new Blob([texto], { type: "text/plain" }) })]);
+      toast("Resumo copiado", "Cole no e-mail: a tabela vai formatada."); return;
+    } catch (e) { /* tenta do jeito antigo */ }
+    const sel = getSelection(), faixa = document.createRange();
+    faixa.selectNodeContents(el); sel.removeAllRanges(); sel.addRange(faixa);
+    let ok = false; try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+    if (ok) { sel.removeAllRanges(); toast("Resumo copiado", "Cole no e-mail."); } else toast("Selecionei o resumo", "Use Ctrl+C para copiar.");
+  }
+
   function resultadoAnalise(r) {
     const c = r.campos, t = r.termometro;
     const niveis = t.nivel === "ok" ? 1 : t.nivel === "medio" ? 2 : 3;
@@ -799,9 +888,9 @@
       return Object.assign({ st: "crit", rot: "Vence antes da sessão (" + U.fmtData(docs[0].validade) + ")" }, x);
     });
     const okCount = pasta.filter(x => x.st === "ok").length;
-    return '<section class="termometro ' + t.nivel + '"><div class="escala" aria-hidden="true"><i style="height:18px" class="' + (niveis >= 1 ? "on" : "") + '"></i><i style="height:28px" class="' + (niveis >= 2 ? "on" : "") + '"></i><i style="height:38px" class="' + (niveis >= 3 ? "on" : "") + '"></i></div>' +
+    return resumoCartao(r) + '<section class="termometro ' + t.nivel + '"><div class="escala" aria-hidden="true"><i style="height:18px" class="' + (niveis >= 1 ? "on" : "") + '"></i><i style="height:28px" class="' + (niveis >= 2 ? "on" : "") + '"></i><i style="height:38px" class="' + (niveis >= 3 ? "on" : "") + '"></i></div>' +
       "<div><span class=\"eyebrow\" style=\"color:inherit;opacity:.7\">Termômetro do edital</span><h3>" + t.rotulo + "</h3><p>" + t.texto + "</p></div></section>" +
-      '<section class="card"><div class="card-h"><h2>Dados do certame</h2><div class="linha-acoes"><button class="btn peq ghost" data-acao="copiarAnalise">' + ic("copiar") + 'Copiar resumo</button><button class="btn peq primario" data-acao="criarDaAnalise">' + ic("mais") + "Criar edital</button></div></div>" +
+      '<section class="card"><div class="card-h"><h2>Dados do certame</h2><div class="linha-acoes"><button class="btn peq ghost" data-acao="copiarAnalise">' + ic("copiar") + 'Copiar análise</button><button class="btn peq primario" data-acao="criarDaAnalise">' + ic("mais") + "Criar edital</button></div></div>" +
       '<dl class="dados">' + dado("Número", h(c.numero)) + dado("Modalidade", h(c.modalidade)) + dado("Órgão", h(c.orgao), true) + dado("Objeto", h(c.objeto), true) +
       dado("Sessão pública", c.sessao ? U.fmtDataHora(c.sessao) + " " + chipSessao(c.sessao) : "") + dado("Impugnar / esclarecer até", c.impugnacaoAte ? U.fmtData(c.impugnacaoAte) + " " + chip(c.impugnacaoAte) : "") +
       dado("Critério de julgamento", h(c.criterio)) + dado("Modo de disputa", h(c.modoDisputa)) + dado("Plataforma", h(c.plataforma)) + dado("Valor estimado", c.valorEstimado ? U.moeda(c.valorEstimado) : c.orcamentoSigiloso ? "Sigiloso" : "") +
@@ -820,7 +909,9 @@
     ui.analiseTexto = ta ? ta.value : ui.analiseTexto;
     if (ui.analiseTexto.trim().length < 200) { toast("Texto curto demais", "Cole o edital completo (ou ao menos as seções de objeto, sessão e habilitação).", "crit"); return; }
     ui.analise = A.analisarEdital(ui.analiseTexto, { porte: S.empresa.porte });
+    ui.cidade = null;
     $("#resultado-analise").innerHTML = resultadoAnalise(ui.analise);
+    buscarCidade(ui.analise.campos.municipio, ui.analise.campos.uf);
     toast("Edital analisado", ui.analise.preenchidos + " de 7 dados principais encontrados · " + U.plural(ui.analise.riscos.length, "ponto de atenção", "pontos de atenção"));
     if (window.innerWidth < 1180) $("#resultado-analise").scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -1429,6 +1520,9 @@
     analisar: analisarAgora,
     exemploEdital: () => { ui.analiseTexto = D.editalExemplo(); $("#texto-edital").value = ui.analiseTexto; analisarAgora(); },
     limparAnalise: () => { ui.analiseTexto = ""; ui.analise = null; render(); },
+    copiarResumoEmail,
+    refazerResumo: () => { atualizarResumo(); toast("Resumo refeito", "As edições manuais foram descartadas."); },
+    buscarCidade: () => buscarCidade($("#resumo-cidade").value.trim(), $("#resumo-uf").value.trim()),
     copiarAnalise: async () => { const t = textoAnalise(ui.analise); if (await U.copiar(t)) toast("Resumo copiado", "Cole no e-mail, Teams ou WhatsApp."); else mostrarTexto("Resumo da análise", t); },
     criarDaAnalise: () => {
       const c = ui.analise.campos;
@@ -1478,6 +1572,7 @@
     checkItem: el => { const e = edital(el.dataset.id); (e.checklist = e.checklist || {})[CHECK_PROPOSTA[+el.dataset.item]] = el.checked; atualizar(); },
     notasEdital: el => { const e = edital(el.dataset.id); e.notas = el.value; salvar(); toast("Anotação salva"); },
     statusRec: el => { const r = S.recursos.find(x => x.id === el.dataset.id); r.status = el.value; registrar(r.pregao + ": recurso agora está \"" + nomeLista(STATUS_REC, el.value) + "\".", "recursos"); atualizar(); },
+    resumoOpcao: el => { S.ajustes[el.dataset.chave] = el.value.trim(); salvar(); atualizarResumo(); },
     calc: () => { ui.calc = { tipo: $("#calc-tipo").value, data: $("#calc-data").value, regime: $("#calc-regime").value }; const lbl = $('label[for="calc-data"]'); if (lbl) lbl.textContent = ui.calc.tipo === "recurso" ? "Data da intimação / ata" : "Data da sessão"; $("#calc-res").innerHTML = calcHTML(); },
     ajuste: el => {
       const v = el.type === "checkbox" ? el.checked : el.value;
