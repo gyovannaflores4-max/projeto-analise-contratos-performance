@@ -632,7 +632,7 @@
       '<div class="cab-acoes"><a class="btn ghost" href="#analise">' + ic("analise") + 'Analisar um edital</a><button class="btn primario" data-acao="novoEdital">' + ic("mais") + "Novo edital</button></div></div>" +
       '<div class="ferramentas"><label class="campo-busca"><span class="sr">Buscar editais</span>' + ic("busca") + '<input type="search" id="f-busca-ed" data-digitar="buscaEd" value="' + h(ui.fEd.busca) + '" placeholder="Número, órgão, objeto, UF…"></label>' +
       '<select id="f-etapa" data-mudar="filtroEtapa" aria-label="Filtrar por etapa"><option value="">Todas as etapas</option>' + ETAPAS.map(e => '<option value="' + e.id + '"' + (ui.fEd.etapa === e.id ? " selected" : "") + ">" + h(e.nome) + "</option>").join("") + "</select>" +
-      '<select id="f-portal" data-mudar="filtroPortal" aria-label="Filtrar por portal"><option value="">Todos os portais</option>' + PORTAIS.map(p => '<option' + (ui.fEd.portal === p ? " selected" : "") + ">" + h(p) + "</option>").join("") + "</select>" +
+      '<select id="filtro-portal-editais" data-mudar="filtroPortal" aria-label="Filtrar por portal"><option value="">Todos os portais</option>' + PORTAIS.map(p => '<option' + (ui.fEd.portal === p ? " selected" : "") + ">" + h(p) + "</option>").join("") + "</select>" +
       '<div class="segmento" role="group" aria-label="Visualização"><button data-acao="vista" data-v="quadro" aria-pressed="' + (ui.editaisVista === "quadro") + '">Quadro</button><button data-acao="vista" data-v="lista" aria-pressed="' + (ui.editaisVista === "lista") + '">Lista</button></div></div>' +
       '<div id="ed-resultado">' + resultadoEditais() + "</div>";
   }
@@ -726,7 +726,7 @@
     { nome: "link", rotulo: "Link do edital ou da sala de disputa", tipo: "url", span: 2, ph: "https://" },
     { nome: "uasg", rotulo: "UASG / código da unidade" }
   ];
-  const TOPO_PNCP = '<div class="importar"><label for="pncp-link">Importar do PNCP</label><div class="linha"><input id="pncp-link" placeholder="Cole o link do edital no PNCP (pncp.gov.br/app/editais/…)"><button type="button" class="btn primario peq" data-acao="importarPncp">Buscar dados</button></div><small>Preenche órgão, objeto, datas, valor e portal sozinho. Funciona com o portal publicado na Vercel.</small></div>';
+  const TOPO_PNCP = '<div class="importar"><label for="pncp-link">Importar de um link</label><div class="linha"><input id="pncp-link" placeholder="Cole o link do pregão ou do edital"><button type="button" class="btn primario peq" data-acao="importarPncp">Buscar dados</button></div><small>Aceita link do PNCP, do Compras.gov.br (acompanhamento da compra), do e-compras.AM, o link direto do PDF do edital ou a página do edital em outros portais. Confira os dados antes de salvar.</small></div>';
   function formEdital(id, preset) {
     const e = id ? edital(id) : null;
     abrirForm({
@@ -738,6 +738,15 @@
           const novo = Object.assign({ id: U.uid(), checklist: {}, notas: "", criadoEm: U.hojeISO(), historico: [{ data: U.hojeISO(), texto: "Edital cadastrado no portal." }] }, v);
           S.editais.push(novo);
           registrar("Novo edital cadastrado: " + novo.numero + ".", "editais");
+          const ident = ui.importChat && (ui.importChat.link.match(/ident=(\d+)/) || [])[1];
+          const existente = ident && S.chats.find(c => c.ident === ident || (c.link || "").includes("ident=" + ident) || (c.processo || "").includes("ident=" + ident));
+          if (existente && !existente.editalId) existente.editalId = novo.id; // liga o chat que já existia ao novo edital
+          if (ident && !existente) {
+            S.chats.push({ id: U.uid(), editalId: novo.id, titulo: novo.numero, orgao: novo.orgao, portal: "e-compras AM", processo: ui.importChat.link, link: ui.importChat.link, auto: true, status: ui.importChat.situacao, mensagens: [] });
+            registrar("Chat do " + novo.numero + " monitorado automaticamente (e-compras.AM).", "chats");
+            setTimeout(() => verificarChats(S.chats[S.chats.length - 1].id), 300);
+          }
+          ui.importChat = null;
         }
         if (v.propostaStatus === "cadastrada" && ["triagem", "analise", "proposta"].includes(v.etapa)) (e || S.editais[S.editais.length - 1]).etapa = "cadastrada";
         atualizar();
@@ -1730,16 +1739,40 @@
     monitorarChat: d => { const e = edital(d.id); formChat(null, { titulo: e.numero, editalId: e.id, orgao: e.orgao, portal: e.portal, link: e.link, auto: e.portal === "e-compras AM", processo: e.portal === "e-compras AM" ? (e.numero.match(/(\d+)\/\d{2}(\d{2})/) || []).slice(1).join("/") : "" }); },
     importarPncp: async (d, btn) => {
       const v = $("#pncp-link").value.trim();
-      if (!v) { toast("Cole o link do edital no PNCP", "", "crit"); return; }
+      if (!v) { toast("Cole o link do pregão ou do edital", "", "crit"); return; }
       btn.disabled = true; btn.textContent = "Buscando…";
-      try {
-        const j = await api("/api/pncp?url=" + encodeURIComponent(v));
-        const f = $("#form-modal");
-        const por = (nome, valor) => { if (valor === undefined || valor === null || valor === "" || !f.elements[nome]) return; const el = f.elements[nome]; if (el.tagName === "SELECT" && ![...el.options].some(o => o.value === valor)) return; el.value = valor; };
+      const f = $("#form-modal");
+      const por = (nome, valor) => { if (valor === undefined || valor === null || valor === "" || !f.elements[nome]) return; const el = f.elements[nome]; if (el.tagName === "SELECT" && ![...el.options].some(o => o.value === valor)) return; el.value = valor; };
+      const preencher = (j, origem) => {
         ["numero", "modalidade", "orgao", "municipio", "uf", "objeto", "sessao", "limiteProposta", "portal", "link", "processo", "uasg"].forEach(k => por(k, j[k]));
         if (j.valorEstimado) por("valorEstimado", Number(j.valorEstimado).toLocaleString("pt-BR", { minimumFractionDigits: 2 }));
-        toast("Dados importados do PNCP", (j.arquivos || []).length ? U.plural(j.arquivos.length, "documento publicado", "documentos publicados") : "");
-      } catch (e) { toast("Não consegui buscar no PNCP", e.message, "crit"); }
+        const n = ["numero", "orgao", "objeto", "sessao", "valorEstimado"].filter(k => j[k]).length;
+        toast("Dados importados " + origem, n + " de 5 dados principais preenchidos" + (j.aviso ? " · " + j.aviso : "") + ". Confira antes de salvar.", n < 3 ? "pop" : "");
+      };
+      // Texto lido de uma página ou PDF: usa a mesma leitura da Análise de edital
+      const deTexto = (texto, extra) => {
+        const r = A.analisarEdital(texto, { porte: S.empresa.porte }), c = r.campos;
+        ui.analise = r; ui.analiseTexto = texto; // fica disponível na Análise de edital
+        return Object.assign({ numero: c.numero, modalidade: c.modalidade, orgao: c.orgao, municipio: c.municipio, uf: c.uf, objeto: c.objetoCompleto || c.objeto,
+          sessao: c.sessao && c.sessao.length > 10 ? c.sessao : c.sessao ? c.sessao + "T09:00" : "", limiteProposta: c.limiteProposta && c.limiteProposta.length > 10 ? c.limiteProposta : "",
+          valorEstimado: c.valorEstimado, portal: (extra && extra.portal) || c.plataforma, processo: c.processo, link: extra && extra.link }, {});
+      };
+      try {
+        const j = await api("/api/importar?url=" + encodeURIComponent(v), 45000);
+        ui.importChat = null;
+        if (j.tipo === "dados") {
+          preencher(j, j.portal === "e-compras AM" ? "do e-compras.AM" : /pncp\.gov/i.test(v) ? "do PNCP" : "(" + (j.portal || "link") + ")");
+          if (j.chatAutomatico) ui.importChat = { link: j.link, situacao: j.situacao || "" };
+        } else if (j.tipo === "texto") {
+          preencher(deTexto(j.texto, j), "da página");
+        } else if (j.tipo === "pdf") {
+          btn.textContent = "Lendo o PDF…";
+          const bytes = Uint8Array.from(atob(j.base64), ch => ch.charCodeAt(0));
+          const arq = new File([bytes], j.nome || "edital.pdf", { type: "application/pdf" });
+          const texto = await textoDoArquivo(arq, { textContent: "" });
+          preencher(deTexto(texto, j), "do PDF " + (j.nome || ""));
+        }
+      } catch (e) { toast("Não consegui importar desse link", e.message, "crit"); }
       btn.disabled = false; btn.textContent = "Buscar dados";
     },
 

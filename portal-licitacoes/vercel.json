@@ -11,6 +11,9 @@
     },
     "api/municipio.js": {
       "maxDuration": 30
+    },
+    "api/importar.js": {
+      "maxDuration": 30
     }
   }
 }

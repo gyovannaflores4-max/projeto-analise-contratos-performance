@@ -9,7 +9,7 @@ Portal para a equipe de licitações acompanhar, num lugar só, tudo o que tem p
 | Tela | Para que serve |
 |---|---|
 | **Painel** | Saudação com o resumo do dia, indicadores, prioridades, agenda dos próximos 7 dias, funil de editais, taxa de sucesso e últimas movimentações. Botão **Copiar resumo do dia** gera um texto pronto para o grupo da equipe. |
-| **Editais** | Quadro (kanban) da triagem até o recurso: arraste os cartões entre as colunas. Também em lista, com busca e filtros. Cada edital tem gaveta de detalhes com datas, prazo de impugnação, checklist da proposta, anotações e histórico. Importa os dados de um edital pelo link do **PNCP**. |
+| **Editais** | Quadro (kanban) da triagem até o recurso: arraste os cartões entre as colunas. Também em lista, com busca e filtros. Cada edital tem gaveta de detalhes com datas, prazo de impugnação, checklist da proposta, anotações e histórico. Importa os dados de um edital por **qualquer link**: PNCP, Compras.gov.br (acompanhamento da compra), e-compras.AM, link direto do PDF ou ZIP do edital, ou a página do edital em outros portais. |
 | **Propostas** | Contagem regressiva para cadastrar cada proposta, com checklist (planilha de custos, proposta assinada, declarações, documentos, conferência). Fica laranja com menos de 48 h. |
 | **Chats dos pregões** | Conversa de cada pregão com destaque para retomada, suspensão, convocação, recurso, habilitação, diligência, resultado e desclassificação. Avisa quando o pregoeiro **cita a empresa** (nome, apelido ou CNPJ) e mostra a data de retomada informada. Pregões do **e-compras.AM** são lidos sozinhos; dos outros portais, cole as mensagens. |
 | **Análise de edital** | Cole o texto ou envie o PDF. Extrai número, órgão, objeto, sessão, critério, modo de disputa, plataforma, valor, vigência, pagamento; calcula o prazo de impugnação; compara a habilitação exigida com a pasta de documentos (válido no dia da sessão?) e lista pontos de atenção (atestado acima de 50%, visita obrigatória, índices acima de 1, garantia, multa alta, prazo curto de convocação, falta de reajuste…). Tudo roda no navegador. |
@@ -84,6 +84,7 @@ O backup (Ajustes → Exportar backup) continua disponível como cópia extra.
 - `assets/dados-exemplo.js`: dados fictícios e o edital de exemplo.
 - `api/chat.js`: lê o chat público de um pregão no e-compras.AM (mesma lógica de `alerta-csc/alerta_chat.py`).
 - `api/pncp.js`: importa um edital do PNCP pelo link.
+- `api/importar.js`: importa por qualquer link (PNCP, Compras.gov.br pela UASG e número da compra, e-compras.AM, PDF/ZIP do edital ou página de outros portais). Só acessa endereços públicos.
 - `api/municipio.js` e `api/_municipios.json`: dados da cidade do órgão para o resumo (população pelo IBGE/SIDRA, rota até a capital pelo OSRM, coordenadas dos 5.571 municípios).
 - `servidor-local.js`: roda o portal e as APIs no seu computador.
 - `assets/config.js`: endereço e chave pública do Supabase (login e dados na nuvem).

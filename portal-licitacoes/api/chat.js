@@ -56,6 +56,9 @@ async function buscarPregao(processo) {
     edital: String(linha.edital).trim(),
     status: String(linha.status || "").trim(),
     objeto: String(linha.objeto || "").trim(),
+    processo: String(linha.processo || "").trim(),
+    publicacao: String(linha.publicacao || "").trim(),
+    orgao: String(linha.nome_ug || "").trim(),
     link: BASE + "licitacoes_acompanhamento.asp?ident=" + linha.id_edital
   };
 }
@@ -109,3 +112,6 @@ module.exports = async (req, res) => {
     res.status(502).json({ erro: "O e-compras.AM não respondeu agora. Tento de novo na próxima leitura." });
   }
 };
+module.exports.buscarPregao = buscarPregao;
+module.exports.pregaoPorIdent = pregaoPorIdent;
+module.exports.lerChat = lerChat;
