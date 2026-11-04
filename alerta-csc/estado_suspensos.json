@@ -1,5 +1,5 @@
 {
-  "ultima_leitura": "2026-11-04T17:31:28+00:00",
+  "ultima_leitura": "2026-11-04T22:51:29+00:00",
   "pregoes": {
     "susp-macae-82": {
       "situacao": "Suspensa",
@@ -40,6 +40,14 @@
       "novaData": null,
       "docs": [
         "Edital PE SRP n 12-2026 - Serv. Dialise Aguda - SESMA.zip|2026-09-23T08:11"
+      ],
+      "parecidos": []
+    },
+    "susp-mariogatti-82": {
+      "situacao": "Suspensa",
+      "novaData": null,
+      "docs": [
+        "PE901882026 - GOV 82.pdf|2026-10-08T09:36"
       ],
       "parecidos": []
     }
