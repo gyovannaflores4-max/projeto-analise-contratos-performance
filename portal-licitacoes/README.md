@@ -1,4 +1,4 @@
-# Pregão em Dia | portal de acompanhamento de licitações
+# Equipe Comercial | portal de acompanhamento de licitações
 
 Portal para a equipe de licitações acompanhar, num lugar só, tudo o que tem prazo: editais, propostas, chats dos pregões, recursos, documentos e cadastros nos portais de compras.
 
@@ -77,7 +77,7 @@ O endereço do arquivo fica em **Ajustes → Integrações → Arquivo do robô*
 
 ## Login e onde ficam os dados
 
-O portal tem **login com e-mail e senha** (Supabase, projeto "Pregão em Dia"). Só e-mails da lista de autorizados conseguem criar conta; hoje, somente gyovannaflores4@gmail.com.
+O portal tem **login com e-mail e senha** (Supabase, projeto "Pregão em Dia", nome antigo do portal). Só e-mails da lista de autorizados conseguem criar conta; hoje, somente gyovannaflores4@gmail.com.
 
 - **Primeiro acesso:** na tela de entrada, clique em **Primeiro acesso? Criar senha**, use o e-mail autorizado e escolha uma senha (mínimo 8 caracteres). Depois escolha começar vazio, com dados de exemplo ou levando o que já estava no navegador.
 - **Vários computadores ao mesmo tempo:** antes de salvar, o portal confere se a nuvem tem algo mais novo e junta as duas versões (itens unidos pelo id, exclusões respeitadas, mensagens de chat unidas), em vez de sobrescrever.

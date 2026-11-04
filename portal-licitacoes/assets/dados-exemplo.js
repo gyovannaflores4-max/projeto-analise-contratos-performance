@@ -1,4 +1,4 @@
-/* Pregão em Dia | estado inicial e dados de exemplo.
+/* Equipe Comercial | estado inicial e dados de exemplo.
    Todos os órgãos, empresas, números e mensagens abaixo são FICTÍCIOS. As datas são calculadas
    a partir de hoje, para o exemplo sempre mostrar prazos correndo. */
 (function (g) {

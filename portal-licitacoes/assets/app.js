@@ -1,4 +1,4 @@
-/* Pregão em Dia | aplicação
+/* Equipe Comercial | aplicação
    Telas: painel, editais (quadro/lista), propostas, chats dos pregões, análise de edital,
    recursos e contrarrazões, documentos, portais, central de alertas e ajustes.
    Os dados ficam no navegador (localStorage). Com o portal publicado na Vercel, /api/chat lê o
@@ -1883,7 +1883,7 @@
     secao("Chats com novidade:", S.chats.filter(c => naoLidas(c).length).map(c => c.titulo + " · " + U.plural(naoLidas(c).length, "mensagem nova", "mensagens novas") + (naoLidas(c).some(m => infoMsg(m).citaEmpresa) ? " (cita a " + apelido() + ")" : "") + (retomadaPrevista(c) ? " · retomada " + retomadaPrevista(c) : "")));
     secao("Documentos e portais:", gerarAlertas().filter(a => ["documento", "portal"].includes(a.tipo) && a.nivel !== "info").map(a => a.titulo.replace(/^(Renovar documento|Documento vencido): /, "") + " · " + a.detalhe));
     if (l.length <= 2) l.push("Nenhum prazo crítico hoje.");
-    l.push("Gerado pelo Pregão em Dia");
+    l.push("Gerado pela Equipe Comercial");
     return l.join("\n");
   }
   function mostrarTexto(titulo, texto, nomeArquivo, tipo) {
@@ -2232,7 +2232,7 @@
     copiarResumo: async () => { const t = resumoDoDia(); if (await U.copiar(t)) toast("Resumo do dia copiado", "Cole no grupo da equipe."); else mostrarTexto("Resumo do dia", t); },
     exportarAgenda: () => {
       const ev = eventosAgenda(365).map(x => ({ uid: U.hash(x.tipo + x.ref + x.data + x.titulo), data: x.data, titulo: x.titulo, descricao: x.sub }));
-      mostrarTexto("Agenda de licitações (" + ev.length + " compromissos)", U.ics(ev, "Licitações · " + (S.empresa.apelido || "Pregão em Dia")), "licitacoes.ics", "text/calendar;charset=utf-8");
+      mostrarTexto("Agenda de licitações (" + ev.length + " compromissos)", U.ics(ev, "Licitações · " + (S.empresa.apelido || "Equipe Comercial")), "licitacoes.ics", "text/calendar;charset=utf-8");
     },
     ativarNotif: async () => {
       if (!("Notification" in window)) { toast("Este navegador não tem notificações", "Os avisos continuam aparecendo aqui no portal.", "crit"); return; }
@@ -2247,7 +2247,7 @@
       try { const j = await api("/api/chat?ping=1", 15000); toast("API conectada", j.mensagem || "Tudo certo."); }
       catch (e) { toast("API indisponível", e.message, "crit"); }
     },
-    backup: () => mostrarTexto("Backup dos dados", JSON.stringify(S, null, 2), "pregao-em-dia-backup-" + U.hojeISO() + ".json", "application/json")
+    backup: () => mostrarTexto("Backup dos dados", JSON.stringify(S, null, 2), "equipe-comercial-backup-" + U.hojeISO() + ".json", "application/json")
   };
 
   function definirCaminho(chave, valor) {
@@ -2292,7 +2292,7 @@
       const arq = el.files[0]; if (!arq) return;
       try {
         const dados = JSON.parse(await arq.text());
-        if (!dados || !dados.versao || !Array.isArray(dados.editais)) throw new Error("O arquivo não parece um backup do Pregão em Dia.");
+        if (!dados || !dados.versao || !Array.isArray(dados.editais)) throw new Error("O arquivo não parece um backup da Equipe Comercial.");
         confirmar("Importar backup?", "Os dados atuais deste navegador serão substituídos pelo backup <b>" + h(arq.name) + "</b> (" + U.plural(dados.editais.length, "edital", "editais") + ").", "Importar", () => {
           const base = D.vazio();
           S = Object.assign(base, dados, { empresa: Object.assign(base.empresa, dados.empresa), ajustes: Object.assign(base.ajustes, dados.ajustes) });
@@ -2456,7 +2456,7 @@
     let el = $("#entrada");
     if (!el) { el = document.createElement("div"); el.id = "entrada"; document.body.insertBefore(el, document.body.firstChild); }
     el.innerHTML = '<div class="entrada-marca"><span class="marca-logo"><svg viewBox="0 0 24 24"><path d="M4 12.5 9 17.5 20 6.5"/><path d="M14 17.5h6"/></svg></span>' +
-      "<h1>Pregão em Dia</h1><p>Editais, propostas, chats dos pregões e prazos num lugar só.</p>" +
+      "<h1>Equipe Comercial</h1><p>Editais, propostas, chats dos pregões e prazos num lugar só.</p>" +
       "<ul><li>Chat do e-compras lido a cada 5 minutos</li><li>Prazos de recurso em dias úteis, com feriados</li><li>Certidões e portais sempre em dia</li></ul></div>" +
       '<div class="entrada-lado">' + conteudo + "</div>";
     return el;
@@ -2535,7 +2535,7 @@
       S = k === "local" ? normalizar(local) : k === "exemplo" ? D.criar() : D.vazio();
       abrirPortal();
       if (k === "vazio") location.hash = "#ajustes";
-      toast("Bem-vinda ao Pregão em Dia!", "Seus dados agora ficam salvos na nuvem.");
+      toast("Bem-vinda à Equipe Comercial!", "Seus dados agora ficam salvos na nuvem.");
     }));
   }
   let rotinasLigadas = false;

@@ -1,4 +1,4 @@
-/* Pregão em Dia | utilitários: datas, dias úteis, feriados, formatação e armazenamento.
+/* Equipe Comercial | utilitários: datas, dias úteis, feriados, formatação e armazenamento.
    Datas ficam como texto "AAAA-MM-DD" ou "AAAA-MM-DDTHH:MM" (horário local, sem fuso). */
 (function (g) {
   "use strict";
@@ -194,7 +194,7 @@
     const esc = t => String(t || "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
     const compacto = s => s.replace(/[-:]/g, "");
     const carimbo = compacto(new Date().toISOString().slice(0, 19)) + "Z";
-    const linhas = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Pregao em Dia//PT-BR", "CALSCALE:GREGORIAN", "X-WR-CALNAME:" + esc(nomeAgenda || "Licitações")];
+    const linhas = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Equipe Comercial//PT-BR", "CALSCALE:GREGORIAN", "X-WR-CALNAME:" + esc(nomeAgenda || "Licitações")];
     eventos.forEach(ev => {
       linhas.push("BEGIN:VEVENT", "UID:" + ev.uid + "@pregao-em-dia", "DTSTAMP:" + carimbo);
       if (U.temHora(ev.data)) {

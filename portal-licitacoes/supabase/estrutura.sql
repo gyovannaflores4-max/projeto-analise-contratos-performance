@@ -1,4 +1,4 @@
--- Pregão em Dia | estrutura do banco no Supabase (projeto "Pregão em Dia", sa-east-1).
+-- Equipe Comercial | estrutura do banco no Supabase (projeto "Pregão em Dia" no Supabase, sa-east-1).
 -- Já aplicada no projeto. Fica aqui como registro e para recriar o banco se precisar.
 
 -- E-mails autorizados a criar conta (sem acesso pela API: só o gatilho lê)
