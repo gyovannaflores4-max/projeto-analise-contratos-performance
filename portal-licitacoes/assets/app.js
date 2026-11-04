@@ -1066,6 +1066,15 @@
     if (ok) { sel.removeAllRanges(); toast("Resumo copiado", "Cole no e-mail."); } else toast("Selecionei o resumo", "Use Ctrl+C para copiar.");
   }
 
+  /* Conferência automática da leitura: aparece antes do resumo, com o que parece errado */
+  function conferenciaHTML(r) {
+    const lista = (r.conferencia || []).filter(x => x.nivel !== "info"), infos = (r.conferencia || []).filter(x => x.nivel === "info");
+    if (!lista.length) return '<section class="card conferencia ok"><div class="card-h"><h2>' + ic("check") + 'Conferência automática</h2></div><p class="muted">Data da sessão, prazo da proposta, itens, valor e portal conferidos: nada fora do lugar.' + (infos.length ? " " + infos.map(x => h(x.texto)).join(" ") : "") + "</p></section>";
+    const crit = lista.filter(x => x.nivel === "crit").length;
+    return '<section class="card conferencia ' + (crit ? "crit" : "warn") + '"><div class="card-h"><h2>' + ic("aviso") + "Conferência automática</h2><span class=\"pill " + (crit ? "crit" : "warn") + ' sem-ponto">' + (crit ? U.plural(crit, "provável erro", "prováveis erros") : U.plural(lista.length, "ponto a conferir", "pontos a conferir")) + "</span></div>" +
+      '<p class="muted" style="margin-bottom:8px">O portal conferiu a própria leitura e achou o que está abaixo. Confira no edital antes de copiar o resumo ou cadastrar.</p><ul class="conf-lista">' +
+      lista.concat(infos).map(x => '<li class="' + x.nivel + '"><span class="nivel ' + (x.nivel === "crit" ? "alto" : x.nivel === "warn" ? "medio" : "baixo") + '"></span>' + h(x.texto) + "</li>").join("") + "</ul></section>";
+  }
   function resultadoAnalise(r) {
     const c = r.campos, t = r.termometro;
     const niveis = t.nivel === "ok" ? 1 : t.nivel === "medio" ? 2 : 3;
@@ -1084,7 +1093,7 @@
       return Object.assign({ st: "crit", rot: "Vence antes da sessão (" + U.fmtData(docs[0].validade) + ")" }, x);
     });
     const okCount = pasta.filter(x => x.st === "ok").length;
-    return resumoCartao(r) + '<section class="termometro ' + t.nivel + '"><div class="escala" aria-hidden="true"><i style="height:18px" class="' + (niveis >= 1 ? "on" : "") + '"></i><i style="height:28px" class="' + (niveis >= 2 ? "on" : "") + '"></i><i style="height:38px" class="' + (niveis >= 3 ? "on" : "") + '"></i></div>' +
+    return conferenciaHTML(r) + resumoCartao(r) + '<section class="termometro ' + t.nivel + '"><div class="escala" aria-hidden="true"><i style="height:18px" class="' + (niveis >= 1 ? "on" : "") + '"></i><i style="height:28px" class="' + (niveis >= 2 ? "on" : "") + '"></i><i style="height:38px" class="' + (niveis >= 3 ? "on" : "") + '"></i></div>' +
       "<div><span class=\"eyebrow\" style=\"color:inherit;opacity:.7\">Termômetro do edital</span><h3>" + t.rotulo + "</h3><p>" + t.texto + "</p></div></section>" +
       '<section class="card"><div class="card-h"><h2>Dados do certame</h2><div class="linha-acoes"><button class="btn peq ghost" data-acao="copiarAnalise">' + ic("copiar") + 'Copiar análise</button><button class="btn peq primario" data-acao="criarDaAnalise">' + ic("mais") + "Criar edital</button></div></div>" +
       '<dl class="dados">' + dado("Número", h(c.numero)) + dado("Modalidade", h(c.modalidade)) + dado("Órgão", h(c.orgao), true) + dado("Objeto", h(c.objeto), true) +
@@ -1108,7 +1117,8 @@
     ui.cidade = null;
     $("#resultado-analise").innerHTML = resultadoAnalise(ui.analise);
     buscarCidade(ui.analise.campos.municipio, ui.analise.campos.uf, ui.analise.campos.cidades);
-    toast("Edital analisado", ui.analise.preenchidos + " de 7 dados principais encontrados · " + U.plural(ui.analise.riscos.length, "ponto de atenção", "pontos de atenção"));
+    const errosLeitura = (ui.analise.conferencia || []).filter(x => x.nivel === "crit").length;
+    toast("Edital analisado", ui.analise.preenchidos + " de 7 dados principais encontrados · " + U.plural(ui.analise.riscos.length, "ponto de atenção", "pontos de atenção") + (errosLeitura ? " · " + U.plural(errosLeitura, "item da leitura para conferir", "itens da leitura para conferir") : ""), errosLeitura ? "pop" : "");
     if (window.innerWidth < 1180) $("#resultado-analise").scrollIntoView({ behavior: "smooth", block: "start" });
   }
   function carregarScript(src) {
@@ -1514,19 +1524,29 @@
         const v = k => (col[k] >= 0 ? r[col[k]] : null);
         const emissao = typeof v("emissao") === "number" ? dataExcel(v("emissao")) : "";
         const dias = String(v("validade") || "").trim();
+        // A coluna "Vencimento" manda: "IND" (indeterminado) vale mesmo que "Validade" tenha dias
+        const vencInd = /^ind/i.test(String(v("venc") || "").trim());
         let validade = typeof v("venc") === "number" ? dataExcel(v("venc")) : "";
-        if (!validade && emissao && /^\d+$/.test(dias)) validade = U.addDias(emissao, +dias);
+        if (!validade && !vencInd && emissao && /^\d+$/.test(dias)) validade = U.addDias(emissao, +dias);
         const obs = [];
-        if (/^ind/i.test(dias)) obs.push("validade indeterminada");
+        if (/^ind/i.test(dias) || vencInd) obs.push("validade indeterminada");
         else if (/^\d+$/.test(dias)) obs.push("validade de " + dias + " dias");
         if (!emissao && v("emissao")) obs.push(String(v("emissao")).trim().toLowerCase());
         if (typeof v("previsao") === "number") obs.push("renovação prevista para " + U.fmtData(dataExcel(v("previsao"))));
         const st = String(v("status") || "").trim().toUpperCase();
         if (st === "REGULAR" && validade && U.diasAte(validade) < 0) obs.push("na planilha consta REGULAR");
+        if (st === "VENCIDO" && (!validade || U.diasAte(validade) >= 0)) obs.push("na planilha consta VENCIDO");
         lidos.push({ nome, tipo: tipoDoDocumento(nome), empresa, setor: col.setor >= 0 ? String(r[col.setor] || "").trim() : "", emissao, validade, obs: obs.join("; "), arquivado: encerrada, origem: "planilha" });
       });
     });
-    return lidos;
+    // O mesmo documento repetido na aba (a linha antiga e a renovada): fica a mais recente
+    const porChave = new Map();
+    lidos.forEach(x => {
+      const k = chaveDoc(x), atual = porChave.get(k);
+      const recente = (a, b) => (a.emissao || "") !== (b.emissao || "") ? (a.emissao || "") > (b.emissao || "") : (a.validade || "9999") > (b.validade || "9999");
+      if (!atual || recente(x, atual)) porChave.set(k, x);
+    });
+    return [...porChave.values()];
   }
   const chaveDoc = d => [d.empresa, d.nome].map(x => U.semAcento(x || "").toLowerCase().replace(/\W+/g, "")).join("|");
   async function importarDocs(el) {
@@ -2019,7 +2039,8 @@
         ui.analise = r; ui.analiseTexto = texto; // fica disponível na Análise de edital
         return Object.assign({ numero: c.numero, modalidade: c.modalidade, orgao: c.orgao, municipio: c.municipio, uf: c.uf, objeto: c.objetoCompleto || c.objeto,
           sessao: c.sessao && c.sessao.length > 10 ? c.sessao : c.sessao ? c.sessao + "T09:00" : "", limiteProposta: c.limiteProposta && c.limiteProposta.length > 10 ? c.limiteProposta : "",
-          valorEstimado: c.valorEstimado, portal: (extra && extra.portal) || c.plataforma, processo: c.processo, link: extra && extra.link }, {});
+          valorEstimado: c.valorEstimado, portal: (extra && extra.portal) || c.plataforma, processo: c.processo, link: extra && extra.link,
+          aviso: (r.conferencia || []).filter(x => x.nivel === "crit").map(x => x.texto).join(" ") }, {});
       };
       try {
         const j = await api("/api/importar?url=" + encodeURIComponent(v), 45000);

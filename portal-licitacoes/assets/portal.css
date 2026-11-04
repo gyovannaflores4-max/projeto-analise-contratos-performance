@@ -597,3 +597,17 @@ body.trancado #app,body.trancado .toasts{display:none}
 .preco-lado .tabela td,.preco-lado .tabela th{padding:9px 12px}
 .passos{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px}
 code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em;background:var(--surface-2);padding:1px 5px;border-radius:5px}
+
+/* Conferência automática da análise */
+.conferencia h2{display:flex;align-items:center;gap:8px}
+.conferencia.ok{border-color:color-mix(in srgb,var(--ok) 35%,var(--line))}
+.conferencia.ok h2 .i{color:var(--ok)}
+.conferencia.warn{border-color:color-mix(in srgb,var(--warn) 45%,var(--line));background:color-mix(in srgb,var(--warn-soft) 45%,var(--surface))}
+.conferencia.crit{border-color:color-mix(in srgb,var(--crit) 45%,var(--line));background:color-mix(in srgb,var(--crit-soft) 45%,var(--surface))}
+.conferencia.warn h2 .i{color:var(--warn)}
+.conferencia.crit h2 .i{color:var(--crit)}
+.conf-lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.conf-lista li{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.45}
+.conf-lista .nivel{width:9px;height:9px;border-radius:50%;margin-top:6px;flex:none;background:var(--info)}
+.conf-lista .nivel.alto{background:var(--crit)}
+.conf-lista .nivel.medio{background:var(--warn)}

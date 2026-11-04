@@ -243,6 +243,65 @@
     return tabelas.length ? tabelas[0].itens : [];
   }
 
+  /* Conferência automática: confere o próprio resultado e aponta o que parece errado,
+     para não depender de alguém comparar com o edital. nivel: crit (provável erro) | warn (confira) | info. */
+  function conferir(c, o, t) {
+    t = t || U.normalizarMesmoTamanho(o);
+    const out = [], add = (nivel, campo, texto) => out.push({ nivel, campo, texto });
+    const br = d => d ? d.slice(8, 10) + "/" + d.slice(5, 7) + "/" + d.slice(0, 4) : "";
+    if (!c.numero) add("warn", "numero", "Não achei o número e a modalidade do edital.");
+    if (!c.orgao) add("warn", "orgao", "Não achei o órgão.");
+    if (!c.objeto) add("warn", "objeto", "Não achei o objeto.");
+    // Datas
+    if (!c.sessao) add("crit", "sessao", "Não achei a data da sessão. Confira no edital antes de cadastrar.");
+    else {
+      const ds = U.soData(c.sessao);
+      if (c.limiteProposta && c.limiteProposta > c.sessao) add("crit", "sessao", "O limite da proposta (" + br(c.limiteProposta) + ") está depois da sessão (" + br(ds) + "): uma das datas está errada.");
+      // outras datas perto de "sessão", "disputa" ou "abertura" que não são a escolhida
+      const outras = new Set();
+      for (const x of todos(t, /sessao (?:publica|de disputa)|abertura da sessao|inicio da (?:sessao|disputa)|data da (?:sessao|disputa|abertura)|disputa de precos|abertura das propostas/)) {
+        const j = t.slice(x.i, x.i + 140), m = RE_DATA.exec(j);
+        if (!m) continue;
+        const d = lerData(m);
+        if (d && d !== ds && d > ds && !/prorrog|adiad|anterior|revogad|suspens/.test(j)) outras.add(d);
+      }
+      if (outras.size) add("crit", "sessao", "O edital também cita " + [...outras].slice(0, 2).map(br).join(" e ") + " junto de \"sessão/disputa\". Confira qual é a data da disputa (saiu " + br(ds) + ").");
+      if (c.limiteProposta && U.soData(c.limiteProposta) === ds && c.limiteProposta.slice(11) === c.sessao.slice(11)) add("info", "sessao", "Limite da proposta e sessão no mesmo horário: confira se o edital fala em prazo de envio antes da abertura.");
+    }
+    // Itens
+    const L = o.split("\n").map(x => x.trim());
+    const temTabela = L.some((x, i) => /^ITEM\s*N\s*[º°o.]\s*\d/i.test(x) || (/^item\b/i.test(x) && /quant|qtd|qtde|qte/i.test(L.slice(i, i + 9).join(" ")) && /unid|\bun\b|und/i.test(L.slice(i, i + 9).join(" "))));
+    if (!c.itens.length) {
+      if (c.trSeparado) add("warn", "itens", "Os itens estão no Termo de Referência, que vem em arquivo separado: envie o TR junto com o edital.");
+      else add(temTabela ? "crit" : "warn", "itens", temTabela ? "O edital tem uma tabela de itens que não consegui ler. Preencha os itens no resumo." : "Não achei a tabela de itens.");
+    }
+    const nums = {};
+    c.itens.forEach(it => {
+      const d = it.descricao || "";
+      const tk = d.split(/\s+/), numericos = tk.filter(x => /^[\d.,:;]+$/.test(x)).length;
+      if (/folha:|assinad[oa] (?:por|digital)|c[óo]digo verificador|autenticidade|https?:\/\//i.test(d) || (tk.length > 8 && numericos / tk.length > 0.3)) add("crit", "itens", "A descrição do item " + it.item + " parece misturada com outro trecho do PDF (assinaturas, cronograma ou tabela). Confira a tabela de itens.");
+      if (!it.qtd) add("warn", "itens", "Item " + it.item + " sem quantidade.");
+      nums[it.item] = (nums[it.item] || 0) + 1;
+    });
+    if (Object.values(nums).some(n => n > 1)) add("warn", "itens", "Há itens com o mesmo número: a tabela pode ter sido lida duas vezes.");
+    if (c.valorEstimado && c.itens.length && c.itens.every(it => it.qtd && it.valorUnit)) {
+      const soma = c.itens.reduce((s, it) => s + (it.valorTotal || it.qtd * it.valorUnit), 0);
+      if (Math.abs(soma - c.valorEstimado) / c.valorEstimado > 0.02) add("warn", "itens", "A soma dos itens (R$ " + soma.toLocaleString("pt-BR", { minimumFractionDigits: 2 }) + ") não bate com o valor estimado (R$ " + c.valorEstimado.toLocaleString("pt-BR", { minimumFractionDigits: 2 }) + ").");
+    }
+    // Portal
+    const cit = PLATAFORMAS.map(([re, nome]) => ({ nome, n: todos(t, re).length })).filter(x => x.n).sort((a, b) => b.n - a.n);
+    if (c.plataforma && cit.length && cit[0].nome !== c.plataforma) add("crit", "plataforma", "Saiu " + c.plataforma + ", mas o edital cita muito mais " + cit[0].nome + " (" + cit[0].n + "x). Confira o portal da disputa.");
+    else if (cit.length > 1 && cit[1].n * 2 >= cit[0].n) add("warn", "plataforma", "O edital cita " + cit[0].nome + " (" + cit[0].n + "x) e " + cit[1].nome + " (" + cit[1].n + "x). Escolhi " + c.plataforma + ": confira.");
+    if (!c.plataforma) add("warn", "plataforma", "Não achei o portal da disputa.");
+    // Execução e valores
+    if (!c.local) add("warn", "local", "Não achei o local de execução.");
+    if (!c.horarios || !c.horarios.length) add("warn", "horarios", "Não achei os horários de execução.");
+    if (!c.valorEstimado && !c.orcamentoSigiloso) add("warn", "valor", "Não achei o valor estimado (pode ser sigiloso ou estar só no portal).");
+    if (c.impugnacaoAte && c.sessao && c.impugnacaoAte < U.hojeISO() && U.soData(c.sessao) >= U.hojeISO()) add("info", "impugnacao", "O prazo de impugnação já passou.");
+    return out;
+  }
+
+  A.conferir = conferir;
   A.analisarEdital = function (original, opcoes) {
     opcoes = opcoes || {};
     const o = String(original || "");
@@ -458,7 +517,8 @@
     }
     { // a plataforma mais citada (o edital costuma repetir o endereço do portal da disputa)
       let melhor = 0;
-      for (const [re, nome] of PLATAFORMAS) { const n = todos(t, re).length; if (n > melhor) { melhor = n; campos.plataforma = nome; } }
+      campos.plataformasCitadas = [];
+      for (const [re, nome] of PLATAFORMAS) { const n = todos(t, re).length; if (n) campos.plataformasCitadas.push({ nome, n }); if (n > melhor) { melhor = n; campos.plataforma = nome; } }
     }
     campos.srp = /registro de precos|\bsrp\b|ata de registro/.test(t);
     if ((p = primeiro(t, /(?:participacao )?exclusiva?(?:mente)? (?:para |a |as |de )?(?:participacao de )?(?:microempresas|\bme\b|me\/epp|me e epp)/))) {
@@ -547,7 +607,8 @@
     const preenchidos = ["numero", "orgao", "objeto", "sessao", "criterio", "plataforma", "valorEstimado"].filter(k => campos[k]).length;
     // Item único sem preço na tabela (minuta do contrato): unitário = valor estimado ÷ quantidade
     if (campos.itens.length === 1 && campos.valorEstimado && campos.itens[0].qtd && !campos.itens[0].valorUnit) campos.itens[0].valorUnit = Math.round(campos.valorEstimado / campos.itens[0].qtd * 100) / 100;
-    return { campos, habilitacao, riscos, termometro, pontos, preenchidos, caracteres: o.length, analisadoEm: U.agoraISO() };
+    const conferencia = conferir(campos, o, t);
+    return { campos, habilitacao, riscos, termometro, pontos, preenchidos, caracteres: o.length, analisadoEm: U.agoraISO(), conferencia };
   };
 
   /* =====================================================================
