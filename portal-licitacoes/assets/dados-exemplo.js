@@ -17,7 +17,7 @@
       // Arquivo que o robô do GitHub (alerta-csc) atualiza com as mensagens dos chats
       arquivoRobo: "https://raw.githubusercontent.com/gyovannaflores4-max/projeto-analise-contratos-performance/main/alerta-csc/chats.json"
     },
-    editais: [], recursos: [], documentos: [], portais: [], chats: [],
+    editais: [], recursos: [], documentos: [], portais: [], chats: [], suspensos: [],
     resolvidos: {}, atividade: []
   });
 

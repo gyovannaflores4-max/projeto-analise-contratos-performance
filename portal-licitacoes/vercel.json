@@ -14,6 +14,9 @@
     },
     "api/importar.js": {
       "maxDuration": 30
+    },
+    "api/suspensos.js": {
+      "maxDuration": 60
     }
   }
 }
