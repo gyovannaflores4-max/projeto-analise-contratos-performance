@@ -383,14 +383,14 @@ projeto-analise-contratos-performance/
 │
 ├── radar-licitacoes/        # busca de editais no PNCP
 ├── alerta-csc/              # robô de alertas (resenhas e chat do e-compras.AM)
-└── portal-licitacoes/       # Pregão em Dia: portal de acompanhamento de licitações
+└── portal-licitacoes/       # Equipe Comercial: portal de acompanhamento de licitações
 ```
 
 ---
 
 ## Ferramentas para licitações
 
-- **[Pregão em Dia](portal-licitacoes/)**: portal de acompanhamento de editais, propostas, chats dos pregões, análise de edital, recursos e contrarrazões, documentos e portais, com central de alertas.
+- **[Equipe Comercial](portal-licitacoes/)**: portal de acompanhamento de editais, propostas, chats dos pregões, análise de edital, recursos e contrarrazões, documentos e portais, com central de alertas.
 - **[Radar de Licitações](radar-licitacoes/)**: busca de editais de serviços médicos com prazo aberto no PNCP.
 - **[Alerta CSC](alerta-csc/)**: robô que avisa por e-mail sobre resenhas e movimentação no chat do e-compras.AM.
 

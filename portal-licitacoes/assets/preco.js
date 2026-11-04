@@ -1,4 +1,4 @@
-/* Pregão em Dia | formação de preço (cálculo puro, sem tela).
+/* Equipe Comercial | formação de preço (cálculo puro, sem tela).
    Preço = custo direto × (1 + BDI), com o BDI no formato do TCU (Acórdão 2.622/2013):
      BDI = [(1 + AC + S + R + G) × (1 + DF) × (1 + L)] / (1 − I) − 1
    AC administração central, S seguros, R riscos, G garantias, DF despesas financeiras, L lucro,

@@ -1,4 +1,4 @@
-/* Pregão em Dia | análise de edital (por regras de texto) e leitura das mensagens de chat dos pregões.
+/* Equipe Comercial | análise de edital (por regras de texto) e leitura das mensagens de chat dos pregões.
    Tudo roda no navegador: o texto do edital não sai do computador. */
 (function (g) {
   "use strict";

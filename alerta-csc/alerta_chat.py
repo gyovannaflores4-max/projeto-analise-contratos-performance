@@ -11,7 +11,7 @@ EMAIL_TO, GITHUB_TOKEN). TESTE_CHAT=1 envia um e-mail de exemplo com as últimas
 mensagens de todos os pregões, sem alterar o estado.
 
 Com PORTAL_CHAVE_ROBO (a mesma chave do resumo diário), os pregões ativos do e-compras.AM
-cadastrados no portal Pregão em Dia entram sozinhos no acompanhamento, junto com
+cadastrados no portal Equipe Comercial entram sozinhos no acompanhamento, junto com
 PROCESSOS. O robô também lê o ranking de cada lote (empresas em ordem de valor, melhor lance,
 habilitada, vencedora), avisa quando a posição da empresa muda e grava tudo em chats.json.
 """
@@ -33,7 +33,7 @@ from alerta_resenhas import PROCESSOS_PADRAO, USER_AGENT, abrir_issue, enviar_em
 
 BASE = "https://www.e-compras.am.gov.br/publico/"
 ESTADO = Path(__file__).with_name("estado_chat.json")
-# Cópia das mensagens para o portal Pregão em Dia mostrar o mesmo conteúdo dos e-mails.
+# Cópia das mensagens para o portal Equipe Comercial mostrar o mesmo conteúdo dos e-mails.
 ARQUIVO_CHATS = Path(__file__).with_name("chats.json")
 COLUNAS = [
     "null", "edital", "cod_ug", "objeto", "status", "processo", "rp",
@@ -200,7 +200,7 @@ def posicao(disputa, termos):
 
 
 def pregoes_do_portal():
-    """Pregões ativos do e-compras.AM cadastrados no portal Pregão em Dia."""
+    """Pregões ativos do e-compras.AM cadastrados no portal Equipe Comercial."""
     chave = os.environ.get("PORTAL_CHAVE_ROBO", "").strip()
     if not chave:
         return [], set()

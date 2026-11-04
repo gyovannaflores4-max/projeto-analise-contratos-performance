@@ -1,4 +1,4 @@
-"""Resumo diário do Pregão em Dia por e-mail.
+"""Resumo diário da Equipe Comercial por e-mail.
 
 Lê os dados do portal no Supabase (editais, recursos, documentos, portais e chats) e manda,
 uma vez por dia útil, um e-mail com o que pede ação: sessões do dia e da semana, propostas a
@@ -378,11 +378,11 @@ def assunto(r):
         n = cont.get(titulo, 0) + (r["docs_omitidos"] if titulo == "Documentos vencendo" else 0)
         if n:
             partes.append(f"{n} {sing if n == 1 else plur}")
-    return f"Pregão em Dia | Resumo de {SEMANA[H.weekday()]} {data_br(H)}" + (": " + ", ".join(partes) if partes else ": nada urgente")
+    return f"Equipe Comercial | Resumo de {SEMANA[H.weekday()]} {data_br(H)}" + (": " + ", ".join(partes) if partes else ": nada urgente")
 
 
 def texto_simples(r):
-    l = [f"Resumo do Pregão em Dia, {data_br(hoje())}", ""]
+    l = [f"Resumo da Equipe Comercial, {data_br(hoje())}", ""]
     for titulo, itens in r["secoes"]:
         if not itens:
             continue
@@ -437,13 +437,13 @@ def html_email(r):
         '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F1F5F4;padding:20px 10px"><tr><td align="center">'
         '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;background:#FFFFFF;border-radius:14px;overflow:hidden;border:1px solid #DCE4E3">'
         '<tr><td style="background:#0B3B3A;padding:18px 22px;color:#FFFFFF">'
-        '<div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#F28C4B;font-weight:700">Pregão em Dia</div>'
+        '<div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#F28C4B;font-weight:700">Equipe Comercial</div>'
         f'<div style="font-size:21px;font-weight:700;margin-top:4px">Resumo de {SEMANA[H.weekday()]}, {data_br(H)}</div>'
         + (f'<div style="font-size:13px;opacity:.8;margin-top:2px">{e(r["empresa"])}</div>' if r["empresa"] else "")
         + "</td></tr>" + "".join(blocos)
         + f'<tr><td style="padding:18px 22px 22px"><a href="{e(PORTAL_URL)}" style="display:inline-block;background:#0D6E6A;color:#FFFFFF;text-decoration:none;font-weight:600;padding:10px 18px;border-radius:9px">Abrir o portal</a></td></tr>'
         "</table>"
-        '<div style="font-size:11.5px;color:#8A9C9E;margin-top:10px">Enviado pelo robô do Pregão em Dia (GitHub Actions). Prazos em dias úteis pela Lei 14.133/2021; confira sempre a regra do edital.</div>'
+        '<div style="font-size:11.5px;color:#8A9C9E;margin-top:10px">Enviado pelo robô da Equipe Comercial (GitHub Actions). Prazos em dias úteis pela Lei 14.133/2021; confira sempre a regra do edital.</div>'
         "</td></tr></table></body></html>"
     )
 

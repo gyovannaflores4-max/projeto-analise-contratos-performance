@@ -28,4 +28,4 @@ http.createServer(async (req, res) => {
     res.setHeader("content-type", TIPOS[path.extname(arquivo)] || "application/octet-stream");
     res.end(dados);
   });
-}).listen(PORTA, () => console.log("Pregão em Dia rodando em http://localhost:" + PORTA));
+}).listen(PORTA, () => console.log("Equipe Comercial rodando em http://localhost:" + PORTA));
