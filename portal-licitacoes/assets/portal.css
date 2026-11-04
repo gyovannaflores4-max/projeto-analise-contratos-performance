@@ -611,3 +611,16 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:
 .conf-lista .nivel{width:9px;height:9px;border-radius:50%;margin-top:6px;flex:none;background:var(--info)}
 .conf-lista .nivel.alto{background:var(--crit)}
 .conf-lista .nivel.medio{background:var(--warn)}
+
+/* Disputa no portal (fase e posição) */
+.disputa{margin:10px 14px 0;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2);display:flex;flex-direction:column;gap:10px}
+.disputa.compacto{margin:0}
+.disputa-h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.disputa-h .eyebrow{margin:0}
+.lote-disp{display:flex;flex-direction:column;gap:4px;padding-top:8px;border-top:1px solid var(--line)}
+.lote-disp p{margin:0;font-size:13.5px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pos-nossa b{font-size:15px}
+.tabela-disp{min-width:0}
+.tabela-disp td,.tabela-disp th{padding:7px 10px;font-size:13px}
+.tabela-disp tr.nossa td{background:var(--brand-soft);font-weight:600}
+.lote-cab{display:flex;align-items:center;gap:8px;flex-wrap:wrap}

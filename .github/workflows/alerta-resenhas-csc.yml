@@ -69,6 +69,8 @@ jobs:
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           GITHUB_TOKEN: ${{ github.token }}
           TESTE_CHAT: ${{ inputs.teste_chat && '1' || '' }}
+          # Pregões do e-compras.AM com proposta cadastrada no portal entram sozinhos no acompanhamento.
+          PORTAL_CHAVE_ROBO: ${{ secrets.PORTAL_CHAVE_ROBO }}
         run: python -u alerta-csc/alerta_chat.py
 
       - name: Acompanhar pregões pelo PNCP (situação, documentos, resultado)

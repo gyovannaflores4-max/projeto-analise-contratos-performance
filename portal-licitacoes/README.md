@@ -47,6 +47,18 @@ Depois abra http://localhost:3000.
 
 Igual ao Radar de Licitações: em **Add New… → Project**, escolha este repositório e, em **Root Directory**, a pasta `portal-licitacoes`. Framework Preset: **Other**. Sem comando de build.
 
+## Acompanhamento automático (e-compras.AM)
+
+Não precisa cadastrar o chat à mão. Todo edital do **e-compras.AM** com a proposta marcada como **cadastrada** (ou na etapa Cadastrada, Em disputa, Habilitação ou Recurso) entra sozinho no acompanhamento: o portal acha o pregão pelo link ou pelo número (modalidade + número + órgão, porque o mesmo número existe em vários órgãos, como a DLE 061/26 da FCECON e a do HEMOAM) e, a cada leitura:
+
+- mostra a **fase no portal** (recebendo propostas, em disputa, análise e habilitação, fase recursal, aguardando homologação, homologado);
+- lê o **ranking de cada lote** da página pública de acompanhamento e mostra a **posição da empresa** (ex.: 6º de 13 por valor), se ela tem o melhor lance, se está habilitada ou inabilitada e quem venceu;
+- **avisa quando a posição muda** e **avança a etapa do edital sozinho** (nunca volta etapa; ganho ou perdido só depois de homologado).
+
+A empresa é reconhecida no ranking pelo nome e apelido de Ajustes → Empresa; outras empresas do grupo entram no campo **Empresas do grupo**. Com o portal fechado, o robô do GitHub faz o mesmo e manda e-mail (precisa do segredo `PORTAL_CHAVE_ROBO`, o mesmo do resumo diário).
+
+Compras.gov.br não tem página pública com o ranking: lá o acompanhamento continua pelo PNCP e pelas mensagens coladas.
+
 ## Monitorar um pregão do e-compras.AM
 
 Em **Chats dos pregões → Monitorar pregão**: escolha o portal **e-compras AM**, marque **Ler o chat automaticamente** e informe o número/ano (por exemplo `408/26`) **ou cole o link de acompanhamento** copiado da barra de endereço (por exemplo `https://www.e-compras.am.gov.br/publico/licitacoes_acompanhamento.asp?ident=256066`).

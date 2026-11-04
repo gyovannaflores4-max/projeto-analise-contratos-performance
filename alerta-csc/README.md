@@ -65,3 +65,7 @@ Como ligar:
 A chave só dá leitura aos dados do portal; no banco fica apenas o hash dela. Gerar outra invalida a anterior. `estado_resumo.json` guarda o dia do último envio, para não repetir.
 
 Pré-visualizar sem mandar e-mail: `python resumo_diario.py --dados dados.json --previa resumo.html` (o `dados.json` é um backup exportado do portal).
+
+## Pregões do portal entram sozinhos no acompanhamento
+
+Com o segredo `PORTAL_CHAVE_ROBO`, o `alerta_chat.py` lê no portal Pregão em Dia os editais do e-compras.AM com proposta cadastrada e acompanha todos eles, além dos que estão em `PROCESSOS`. Para cada pregão, lê também o ranking de cada lote e manda e-mail quando a posição da empresa muda (ex.: "Lote 1: 2º de 7 → 1º de 7, habilitada"). O ranking vai para `chats.json`, e o portal mostra a mesma informação.
