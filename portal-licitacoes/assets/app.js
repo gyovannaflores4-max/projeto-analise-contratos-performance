@@ -188,6 +188,15 @@
       }
     });
 
+    // Pregão suspenso que voltou (ou ganhou nova data) nos últimos 7 dias
+    (S.suspensos || []).forEach(it => {
+      const d = it.dados || {}, quando = it.voltouEm || (d.novaData && it.novaDataEm);
+      if (!quando || U.diasAte(U.soData(quando)) < -7) return;
+      add({ id: "susp:" + it.id + ":" + quando, tipo: "suspenso", icone: "pausa", nivel: "critico", quando: U.soData(quando),
+        titulo: (it.voltouEm ? "Pregão voltou: " : "Nova data no pregão suspenso: ") + (d.numero || it.obs || "pregão"),
+        detalhe: (d.orgao || "") + (d.situacao ? " · " + d.situacao : "") + (d.sessao && d.sessao > U.agoraISO() ? " · sessão " + U.fmtDataHora(d.sessao) : d.novaData ? " · " + U.fmtDataHora(d.novaData.data) : ""), rota: "suspensos" });
+    });
+
     S.recursos.forEach(r => {
       const p = prazoNosso(r);
       if (!p || !p.data) return;
@@ -1379,7 +1388,8 @@
     try {
       for (const it of lista) {
         ui.lendo["s:" + it.id] = true; if (rotaAtual() === "suspensos") renderSeLivre();
-        const pn = it.dados && it.dados.pncp ? "&pncp=" + it.dados.pncp.cnpj + "-" + it.dados.pncp.ano + "-" + it.dados.pncp.seq : "";
+        const id = it.dados && it.dados.pncp ? it.dados.pncp.cnpj + "-" + it.dados.pncp.ano + "-" + it.dados.pncp.seq : it.pncp || "";
+        const pn = id ? "&pncp=" + id : "";
         try { atualizarSuspenso(it, await api("/api/suspensos?ref=" + encodeURIComponent(it.link) + pn, 65000)); it.erro = ""; }
         catch (e) { it.erro = e.message; if (soEste) toast("Não consegui ler esse pregão agora", e.message, "crit"); }
         it.consultadoEm = new Date().toISOString();
@@ -1395,10 +1405,10 @@
     const novidades = [];
     it.vistos = it.vistos || { parecidos: [], docs: [] };
     if (antes) {
-      if (estaSuspenso(antes) && !estaSuspenso(d)) novidades.push(["Saiu da suspensão: agora está \"" + d.situacao + "\".", "pop"]);
+      if (estaSuspenso(antes) && !estaSuspenso(d)) { novidades.push(["O processo VOLTOU: agora está \"" + d.situacao + "\"" + (d.sessao && d.sessao > U.agoraISO() ? ", sessão em " + U.fmtDataHora(d.sessao) : "") + ".", "pop"]); it.voltouEm = U.agoraISO(); }
       else if (antes.situacao !== d.situacao) novidades.push(["Situação mudou: " + antes.situacao + " → " + d.situacao + ".", ""]);
       const nd = d.novaData && d.novaData.data, na = antes.novaData && antes.novaData.data;
-      if (nd && nd !== na) novidades.push(["Nova data: " + U.fmtDataHora(nd) + ".", "pop"]);
+      if (nd && nd !== na) { novidades.push(["Nova data: " + U.fmtDataHora(nd) + ".", "pop"]); it.novaDataEm = U.agoraISO(); }
       (d.documentos || []).filter(x => !it.vistos.docs.includes(x.titulo + "|" + x.data)).forEach(x => novidades.push(["Documento novo: " + x.titulo + ".", ""]));
     }
     (d.parecidos || []).filter(p => !it.vistos.parecidos.includes(p.linkPncp)).forEach(p => {
@@ -1406,6 +1416,8 @@
     });
     it.vistos.parecidos = [...new Set(it.vistos.parecidos.concat((d.parecidos || []).map(p => p.linkPncp)))];
     it.vistos.docs = [...new Set(it.vistos.docs.concat((d.documentos || []).map(x => x.titulo + "|" + x.data)))].slice(-200);
+    if (estaSuspenso(d)) { it.foiSuspenso = true; if (d.desde) it.suspensoDesde = d.desde; if (!it.sessaoOriginal && d.sessao) it.sessaoOriginal = d.sessao; }
+    if (!antes && !estaSuspenso(d) && it.voltouEm === undefined) it.voltouEm = null; // primeira leitura já sem suspensão: não é "voltou"
     it.dados = d;
     if (novidades.length) {
       it.novidade = true;
@@ -1427,13 +1439,13 @@
     if (novos) salvar();
   }
   function pgSuspensos() {
-    const lista = suspensos().slice().sort((a, b) => (b.novidade ? 1 : 0) - (a.novidade ? 1 : 0) || String((a.dados || {}).desde || "9").localeCompare(String((b.dados || {}).desde || "9")));
+    const lista = suspensos().slice().sort((a, b) => (b.voltouEm ? 1 : 0) - (a.voltouEm ? 1 : 0) || (b.novidade ? 1 : 0) - (a.novidade ? 1 : 0) || String((a.dados || {}).desde || "9").localeCompare(String((b.dados || {}).desde || "9")));
     const susp = lista.filter(x => estaSuspenso(x.dados)).length, rep = lista.filter(x => x.dados && (x.dados.parecidos || []).length).length;
-    const voltaram = lista.filter(x => x.dados && !estaSuspenso(x.dados)).length;
+    const voltaram = lista.filter(x => x.voltouEm).length;
     const html = '<div class="cab"><div><span class="eyebrow">Operação</span><h1>Pregões suspensos</h1><p>O portal confere a cada 30 minutos a situação, a nova data, os documentos novos e se o órgão publicou outro edital com o mesmo objeto (número diferente).</p></div>' +
       '<div class="cab-acoes"><button class="btn ghost" data-acao="atualizarSuspensos">' + ic("atualizar") + 'Conferir agora</button><button class="btn primario" data-acao="novoSuspenso">' + ic("mais") + "Acompanhar pregão</button></div></div>" +
       '<div class="kpis kpis-3"><div class="kpi"><span class="rot">Suspensos</span><span class="val">' + susp + '</span><span class="sub">sem retomada ainda</span></div>' +
-      '<div class="kpi"><span class="rot">Saíram da suspensão</span><span class="val">' + voltaram + '</span><span class="sub">ou o PNCP não mostra suspensão</span></div>' +
+      '<div class="kpi' + (voltaram ? " kpi-volta" : "") + '"><span class="rot">Voltaram</span><span class="val">' + voltaram + '</span><span class="sub">saíram da suspensão</span></div>' +
       '<div class="kpi' + (rep ? " kpi-atencao" : "") + '"><span class="rot">Possível republicação</span><span class="val">' + rep + '</span><span class="sub">mesmo órgão, objeto parecido</span></div></div>' +
       (lista.length ? '<div class="susp-lista">' + lista.map(suspensoHTML).join("") + "</div>" : '<div class="card">' + vazio("aviso", "Nenhum pregão suspenso em acompanhamento.", '<button class="btn primario" data-acao="novoSuspenso">' + ic("mais") + "Acompanhar pregão</button>") + "</div>");
     setTimeout(() => { let mudou = false; suspensos().forEach(x => { if (x.novidade) { x.novidade = false; mudou = true; } }); if (mudou) { salvar(); atualizarNav(); } }, 1500);
@@ -1442,24 +1454,37 @@
   function suspensoHTML(it) {
     const d = it.dados, lendo = ui.lendo["s:" + it.id];
     const quando = s => s ? U.fmtDataHora(s) : "—";
-    if (!d) return '<article class="card susp"><div class="susp-h"><b>' + h(it.link) + "</b>" + (lendo ? '<span class="pill info sem-ponto">Lendo…</span>' : "") + "</div>" + (it.erro ? '<p class="nota" style="color:var(--crit)">' + h(it.erro) + "</p>" : '<p class="muted">Buscando os dados do pregão…</p>') + rodapeSusp(it) + "</article>";
+    if (!d) return '<article class="card susp"><div class="susp-h"><div><b>' + h(nomeProvisorio(it)) + '</b><span class="org">' + linkCurto(it.link) + "</span></div>" + (lendo ? '<span class="pill info sem-ponto">Lendo…</span>' : "") + "</div>" + (it.erro ? '<p class="nota" style="color:var(--crit)">' + h(it.erro) + "</p>" : '<p class="muted">' + (lendo ? "Buscando situação, datas e documentos (leva uns 15 segundos)…" : "Na fila para a primeira leitura…") + "</p>") + rodapeSusp(it) + "</article>";
     const susp = estaSuspenso(d);
-    const dias = d.desde ? -U.diasAte(U.soData(d.desde)) : null;
-    const depois = (d.documentos || []).filter(x => !d.desde || (x.data || "") >= U.soData(d.desde)).slice(-4).reverse();
-    const ev = (d.eventos || []).filter(x => !d.desde || x.data >= d.desde).slice(-3).reverse();
-    return '<article class="card susp' + (it.novidade ? " novo" : "") + '">' +
-      '<div class="susp-h"><div><b>' + h(d.numero) + "</b>" + (it.novidade ? ' <span class="pill pop sem-ponto">Novidade</span>' : "") + '<span class="org">' + h(d.orgao) + (d.municipio ? " · " + h(d.municipio) + (d.uf ? "/" + h(d.uf) : "") : "") + '</span></div><div class="chips"><span class="pill ' + (susp ? "crit" : "ok") + '">' + h(d.situacao || "—") + '</span><span class="tag-portal" style="--cor:' + corPortal(d.portal) + '">' + h(d.portal || "") + "</span></div></div>" +
+    const desde = d.desde || it.suspensoDesde || "";
+    const dias = desde ? -U.diasAte(U.soData(desde)) : null;
+    const depois = (d.documentos || []).filter(x => !desde || (x.data || "") >= U.soData(desde)).slice(-4).reverse();
+    const ev = (d.eventos || []).filter(x => !desde || x.data >= desde).slice(-3).reverse();
+    const faixa = it.voltouEm && !susp ? '<div class="susp-volta">' + ic("check") + "<div><b>O processo voltou!</b> Agora está \"" + h(d.situacao) + "\"" + (d.sessao && d.sessao > U.agoraISO() ? " · sessão em <b>" + quando(d.sessao) + "</b>" : "") + ' <span class="muted">(percebido ' + U.desde(it.voltouEm) + ")</span></div></div>"
+      : susp && d.novaData ? '<div class="susp-volta data">' + ic("calendario") + "<div><b>Nova data marcada:</b> " + quando(d.novaData.data) + "</div></div>" : "";
+    return '<article class="card susp' + (it.novidade ? " novo" : "") + (it.voltouEm && !susp ? " voltou" : "") + '">' + faixa +
+      '<div class="susp-h"><div><b>' + h(d.numero) + "</b>" + (it.novidade ? ' <span class="pill pop sem-ponto">Novidade</span>' : "") + '<span class="org">' + h(d.orgao) + (d.municipio ? " · " + h(d.municipio) + (d.uf ? "/" + h(d.uf) : "") : "") + "</span><span class=\"org\">" + linkCurto(it.link) + '</span></div><div class="chips"><span class="pill ' + (susp ? "crit" : "ok") + '">' + h(d.situacao || "—") + '</span><span class="tag-portal" style="--cor:' + corPortal(d.portal) + '">' + h(d.portal || "") + "</span></div></div>" +
       '<p class="susp-obj">' + h(U.corta(d.objeto, 260)) + "</p>" +
-      '<dl class="datas susp-datas"><div><dt>Suspenso desde</dt><dd>' + (susp && d.desde ? U.fmtData(U.soData(d.desde)) + ' <span class="muted">(há ' + U.plural(dias, "dia", "dias") + ")</span>" : "—") + "</dd></div>" +
+      '<dl class="datas susp-datas"><div><dt>' + (susp ? "Suspenso desde" : "Ficou suspenso desde") + "</dt><dd>" + (desde ? U.fmtData(U.soData(desde)) + (susp ? ' <span class="muted">(há ' + U.plural(dias, "dia", "dias") + ")</span>" : "") : "—") + "</dd></div>" +
       "<div><dt>Volta quando?</dt><dd>" + (d.novaData ? '<b style="color:var(--ok)">' + quando(d.novaData.data) + "</b>" : susp ? '<span class="muted">Sem nova data publicada</span>' : d.sessao && d.sessao > U.agoraISO() ? "Sessão em " + quando(d.sessao) : '<span class="muted">Confira no portal de origem</span>') + "</dd></div>" +
-      "<div><dt>Sessão original</dt><dd>" + quando(d.sessao) + "</dd></div></dl>" +
+      "<div><dt>Sessão original</dt><dd>" + quando(it.sessaoOriginal || d.sessao) + "</dd></div></dl>" +
       (d.motivo ? '<p class="susp-motivo"><b>Motivo:</b> ' + h(U.corta(d.motivo.replace(/^motivo:\s*/i, ""), 320)) + "</p>" : "") +
       (d.novaData && d.novaData.origem ? '<p class="nota">Nova data tirada de: ' + h(d.novaData.origem) + "</p>" : "") +
-      (!susp && !it.editalId && /PNCP/.test(d.fonte) && /divulgada/i.test(d.situacao) ? '<p class="nota">No PNCP o pregão aparece como "Divulgada". Se ele está suspenso no portal de origem, a suspensão pode não ter sido lançada no PNCP: confira no Compras.gov.br.</p>' : "") +
-      (depois.length || ev.length ? '<div class="susp-bloco"><h4>' + (d.desde ? "Depois da suspensão" : "Documentos e eventos") + "</h4><ul>" + depois.map(x => "<li><time>" + (x.data ? U.fmtData(U.soData(x.data)) : "") + "</time> " + (x.url ? '<a href="' + h(x.url) + '" target="_blank" rel="noopener">' + h(U.corta(x.titulo, 110)) + "</a>" : h(U.corta(x.titulo, 110))) + "</li>").join("") + ev.map(x => "<li><time>" + U.fmtData(U.soData(x.data)) + "</time> " + h(U.corta(x.texto, 160)) + "</li>").join("") + "</ul></div>" : "") +
+      (!susp && !it.editalId && !it.foiSuspenso && /PNCP/.test(d.fonte) && /divulgada/i.test(d.situacao) ? '<p class="nota">No PNCP o pregão aparece como "Divulgada". Se ele está suspenso no portal de origem, a suspensão pode não ter sido lançada no PNCP: confira no Compras.gov.br.</p>' : "") +
+      (depois.length || ev.length ? '<div class="susp-bloco"><h4>' + (desde ? "Depois da suspensão" : "Documentos e eventos") + "</h4><ul>" + depois.map(x => "<li><time>" + (x.data ? U.fmtData(U.soData(x.data)) : "") + "</time> " + (x.url ? '<a href="' + h(x.url) + '" target="_blank" rel="noopener">' + h(U.corta(x.titulo, 110)) + "</a>" : h(U.corta(x.titulo, 110))) + "</li>").join("") + ev.map(x => "<li><time>" + U.fmtData(U.soData(x.data)) + "</time> " + h(U.corta(x.texto, 160)) + "</li>").join("") + "</ul></div>" : "") +
       ((d.parecidos || []).length ? '<div class="susp-bloco rep"><h4>' + ic("aviso") + "Possível republicação (mesmo órgão, objeto parecido)</h4>" + d.parecidos.map(p => '<div class="rep-item"><div><b>' + h(p.numero) + "</b> · " + p.semelhanca + '% parecido · publicado em ' + U.fmtData(U.soData(p.publicacao)) + (p.sessao ? " · sessão " + U.fmtDataHora(p.sessao) : "") + ' · <span class="muted">' + h(p.situacao) + '</span><p class="muted">' + h(U.corta(p.objeto, 200)) + '</p></div><div class="linha-acoes"><a class="btn peq ghost" href="' + h(p.link) + '" target="_blank" rel="noopener">' + ic("link") + 'Abrir</a><button class="btn peq primario" data-acao="cadastrarRepublicado" data-id="' + it.id + '" data-link="' + h(p.linkPncp) + '">' + ic("mais") + "Cadastrar edital</button></div></div>").join("") + "</div>" : "") +
       (it.obs ? '<p class="nota">Observação: ' + h(it.obs) + "</p>" : "") + rodapeSusp(it) + "</article>";
   }
+  // Nome enquanto a primeira leitura não chega: observação ou o número tirado do link
+  function nomeProvisorio(it) {
+    if (it.obs) return it.obs;
+    const c = (it.link.match(/compra=(\d{17})/) || [])[1];
+    if (c) return ({ "05": "Pregão Eletrônico ", "06": "Dispensa ", "03": "Concorrência " }[c.slice(6, 8)] || "Compra ") + parseInt(c.slice(8, 13), 10) + "/" + c.slice(13) + " · UASG " + c.slice(0, 6);
+    const p = it.link.match(/processos\/([A-Z]{2})\/([^/]+)\/([A-Z]+)-(\d+)-(\d{4})/i);
+    if (p) return p[3].toUpperCase() + " " + p[4] + "/" + p[5] + " · " + p[2].replace(/-\d+$/, "").replace(/-/g, " ");
+    return it.link;
+  }
+  const linkCurto = l => '<a href="' + h(l) + '" target="_blank" rel="noopener">' + ic("link") + " " + h((l.match(/^https?:\/\/(?:www\.)?([^/]+)/) || [])[1] || "link") + (/compra=(\d+)/.test(l) ? " · compra " + l.match(/compra=(\d+)/)[1] : "") + "</a>";
   function rodapeSusp(it) {
     const d = it.dados || {};
     return '<div class="linha-acoes susp-rodape"><a class="btn peq ghost" href="' + h(it.link) + '" target="_blank" rel="noopener">' + ic("link") + "Abrir no portal</a>" +

@@ -58,7 +58,7 @@ def mudancas(antes, d):
     suspenso = lambda x: "suspens" in (x.get("situacao") or "").lower()
     if antes:
         if suspenso(antes) and not suspenso(d):
-            saida.append(f"SAIU DA SUSPENSÃO: agora está \"{d.get('situacao')}\"")
+            saida.append(f"O PROCESSO VOLTOU: agora está \"{d.get('situacao')}\"" + (f", sessão em {data_br(d['sessao'])}" if d.get("sessao") else ""))
         elif antes.get("situacao") != d.get("situacao"):
             saida.append(f"situação mudou: {antes.get('situacao')} → {d.get('situacao')}")
         nova = (d.get("novaData") or {}).get("data")
@@ -114,7 +114,7 @@ def main():
 
     if blocos:
         assunto = "[Equipe Comercial] Pregões suspensos: " + "; ".join(
-            f"{d.get('numero')} ({'republicação' if any('REPUBLICA' in n for n in nov) else 'saiu da suspensão' if any('SAIU' in n for n in nov) else 'nova data' if any('NOVA DATA' in n for n in nov) else 'movimentação'})"
+            f"{d.get('numero')} ({'republicação' if any('REPUBLICA' in n for n in nov) else 'VOLTOU' if any('VOLTOU' in n for n in nov) else 'nova data' if any('NOVA DATA' in n for n in nov) else 'movimentação'})"
             for d, nov, _ in blocos)
         linhas = ["Novidades nos pregões suspensos que a equipe acompanha:", ""]
         for d, nov, item in blocos:

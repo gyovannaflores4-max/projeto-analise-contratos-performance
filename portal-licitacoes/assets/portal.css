@@ -649,3 +649,9 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:
 .rep-item p{margin:2px 0 0}
 .susp-rodape{border-top:1px solid var(--line);padding-top:10px}
 @media (max-width:760px){.kpis-3,.susp-datas{grid-template-columns:minmax(0,1fr)}}
+.susp-volta{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:var(--ok-soft);color:var(--ok);font-size:14px}
+.susp-volta .muted{color:inherit;opacity:.75}
+.susp-volta.data{background:var(--info-soft);color:var(--info)}
+.susp.voltou{border-color:var(--ok);box-shadow:0 0 0 1px var(--ok)}
+.susp-h .org a{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;word-break:break-all}
+.kpi.kpi-volta .val{color:var(--ok)}

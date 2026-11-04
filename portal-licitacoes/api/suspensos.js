@@ -57,17 +57,46 @@ function semelhanca(a, b, fora) {
 }
 
 /* ---------- PNCP ---------- */
+// Compra do Compras.gov.br no PNCP. Código do link: UASG(6) + modalidade(2) + número(5) + ano(4).
+// 1) a UASG dá o CNPJ do órgão (dados abertos do Compras.gov.br); 2) a consulta oficial do PNCP, filtrada
+// por CNPJ + UASG, acha a compra mês a mês, do mais recente para trás. A busca textual do PNCP fica por último
+// (ela costuma não responder para quem chama de servidores na nuvem).
+const MODALIDADE_PNCP = { "05": 6, "06": 8, "03": 4, "02": 5, "07": 7 };
 async function pncpDoComprasGov(codigo) {
-  const uasg = codigo.slice(0, 6), num = String(parseInt(codigo.slice(8, 13), 10)), ano = codigo.slice(13, 17);
+  const uasg = codigo.slice(0, 6), mod = codigo.slice(6, 8), num = String(parseInt(codigo.slice(8, 13), 10)), ano = codigo.slice(13, 17);
+  const u = await json("https://dadosabertos.compras.gov.br/modulo-uasg/1_consultarUasg?codigoUasg=" + uasg + "&statusUasg=true", 15000).catch(() => null);
+  const cnpj = u && u.resultado && u.resultado[0] && u.resultado[0].cnpjCpfOrgao;
+  if (cnpj) {
+    const meses = [], fim = new Date(Date.now() - 3 * 3600000);
+    for (let d = new Date(Date.UTC(fim.getUTCFullYear(), fim.getUTCMonth(), 1)); d.getUTCFullYear() >= +ano && meses.length < 12; d.setUTCMonth(d.getUTCMonth() - 1)) meses.push(new Date(d));
+    const mesmo = c => String(parseInt(c.numeroCompra, 10)) === num && String(c.anoCompra) === ano;
+    for (let i = 0; i < meses.length; i += 4) { // 4 meses por vez, em paralelo
+      const lotes = await Promise.all(meses.slice(i, i + 4).map(async m => {
+        const ini = m.toISOString().slice(0, 10), f = new Date(Date.UTC(m.getUTCFullYear(), m.getUTCMonth() + 1, 0)).toISOString().slice(0, 10);
+        const achados = [];
+        for (let pg = 1; pg <= 6; pg++) {
+          const l = await json(PNCP + "/api/consulta/v1/contratacoes/publicacao?dataInicial=" + ymd(ini) + "&dataFinal=" + ymd(f) + "&codigoModalidadeContratacao=" + (MODALIDADE_PNCP[mod] || 6) +
+            "&cnpj=" + cnpj + "&codigoUnidadeAdministrativa=" + uasg + "&pagina=" + pg + "&tamanhoPagina=50", 25000).catch(() => null);
+          const lista = (l && l.data) || [];
+          achados.push(...lista.filter(mesmo));
+          if (achados.length || !l || pg >= (l.totalPaginas || 1)) break;
+        }
+        return achados;
+      }));
+      const c = lotes.flat()[0];
+      if (c) return { cnpj: c.orgaoEntidade.cnpj, ano: String(c.anoCompra), seq: String(c.sequencialCompra) };
+    }
+  }
+  // último recurso: busca textual do PNCP
   const re = new RegExp("\\b0*" + num + "\\s*/\\s*" + ano + "\\b");
   let falhas = 0;
-  for (const [q, pg] of [[uasg, 1], [num + "/" + ano, 1], [uasg, 2], [num + "/" + ano, 2], [uasg, 3], [uasg, 4]]) {
+  for (const [q, pg] of [[uasg, 1], [num + "/" + ano, 1], [uasg, 2]]) {
     const j = await json(PNCP + "/api/search/?q=" + encodeURIComponent(q) + "&tipos_documento=edital&pagina=" + pg + "&tam_pagina=100").catch(() => { falhas++; return null; });
     const it = ((j && j.items) || []).find(x => String(x.unidade_codigo) === uasg && re.test(String(x.title)));
     const m = it && String(it.item_url || "").match(/(\d{14})\/(\d{4})\/(\d+)/);
     if (m) return { cnpj: m[1], ano: m[2], seq: m[3] };
   }
-  if (falhas >= 3) throw Object.assign(new Error("A busca do PNCP não respondeu agora. Tento de novo na próxima leitura."), { status: 503 });
+  if (falhas >= 3 && !cnpj) throw Object.assign(new Error("O PNCP não respondeu agora. Tento de novo na próxima leitura."), { status: 503 });
   return null;
 }
 // Pregão de outro portal no PNCP: mesmo número/ano e objeto parecido (o nome do órgão muda entre os sistemas)
