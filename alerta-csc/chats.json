@@ -1,11 +1,108 @@
 {
  "fonte": "e-compras.AM (robô alerta-csc)",
- "atualizado_em": "2026-11-03T18:14:53+00:00",
+ "atualizado_em": "2026-11-04T17:29:42+00:00",
  "pregoes": {
   "255223": {
    "edital": "PE 328/26",
    "status": "Suspensão Recursal",
    "objeto": "Serviços Médicos de Infectologia",
+   "disputa": {
+    "situacao": "Suspensão Recursal",
+    "lotes": [
+     {
+      "numero": "1",
+      "nome": "(ID-153925) SERVIÇO DE INFECTOLOGISTA, Contratação de empresa especializada em serviço médico de INFECTOLOGISTA, em plantão de 4 horas - DIURNO, conforme Termo de Referência.",
+      "situacao": "Encerrado com Vencedor",
+      "participantes": [
+       {
+        "codigo": "1",
+        "nome": "SOCIEDADE DE CLINICA MEDICA DO AMAZONAS LTDA",
+        "vencedor": true,
+        "exame1": false,
+        "exame2": true,
+        "valor": 1180.0,
+        "adjudicado": false,
+        "melhor": null,
+        "negociado": null,
+        "habilitado": null
+       },
+       {
+        "codigo": "3",
+        "nome": "DIMPI GESTAO EM SAUDE LTDA",
+        "vencedor": false,
+        "exame1": false,
+        "exame2": true,
+        "valor": 1408.0,
+        "adjudicado": false,
+        "melhor": null,
+        "negociado": null,
+        "habilitado": null
+       },
+       {
+        "codigo": "5",
+        "nome": "MEDICANDO SERVICOS MEDICOS LTDA",
+        "vencedor": false,
+        "exame1": false,
+        "exame2": true,
+        "valor": 2000.0,
+        "adjudicado": false,
+        "melhor": null,
+        "negociado": null,
+        "habilitado": null
+       },
+       {
+        "codigo": "7",
+        "nome": "NAHRO SERVICOS MEDICOS LTDA",
+        "vencedor": false,
+        "exame1": false,
+        "exame2": true,
+        "valor": 2000.0,
+        "adjudicado": false,
+        "melhor": null,
+        "negociado": null,
+        "habilitado": null
+       },
+       {
+        "codigo": "2",
+        "nome": "MULTIECHO DIAGNOSTICOS LTDA",
+        "vencedor": false,
+        "exame1": false,
+        "exame2": true,
+        "valor": 2300.0,
+        "adjudicado": false,
+        "melhor": null,
+        "negociado": null,
+        "habilitado": null
+       },
+       {
+        "codigo": "4",
+        "nome": "ORTHOS MED SERVIÇOS DE SAUDE LTDA",
+        "vencedor": false,
+        "exame1": false,
+        "exame2": true,
+        "valor": 3000.0,
+        "adjudicado": false,
+        "melhor": null,
+        "negociado": null,
+        "habilitado": null
+       },
+       {
+        "codigo": "6",
+        "nome": "MITTEL SA",
+        "vencedor": false,
+        "exame1": false,
+        "exame2": true,
+        "valor": 3611.07,
+        "adjudicado": false,
+        "melhor": null,
+        "negociado": null,
+        "habilitado": null
+       }
+      ],
+      "semLances": false
+     }
+    ]
+   },
    "link": "https://www.e-compras.am.gov.br/publico/licitacoes_acompanhamento.asp?ident=255223",
    "mensagens": [
     {
@@ -644,6 +741,67 @@
    "edital": "PE 400/26",
    "status": "Suspensão Recursal",
    "objeto": "Contr. de Serv. em Pediatria Oncologica",
+   "disputa": {
+    "situacao": "Suspensão Recursal",
+    "lotes": [
+     {
+      "numero": "1",
+      "nome": "Lote 1",
+      "situacao": "Encerrado com Vencedor",
+      "participantes": [
+       {
+        "codigo": "3",
+        "nome": "DIMPI GESTAO EM SAUDE LTDA",
+        "vencedor": true,
+        "exame1": false,
+        "exame2": true,
+        "valor": 6147700.0,
+        "adjudicado": false,
+        "melhor": true,
+        "negociado": 6049096.0,
+        "habilitado": true
+       },
+       {
+        "codigo": "1",
+        "nome": "NOVA RENASCER LTDA",
+        "vencedor": false,
+        "exame1": false,
+        "exame2": true,
+        "valor": 6198023.46,
+        "adjudicado": false,
+        "melhor": false,
+        "negociado": null,
+        "habilitado": null
+       },
+       {
+        "codigo": "4",
+        "nome": "SEGRA SEGURANCA RADIOLOGICA LTDA",
+        "vencedor": false,
+        "exame1": false,
+        "exame2": true,
+        "valor": 6573800.0,
+        "adjudicado": false,
+        "melhor": false,
+        "negociado": null,
+        "habilitado": null
+       },
+       {
+        "codigo": "2",
+        "nome": "MULTIECHO DIAGNOSTICOS LTDA",
+        "vencedor": false,
+        "exame1": false,
+        "exame2": true,
+        "valor": 7462400.0,
+        "adjudicado": false,
+        "melhor": false,
+        "negociado": null,
+        "habilitado": null
+       }
+      ],
+      "semLances": false
+     }
+    ]
+   },
    "link": "https://www.e-compras.am.gov.br/publico/licitacoes_acompanhamento.asp?ident=255937",
    "mensagens": [
     {
@@ -1217,6 +1375,175 @@
    "edital": "PE 408/26",
    "status": "Suspensão Recursal",
    "objeto": "CONTRATAÇÃO DE SERVIÇOS MEDICOS",
+   "disputa": {
+    "situacao": "Suspensão Recursal",
+    "lotes": [
+     {
+      "numero": "1",
+      "nome": "Lote 1",
+      "situacao": "Encerrado com Vencedor",
+      "participantes": [
+       {
+        "codigo": "11",
+        "nome": "SEMPREVIDA MEDICINA INTENSIVA S.A.",
+        "vencedor": false,
+        "exame1": false,
+        "exame2": true,
+        "valor": 16892200.0,
+        "adjudicado": false,
+        "melhor": true,
+        "negociado": null,
+        "habilitado": null
+       },
+       {
+        "codigo": "7",
+        "nome": "SIMSAUDE SERVICOS SA",
+        "vencedor": false,
+        "exame1": false,
+        "exame2": true,
+        "valor": 16892218.25,
+        "adjudicado": false,
+        "melhor": false,
+        "negociado": null,
+        "habilitado": false
+       },
+       {
+        "codigo": "8",
+        "nome": "MITTEL SA",
+        "vencedor": false,
+        "exame1": false,
+        "exame2": true,
+        "valor": 20805000.0,
+        "adjudicado": false,
+        "melhor": false,
+        "negociado": null,
+        "habilitado": null
+       },
+       {
+        "codigo": "1",
+        "nome": "HELPMED SAUDE LTDA",
+        "vencedor": false,
+        "exame1": false,
+        "exame2": true,
+        "valor": 21067800.0,
+        "adjudicado": false,
+        "melhor": false,
+        "negociado": null,
+        "habilitado": null
+       },
+       {
+        "codigo": "13",
+        "nome": "QUEIROZ SERVICOS E GESTAO EM SAUDE LTDA",
+        "vencedor": false,
+        "exame1": false,
+        "exame2": true,
+        "valor": 21261250.0,
+        "adjudicado": false,
+        "melhor": false,
+        "negociado": null,
+        "habilitado": null
+       },
+       {
+        "codigo": "10",
+        "nome": "DIMPI GESTAO EM SAUDE LTDA",
+        "vencedor": true,
+        "exame1": false,
+        "exame2": true,
+        "valor": 21352500.0,
+        "adjudicado": true,
+        "melhor": false,
+        "negociado": null,
+        "habilitado": true
+       },
+       {
+        "codigo": "12",
+        "nome": "J J DE OLIVEIRA SERVICOS LTDA",
+        "vencedor": false,
+        "exame1": false,
+        "exame2": true,
+        "valor": 21535000.0,
+        "adjudicado": false,
+        "melhor": false,
+        "negociado": null,
+        "habilitado": null
+       },
+       {
+        "codigo": "9",
+        "nome": "SOCIEDADE DE CLINICA MEDICA DO AMAZONAS LTDA",
+        "vencedor": false,
+        "exame1": false,
+        "exame2": true,
+        "valor": 23907500.0,
+        "adjudicado": false,
+        "melhor": false,
+        "negociado": null,
+        "habilitado": null
+       },
+       {
+        "codigo": "3",
+        "nome": "NAHRO SERVICOS MEDICOS LTDA",
+        "vencedor": false,
+        "exame1": false,
+        "exame2": true,
+        "valor": 24318125.0,
+        "adjudicado": false,
+        "melhor": false,
+        "negociado": null,
+        "habilitado": null
+       },
+       {
+        "codigo": "2",
+        "nome": "ISAM INSTITUTO DE SAUDE DA AMAZONIA S/S LTDA",
+        "vencedor": false,
+        "exame1": false,
+        "exame2": true,
+        "valor": 25053600.0,
+        "adjudicado": false,
+        "melhor": false,
+        "negociado": null,
+        "habilitado": null
+       },
+       {
+        "codigo": "4",
+        "nome": "KELP - SERVICOS MEDICOS LTDA",
+        "vencedor": false,
+        "exame1": false,
+        "exame2": true,
+        "valor": 31079750.0,
+        "adjudicado": false,
+        "melhor": false,
+        "negociado": null,
+        "habilitado": null
+       },
+       {
+        "codigo": "6",
+        "nome": "NOVA RENASCER LTDA",
+        "vencedor": false,
+        "exame1": false,
+        "exame2": true,
+        "valor": 32550700.0,
+        "adjudicado": false,
+        "melhor": false,
+        "negociado": null,
+        "habilitado": null
+       },
+       {
+        "codigo": "5",
+        "nome": "ORTHOS MED SERVIÇOS DE SAUDE LTDA",
+        "vencedor": false,
+        "exame1": false,
+        "exame2": true,
+        "valor": 255500000.0,
+        "adjudicado": false,
+        "melhor": false,
+        "negociado": null,
+        "habilitado": null
+       }
+      ],
+      "semLances": false
+     }
+    ]
+   },
    "link": "https://www.e-compras.am.gov.br/publico/licitacoes_acompanhamento.asp?ident=256066",
    "mensagens": [
     {
@@ -2649,6 +2976,25 @@
     }
    ],
    "fonte": "PNCP"
+  },
+  "256855": {
+   "edital": "DLE 061/26",
+   "status": "Inscrição de Propostas",
+   "objeto": "SERV MEDICINA URGÊNCIA E EMERGÊNCIA-FCEC",
+   "disputa": {
+    "situacao": "Inscrição de Propostas",
+    "lotes": [
+     {
+      "numero": "1",
+      "nome": "Lote 1",
+      "situacao": "Pendente",
+      "participantes": [],
+      "semLances": true
+     }
+    ]
+   },
+   "link": "https://www.e-compras.am.gov.br/publico/licitacoes_acompanhamento.asp?ident=256855",
+   "mensagens": []
   }
  }
 }

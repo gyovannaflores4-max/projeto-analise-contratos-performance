@@ -1,1 +1,47 @@
-{}
+{
+  "ultima_leitura": "2026-11-04T17:31:28+00:00",
+  "pregoes": {
+    "susp-macae-82": {
+      "situacao": "Suspensa",
+      "novaData": null,
+      "docs": [
+        "SERVICOS DE TERAPIAS RENAIS.pdf|2026-10-08T16:36"
+      ],
+      "parecidos": []
+    },
+    "susp-santacasa-15": {
+      "situacao": "Divulgada no PNCP",
+      "novaData": null,
+      "docs": [
+        "EDITAL P.E SRP 15.2026 - UTI MATERNO E NEO.pdf|2026-10-14T10:58",
+        "ANEXO I - TERMO DE REFERENCIA.pdf|2026-10-14T10:59",
+        "ANEXO VII - MINUTA CONTRATUAL.pdf|2026-10-14T10:59"
+      ],
+      "parecidos": []
+    },
+    "susp-inova-100": {
+      "situacao": "Suspenso - Antes da Abertura",
+      "novaData": null,
+      "docs": [
+        "Edital_Nº 100.2026_Processo_2024-W4Z76_Serviços_Médicos_inversão_Neurocirurgia-HESA.pdf|2026-10-07",
+        "Aviso_de_Licitação_DIOES_PE_100_2026_Serviço_Médico_de_Neurocirurgia.pdf|2026-10-07",
+        "Aviso_de_Licitação_JORNAL_PE_100_2026_Serviço_Médico_de_Neurocirurgia.pdf|2026-10-07",
+        "Esclarecimentos - Esclarecimentos - Med+ & iNOVA Capixaba_v0_16102026.xlsx|2026-10-16",
+        "COMUNICADO - Aviso de suspensão do pregão antes da abertura Pregão 100.2026.pdf|2026-10-22",
+        "Pedidos de Esclarecimento|",
+        "Pedidos de Impugnação|",
+        "Pedidos de Impugnação - IMPUGNAÇÃO AO EDITAL DE PREGÃO ELETRÔNICO.pdf|",
+        "Ata de Suspensões|"
+      ],
+      "parecidos": []
+    },
+    "susp-sesma-12": {
+      "situacao": "Suspensa",
+      "novaData": null,
+      "docs": [
+        "Edital PE SRP n 12-2026 - Serv. Dialise Aguda - SESMA.zip|2026-09-23T08:11"
+      ],
+      "parecidos": []
+    }
+  }
+}

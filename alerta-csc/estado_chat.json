@@ -3,6 +3,7 @@
     "255223": {
       "edital": "PE 328/26",
       "status": "Suspensão Recursal",
+      "posicao": "(ID-153925) SERVIÇO DE INFECTOLOGISTA: 2º de 7, vencedora: SOCIEDADE DE CLINICA MEDICA DO AMAZONAS LTDA",
       "vistas": [
         "00b4dc9ac907",
         "04cf4290f5de",
@@ -135,6 +136,7 @@
     "255937": {
       "edital": "PE 400/26",
       "status": "Suspensão Recursal",
+      "posicao": "Lote 1: 1º de 4, melhor lance, habilitada, vencedora",
       "vistas": [
         "02163dba6de6",
         "026100b8df10",
@@ -254,6 +256,7 @@
     "256066": {
       "edital": "PE 408/26",
       "status": "Suspensão Recursal",
+      "posicao": "Lote 1: 6º de 13, habilitada, vencedora",
       "vistas": [
         "0096ed6d8300",
         "00dc03c3e117",
@@ -537,7 +540,13 @@
         "ffca52e5f7c9",
         "fff72c56808f"
       ]
+    },
+    "256855": {
+      "edital": "DLE 061/26",
+      "status": "Inscrição de Propostas",
+      "posicao": "",
+      "vistas": []
     }
   },
-  "atualizado_em": "2026-11-03T08:41:33+00:00"
+  "atualizado_em": "2026-11-04T17:29:43+00:00"
 }
