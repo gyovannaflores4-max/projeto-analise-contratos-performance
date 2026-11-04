@@ -10,7 +10,8 @@
      ===================================================================== */
   const MES = { janeiro: 1, fevereiro: 2, marco: 3, abril: 4, maio: 5, junho: 6, julho: 7, agosto: 8, setembro: 9, outubro: 10, novembro: 11, dezembro: 12 };
   const RE_DATA = /(\d{1,2})\s*[\/.-]\s*(\d{1,2})\s*[\/.-]\s*(\d{4}|\d{2})\b|(\d{1,2})(?:º|o)?\s+de\s+(janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)\s+de\s+(\d{4})/;
-  const RE_HORA = /(\d{1,2})\s*(?:h(?:oras?|rs?)?|:)\s*(\d{2})?(?!\s*(?:dias|%|\d))/;
+  // 10:00 · 10h · 10h30 · 23h e 59 min
+  const RE_HORA = /(\d{1,2})\s*(?:h(?:oras?|rs?)?|:)\s*(?:e\s*(\d{2})\s*min(?:utos?)?|(\d{2}))?(?!\s*(?:dias|%|\d))/;
 
   // Plataformas mais comuns (mesma lista do Radar de Licitações)
   const PLATAFORMAS = [
@@ -67,7 +68,7 @@
     const depois = janela.slice(md.index + md[0].length, md.index + md[0].length + 70);
     const antes = janela.slice(Math.max(0, md.index - 50), md.index);
     const mh = RE_HORA.exec(depois) || RE_HORA.exec(antes);
-    if (mh && +mh[1] <= 23) return data + "T" + U.pad(+mh[1]) + ":" + U.pad(mh[2] ? +mh[2] : 0);
+    if (mh && +mh[1] <= 23) { const min = mh[2] || mh[3]; return data + "T" + U.pad(+mh[1]) + ":" + U.pad(min && +min <= 59 ? +min : 0); }
     return data;
   }
   function numeroBR(s) { return Number(String(s).replace(/\./g, "").replace(",", ".")); }
@@ -141,6 +142,48 @@
     return itens;
   }
 
+  /* Itens em blocos (comum no e-compras.AM e em TRs estaduais):
+       ITEM Nº 01 / Serviço (s): Quantidade / SEMESTRAL ID UNIDADE / SERVIÇOS DE PLANTÃO / HOSPITALAR 543 153764 PLANTÃO
+       Descrição: Contratação de empresa ... plantão de 12 horas, DIURNO, conforme Termo de Referência.
+       VALOR UNITÁRIO DO PLANTÃO: / VALOR TOTAL:
+     Ignora as linhas de assinatura e autenticação (edoc) que o PDF intercala no meio do texto. */
+  const RUIDO_PDF = /^(?:folha:\s*\d+|a autenticidade deste documento|https?:\/\/|c[óo]digo verificador|documento [\dA-F.]+ assinado|assinado digitalmente|.*assinatura por login\/senha)/i;
+  function itensEmBlocos(o) {
+    const L = o.replace(/\r/g, "").split("\n").map(x => x.replace(/[\s ]+/g, " ").trim()).filter(x => x && !RUIDO_PDF.test(x));
+    const cab = /^ITEM\s*(?:N\s*[º°o.]\s*|N[ÚU]MERO\s*)(\d{1,3})\s*:?$/i;
+    const reQtd = new RegExp("(?:^|\\s)(\\d{1,3}(?:\\.\\d{3})*(?:,\\d+)?|\\d+(?:,\\d+)?)\\s+(?:\\d{4,8}\\s+)?" + UN + "(?:\\s|$)", "i");
+    const itens = [], vistos = new Set();
+    for (let i = 0; i < L.length; i++) {
+      const m = cab.exec(L[i]);
+      if (!m) continue;
+      const num = String(+m[1]).padStart(2, "0");
+      if (vistos.has(num)) break; // o mesmo TR repetido (edital + TR enviados juntos)
+      let fim = i + 1;
+      while (fim < L.length && fim < i + 60 && !cab.test(L[fim]) && !/^\d{1,2}\.\d{1,2}\.?\s+[A-ZÀ-Ú]/.test(L[fim])) fim++;
+      const bloco = L.slice(i + 1, fim);
+      const iDesc = bloco.findIndex(x => /^descri[çc][ãa]o\s*:/i.test(x));
+      let desc = "";
+      if (iDesc >= 0) {
+        const partes = [bloco[iDesc].replace(/^descri[çc][ãa]o\s*:\s*/i, "")];
+        for (let k = iDesc + 1; k < bloco.length && !/^valor\b/i.test(bloco[k]); k++) partes.push(bloco[k]);
+        desc = partes.join(" ");
+      }
+      desc = desc.replace(/^contrata[çc][ãa]o de empresa especializada (?:para|na|em) (?:a )?(?:presta[çc][ãa]o de )?servi[çc]os? (?:de |em )?/i, "")
+        .replace(/,?\s*conforme (?:o |este )?(?:termo de refer[êe]ncia|projeto b[áa]sico|edital)\.?\s*$/i, "").replace(/\s+/g, " ").trim();
+      const antes = (iDesc >= 0 ? bloco.slice(0, iDesc) : bloco).join(" ");
+      const q = reQtd.exec(antes);
+      if (!desc && !q) continue;
+      const vu = /valor unit[áa]rio[^:]*:\s*(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2})/i.exec(bloco.join(" "));
+      const un = q ? q[2] : "";
+      vistos.add(num);
+      itens.push({ item: num, descricao: desc ? desc.charAt(0).toUpperCase() + desc.slice(1) : antes.slice(0, 160),
+        unidade: un ? un.charAt(0).toUpperCase() + un.slice(1).toLowerCase().replace(/\.$/, "") : null,
+        qtd: q ? numeroBR(q[1]) : null, valorUnit: vu ? numeroBR(vu[1]) : null, valorTotal: null });
+      i = fim - 1;
+    }
+    return itens.length >= 1 && itens.some(x => x.descricao) ? itens : [];
+  }
+
   A.analisarEdital = function (original, opcoes) {
     opcoes = opcoes || {};
     const o = String(original || "");
@@ -149,12 +192,12 @@
     const risco = (nivel, titulo, detalhe, pos) => riscos.push({ nivel, titulo, detalhe: detalhe || "", trecho: pos ? recorte(o, pos.i, pos.m[0].length) : "" });
 
     /* ---- Identificação ---- */
-    let p = primeiro(t, /\b(pregao eletronico|pregao presencial|pregao|concorrencia eletronica|concorrencia|dispensa eletronica|credenciamento|chamamento publico)\s*(?:srp\s*)?(?:n[º°o.]*|numero)?\s*[:\-]?\s*(\d{1,5}\s*\/\s*\d{2,4})/);
+    let p = primeiro(t, /\b(pregao eletronico|pregao presencial|pregao|concorrencia eletronica|concorrencia|dispensa de licitacao eletronica(?:\s*\(dle\))?|dispensa eletronica|dle|credenciamento|chamamento publico)\s*(?:srp\s*)?(?:n[º°o.]*|numero)?\s*[:\-]?\s*(\d{1,5}\s*\/\s*\d{2,4})/);
     if (p) {
       const mod = p.m[1];
-      const sigla = /pregao/.test(mod) ? (/presencial/.test(mod) ? "PP" : "PE") : /concorrencia/.test(mod) ? "CE" : /dispensa/.test(mod) ? "DE" : "CH";
+      const sigla = /pregao/.test(mod) ? (/presencial/.test(mod) ? "PP" : "PE") : /concorrencia/.test(mod) ? "CE" : /dle/.test(mod) ? "DLE" : /dispensa/.test(mod) ? "DE" : "CH";
       campos.numero = sigla + " " + p.m[2].replace(/\s/g, "");
-      campos.modalidade = /pregao/.test(mod) ? (/presencial/.test(mod) || (!/eletronico/.test(mod) && /pregao presencial/.test(t)) ? "Pregão presencial" : "Pregão eletrônico") : /concorrencia/.test(mod) ? "Concorrência eletrônica" : /dispensa/.test(mod) ? "Dispensa eletrônica" : "Credenciamento";
+      campos.modalidade = /pregao/.test(mod) ? (/presencial/.test(mod) || (!/eletronico/.test(mod) && /pregao presencial/.test(t)) ? "Pregão presencial" : "Pregão eletrônico") : /concorrencia/.test(mod) ? "Concorrência eletrônica" : /dispensa|dle/.test(mod) ? "Dispensa eletrônica" : "Credenciamento";
     }
     p = primeiro(t, /processo(?: administrativo| licitatorio| sei)?\s*(?:n[º°o.]*|numero)?\s*[:\-]?\s*([\d][\d.\/-]{5,30}\d)/);
     if (p) campos.processo = o.substr(p.i + p.m[0].length - p.m[1].length, p.m[1].length);
@@ -168,11 +211,15 @@
     let linhaOrgao = null;
     const rotulo = /(?:^|\n)\s*(?:CONTRATANTE|[ÓO]RG[ÃA]O(?: GERENCIADOR| REQUISITANTE| PROMOTOR)?|UNIDADE COMPRADORA)\s*:\s*([^\n]{6,140})/i.exec(o.slice(0, 8000));
     if (rotulo) linhaOrgao = rotulo[1].replace(/\s+/g, " ").trim();
+    if (!linhaOrgao) { // "..., através da FUNDAÇÃO CENTRO DE ... - FCECON, torna público"
+      const atraves = /atrav[ée]s\s+(?:d[aoe]s?\s+)?((?:funda[çc][ãa]o|secretaria|hospital|fundo|instituto|departamento|centro|universidade|superintend[êe]ncia|companhia|ag[êe]ncia|empresa|prefeitura|c[âa]mara)[^,;]{5,160}?)\s*,?\s*(?:torna|realiza|comunica|faz saber)/i.exec(o.slice(0, 5000).replace(/\s+/g, " "));
+      if (atraves) linhaOrgao = atraves[1].trim();
+    }
     for (const re of ORG) { if (linhaOrgao) break; linhaOrgao = candidatasOrgao.find(l => re.test(l)); }
     if (linhaOrgao) campos.orgao = linhaOrgao.replace(/\s+/g, " ").trim().replace(/[–-]\s*$/, "");
     // Objeto: rótulo "OBJETO:" do quadro-resumo do início; depois "tem por objeto ..." / "o objeto da presente licitação é ..."
     const rotObj = /(?:^|\n)[ \t]*OBJETO[ \t]*:[ \t]*(?=\S)/.exec(o.slice(0, 8000));
-    p = rotObj ? { m: rotObj, i: rotObj.index } : primeiro(t, /(?:tem (?:como|por) objeto|o objeto (?:da presente licitacao|desta licitacao|deste (?:pregao|edital|certame)|do presente (?:pregao|certame|edital)) (?:e|consiste (?:em|na|no)|sera))\s+(?:a\s+|o\s+)?/)
+    p = rotObj ? { m: rotObj, i: rotObj.index } : primeiro(t, /(?:tem (?:como|por) objeto|o objeto (?:da presente (?:licitacao|dle|dispensa|contratacao)|desta (?:licitacao|dispensa)|deste (?:pregao|edital|certame|termo)|do presente (?:pregao|certame|edital|termo)) (?:e|consiste (?:em|na|no)|sera))\s+(?:a\s+|o\s+)?/)
       || primeiro(t, /(?:^|\n)[ \t]*(?:\d+(?:\.\d+)*\.?[ \t]*)?(?:do |- )?objeto[ \t]*[:.\-–][ \t]*(?=\S)/);
     if (p) {
       const ini = p.i + p.m[0].length;
@@ -255,14 +302,14 @@
       if (!campos.uf) { const ms = new RegExp("(?:/|–|- )\\s*(" + SIGLAS + ")\\b").exec(o.slice(0, 4000)); if (ms) campos.uf = ms[1]; }
     }
     const ml = /\b(?:n[oa]s?)\s+((?:Unidade Hospitalar|Hospital|UPA|Unidade de Pronto Atendimento|Pronto[- ]Socorro|Pronto Atendimento|Unidade B[áa]sica de Sa[úu]de|UBS|Centro de Sa[úu]de|Policl[íi]nica|Maternidade|Santa Casa|Ambulat[óo]rio|Centro Cir[úu]rgico|Unidade de Terapia Intensiva|UTI)\b[^.;:\n]{0,110})/i.exec(o);
-    const mlc = /servi[çc]os (?:solicitados |contratados )?(?:ser[ãa]o|dever[ãa]o ser) (?:prestados|executados|realizados)\s+((?:n[oa]s?|em)\s+(?!seguinte hor)[^.;]{5,220})/i.exec(o);
-    if (mlc) campos.local = (mlc[1].charAt(0).toUpperCase() + mlc[1].slice(1)).replace(/\s+/g, " ").trim();
+    const mlc = /servi[çc]os (?:solicitados |contratados )?(?:ser[ãa]o|dever[ãa]o ser) (?:prestados|executados|realizados)\s+((?:n[oa]s?|em)\s+(?!seguinte hor)(?:[^.;]|(?<=(?:^|[\s–-])[A-ZÀ-Ú])\.){5,220})/i.exec(o); // "D. Pedro" não encerra a frase
+    if (mlc) campos.local = (mlc[1].charAt(0).toUpperCase() + mlc[1].slice(1)).replace(/\s+/g, " ").replace(/\s*,?\s*obedecendo\b.*$/i, "").trim();
     else if (ml) campos.local = ml[1].charAt(0).toUpperCase() + ml[1].slice(1).replace(/\s*,?\s*(?:conforme|de acordo|mediante|contemplando|para|com|sendo)\b.*$/i, "").replace(/[,\s]+$/, "").trim();
     const frases = o.replace(/\r/g, "").split(/(?<=[.;])\s+|\n+/).map(x => x.replace(/^\s*(?:\d+(?:\.\d+)*\.?|[a-z]\))\s*/i, "").replace(/\s+/g, " ").trim());
     // Horários: frases com dias, turnos, escalas ou carga horária. Primeiro nas cláusulas de execução;
     // se não houver, nos trechos do objeto (ex.: "atendimento regular de segunda a sexta-feira e sobreaviso 24 horas").
     const RE_HORARIO = /segunda[- ]feira a sexta|segunda a sexta|segunda a s[áa]bado|segunda a domingo|todos os dias|ininterrupt|s[áa]bados?,|domingos|finais de semana|fins de semana|sobreaviso|plant[ãa]o de \d|plant[õo]es de \d|plant[õo]es? (?:diurnos?|noturnos?|presenciais?)|horas di[áa]rias|horas semanais|horas mensais|carga hor[áa]ria|h\/dia|h\/semana|per[íi]odo (?:da )?(?:manh|tarde|noite|diurno|noturno)|\\bturnos?\\b|\\bescala de|\\bescalas? (?:de trabalho|mensal|semanal)|\b12 ?x ?36\b|\b24 ?x ?(?:48|72)\b|\bdas \d{1,2} ?(?:h|:\d{2}|horas)(?:\d{2})? (?:[àa]s|até) \d{1,2}|\b24 ?(?:h|horas)\b|\b12 ?(?:h|horas)\b|\b6 ?(?:h|horas) di|\b4 ?(?:h|horas) di/i;
-    const EXCLUI_HORARIO = /menor(?:es)? de (?:18|dezoito|16|dezesseis)|trabalho noturno, perigoso|insalubre|n[ãa]o emprega|declara|valor|R\$|multa|pagamento|prazo de|licita[çc][ãa]o [ée]|ser[ãa]o (?:prestados|executados) n(?!o seguinte hor|os seguintes hor)|ap[óo]s a assinatura|sess[ãa]o p[úu]blica|impugna|proposta|habilita|recurso|nota fiscal/i;
+    const EXCLUI_HORARIO = /menor(?:es)? de (?:18|dezoito|16|dezesseis)|trabalho noturno, perigoso|insalubre|n[ãa]o emprega|declara|valor|R\$|multa|pagamento|prazo de|licita[çc][ãa]o [ée]|ser[ãa]o (?:prestados|executados) n(?!o seguinte hor|os seguintes hor)|ap[óo]s a assinatura|sess[ãa]o p[úu]blica|impugna|proposta|habilita|recurso|nota fiscal|telefone|whatsapp|e-?mail|@|extraordin[áa]ria/i;
     let horarios = frases.filter(f => f.length >= 20 && f.length <= 320 && RE_HORARIO.test(f) && !EXCLUI_HORARIO.test(f) && !/objeto/i.test(f));
     if (!horarios.length && campos.objetoCompleto) {
       const pedacos = campos.objetoCompleto.split(/,\s*(?=contemplando|incluindo|com |sendo|em regime|nos? (?:per[íi]odos?|turnos?|hor[áa]rios?))|;\s*/i);
@@ -282,6 +329,7 @@
       if (/^\d+(?:\.\d+)+/.test(desc) || /^(?:item|descri|do pre|dos pre)/i.test(desc) || desc.length > 520) continue;
       campos.itens.push({ item: mi[1], descricao: desc, unidade: mi[3].charAt(0).toUpperCase() + mi[3].slice(1).toLowerCase(), qtd: numeroBR(mi[4]), valorUnit: numeroBR(mi[5]), valorTotal: mi[6] ? numeroBR(mi[6]) : null });
     }
+    if (!campos.itens.length) campos.itens = itensEmBlocos(o);
     if (!campos.itens.length) campos.itens = tabelaEmColunas(o);
     if (!campos.itens.length) campos.itens = tabelaQtdAntes(o);
     // Termo de Referência publicado em arquivo separado: itens, local e horários ficam nele
@@ -292,7 +340,22 @@
       if (rotina.length) campos.horarios = ["Conforme os itens: " + rotina.slice(0, 4).join("; ")];
     }
     // A descrição do item da tabela não é cláusula de horário
-    campos.horarios = campos.horarios.filter(x => !campos.itens.some(i => i.descricao.includes(x.slice(0, 50))));
+    const chaveTxt = x => U.semAcento(String(x).toLowerCase()).replace(/^de\s+/, "").replace(/\s+/g, " ").slice(0, 45);
+    campos.horarios = campos.horarios.filter(x => !campos.itens.some(i => U.semAcento(i.descricao.toLowerCase()).includes(chaveTxt(x))));
+    // Escala por turno ("DIURNO ... 07 às 19 hs", "Noturno 19:00 às 07:00", "Manhã 07:00 às 13:00")
+    if (!campos.horarios.length) {
+      const plano = t.replace(/\s+/g, " "), turnos = {};
+      const reT = /\b(diurno|noturno|manha|tarde|vespertino|matutino)\b[^.;]{0,60}?\b(\d{1,2})(?::(\d{2}))?\s*(?:h|hs|horas)?\s*(?:as|a|ate)\s*(\d{1,2})(?::(\d{2}))?\s*(?:h|hs|horas)?\b/g;
+      let mt;
+      while ((mt = reT.exec(plano)) && Object.keys(turnos).length < 4) {
+        const a = +mt[2], b = +mt[4];
+        if (a > 23 || b > 24 || a === b || turnos[mt[1]]) continue;
+        const nome = { manha: "Manhã", matutino: "Manhã", tarde: "Tarde", vespertino: "Tarde", diurno: "Diurno", noturno: "Noturno" }[mt[1]];
+        if (Object.values(turnos).some(x => x.startsWith(nome))) continue;
+        turnos[mt[1]] = nome + ": " + U.pad(a) + "h" + (mt[3] && mt[3] !== "00" ? mt[3] : "") + " às " + U.pad(b) + "h" + (mt[5] && mt[5] !== "00" ? mt[5] : "");
+      }
+      campos.horarios = Object.values(turnos);
+    }
     if (!campos.valorEstimado && campos.itens.length && campos.itens.every(x => x.valorTotal || (x.qtd && x.valorUnit))) campos.valorEstimado = Math.round(campos.itens.reduce((s, x) => s + (x.valorTotal || x.qtd * x.valorUnit), 0) * 100) / 100;
 
     /* ---- Disputa ---- */
@@ -325,6 +388,7 @@
 
     /* ---- Execução e contrato ---- */
     if ((p = primeiro(t, /vigencia[^.\n]{0,120}?(\d{1,3})\s*(?:\([^)]{1,30}\)\s*)?(meses|dias|anos?)/))) campos.vigencia = p.m[1] + " " + p.m[2];
+    else if ((p = primeiro(t, /(?:o contrato|a contratacao|o prazo do contrato)[^.\n]{0,80}?sera de (\d{1,3})\s*(?:\([^)]{1,30}\)\s*)?(meses|dias|anos?)/))) campos.vigencia = p.m[1] + " " + p.m[2];
     if ((p = primeiro(t, /validade (?:da |das |minima da )?propostas?[^.\n]{0,80}?(\d{2,3})\s*(?:\([^)]{1,30}\)\s*)?dias/))) campos.validadeProposta = p.m[1] + " dias";
     if ((p = primeiro(t, /pagamento[^.\n]{0,160}?(?:ate|em|no prazo (?:maximo )?de)\s*(\d{1,3})\s*(?:\([^)]{1,30}\)\s*)?dias/))) {
       campos.pagamento = p.m[1] + " dias";
