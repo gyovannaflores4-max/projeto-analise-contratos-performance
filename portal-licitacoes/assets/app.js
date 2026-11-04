@@ -1351,6 +1351,124 @@
     const max = Math.max(1, ...dias.map(x => x.n));
     return '<div class="mov-wrap" title="Mensagens por dia nos últimos 7 dias"><div class="mov" aria-hidden="true">' + dias.map(x => '<i style="height:' + Math.max(2, Math.round(34 * x.n / max)) + 'px" title="' + U.fmtDataCurta(x.d) + ": " + x.n + '"></i>').join("") + "</div><span>7 dias</span></div>";
   }
+  /* ---------- Pregões suspensos ----------
+     Acompanha pregões suspensos pelo PNCP e pelo Portal de Compras Públicas (/api/suspensos): situação,
+     desde quando, motivo, nova data quando sair, documentos novos e editais do mesmo órgão com objeto
+     parecido publicados depois (possível republicação com outro número). Confere a cada 30 minutos. */
+  const INTERVALO_SUSP = 30 * 60000;
+  const suspensos = () => (S.suspensos = S.suspensos || []);
+  const estaSuspenso = d => d && /suspens/i.test(d.situacao || "");
+  function formSuspenso() {
+    abrirForm({
+      titulo: "Acompanhar pregão suspenso", tamanho: "estreito", botao: "Acompanhar",
+      campos: [{ nome: "link", rotulo: "Link do pregão", tipo: "url", req: true, span: 2, ph: "https://", dica: "Compras.gov.br (acompanhamento da compra), PNCP ou Portal de Compras Públicas." },
+        { nome: "obs", rotulo: "Observação (opcional)", span: 2, ph: "Ex.: suspenso para análise de impugnação" }],
+      validar: v => (/compra=\d{17}|pncp\.gov\.br\/app\/editais\/\d{14}\/\d{4}\/\d+|portaldecompraspublicas\.com\.br\/processos\//i.test(v.link) ? "" : "Esse link não é do Compras.gov.br, do PNCP nem do Portal de Compras Públicas."),
+      salvar: v => {
+        if (suspensos().some(x => x.link === v.link)) { toast("Esse pregão já está na lista"); return; }
+        const it = { id: U.uid(), link: v.link, obs: v.obs, adicionadoEm: U.agoraISO(), dados: null, vistos: { parecidos: [], docs: [] } };
+        suspensos().push(it); registrar("Pregão suspenso em acompanhamento: " + v.link + ".", "suspensos");
+        salvar(); render(); verificarSuspensos(it.id);
+      }
+    });
+  }
+  async function verificarSuspensos(soEste) {
+    const lista = suspensos().filter(x => soEste ? x.id === soEste : !x.consultadoEm || Date.now() - new Date(x.consultadoEm).getTime() > INTERVALO_SUSP);
+    if (!lista.length || ui.lendoSusp) return;
+    ui.lendoSusp = true;
+    try {
+      for (const it of lista) {
+        ui.lendo["s:" + it.id] = true; if (rotaAtual() === "suspensos") renderSeLivre();
+        const pn = it.dados && it.dados.pncp ? "&pncp=" + it.dados.pncp.cnpj + "-" + it.dados.pncp.ano + "-" + it.dados.pncp.seq : "";
+        try { atualizarSuspenso(it, await api("/api/suspensos?ref=" + encodeURIComponent(it.link) + pn, 65000)); it.erro = ""; }
+        catch (e) { it.erro = e.message; if (soEste) toast("Não consegui ler esse pregão agora", e.message, "crit"); }
+        it.consultadoEm = new Date().toISOString();
+        delete ui.lendo["s:" + it.id];
+        salvar(); if (rotaAtual() === "suspensos") renderSeLivre(); else atualizarNav();
+      }
+    } finally { ui.lendoSusp = false; }
+    // pregões incluídos enquanto a leitura estava em andamento entram na próxima rodada
+    if (suspensos().some(x => !x.consultadoEm)) setTimeout(() => verificarSuspensos(), 500);
+  }
+  function atualizarSuspenso(it, d) {
+    const antes = it.dados, nome = d.numero + " · " + U.corta(d.orgao, 50);
+    const novidades = [];
+    it.vistos = it.vistos || { parecidos: [], docs: [] };
+    if (antes) {
+      if (estaSuspenso(antes) && !estaSuspenso(d)) novidades.push(["Saiu da suspensão: agora está \"" + d.situacao + "\".", "pop"]);
+      else if (antes.situacao !== d.situacao) novidades.push(["Situação mudou: " + antes.situacao + " → " + d.situacao + ".", ""]);
+      const nd = d.novaData && d.novaData.data, na = antes.novaData && antes.novaData.data;
+      if (nd && nd !== na) novidades.push(["Nova data: " + U.fmtDataHora(nd) + ".", "pop"]);
+      (d.documentos || []).filter(x => !it.vistos.docs.includes(x.titulo + "|" + x.data)).forEach(x => novidades.push(["Documento novo: " + x.titulo + ".", ""]));
+    }
+    (d.parecidos || []).filter(p => !it.vistos.parecidos.includes(p.linkPncp)).forEach(p => {
+      novidades.push(["Possível republicação: " + p.numero + " (" + p.semelhanca + "% parecido), publicado em " + U.fmtData(U.soData(p.publicacao)) + ".", "pop"]);
+    });
+    it.vistos.parecidos = [...new Set(it.vistos.parecidos.concat((d.parecidos || []).map(p => p.linkPncp)))];
+    it.vistos.docs = [...new Set(it.vistos.docs.concat((d.documentos || []).map(x => x.titulo + "|" + x.data)))].slice(-200);
+    it.dados = d;
+    if (novidades.length) {
+      it.novidade = true;
+      it.historico = (it.historico || []).concat(novidades.map(n => ({ quando: U.agoraISO(), texto: n[0] }))).slice(-30);
+      novidades.forEach(n => registrar(nome + ": " + n[0], "suspensos"));
+      if (antes || novidades.some(n => /republica/.test(n[0]))) notificar(nome, novidades.map(n => n[0]).join(" "), novidades.some(n => n[1] === "pop") ? "pop" : "", { rotulo: "Ver suspensos", rota: "suspensos" });
+    }
+  }
+  // Pregão cujo chat (PNCP) mostra "Suspensa" entra sozinho na lista
+  function garantirSuspensos() {
+    let novos = 0;
+    S.chats.filter(c => /suspens/i.test(c.status || "") && !/recurs/i.test(c.status || "")).forEach(c => {
+      const e = c.editalId && edital(c.editalId);
+      const link = [e && e.link, c.link].find(l => /compra=\d{17}|pncp\.gov\.br\/app\/editais|portaldecompraspublicas/i.test(l || ""));
+      if (!link || (e && !ativo(e)) || suspensos().some(x => x.link === link || (e && x.editalId === e.id))) return;
+      suspensos().push({ id: U.uid(), link, editalId: e ? e.id : null, adicionadoEm: U.agoraISO(), dados: null, vistos: { parecidos: [], docs: [] } });
+      novos++;
+    });
+    if (novos) salvar();
+  }
+  function pgSuspensos() {
+    const lista = suspensos().slice().sort((a, b) => (b.novidade ? 1 : 0) - (a.novidade ? 1 : 0) || String((a.dados || {}).desde || "9").localeCompare(String((b.dados || {}).desde || "9")));
+    const susp = lista.filter(x => estaSuspenso(x.dados)).length, rep = lista.filter(x => x.dados && (x.dados.parecidos || []).length).length;
+    const voltaram = lista.filter(x => x.dados && !estaSuspenso(x.dados)).length;
+    const html = '<div class="cab"><div><span class="eyebrow">Operação</span><h1>Pregões suspensos</h1><p>O portal confere a cada 30 minutos a situação, a nova data, os documentos novos e se o órgão publicou outro edital com o mesmo objeto (número diferente).</p></div>' +
+      '<div class="cab-acoes"><button class="btn ghost" data-acao="atualizarSuspensos">' + ic("atualizar") + 'Conferir agora</button><button class="btn primario" data-acao="novoSuspenso">' + ic("mais") + "Acompanhar pregão</button></div></div>" +
+      '<div class="kpis kpis-3"><div class="kpi"><span class="rot">Suspensos</span><span class="val">' + susp + '</span><span class="sub">sem retomada ainda</span></div>' +
+      '<div class="kpi"><span class="rot">Saíram da suspensão</span><span class="val">' + voltaram + '</span><span class="sub">ou o PNCP não mostra suspensão</span></div>' +
+      '<div class="kpi' + (rep ? " kpi-atencao" : "") + '"><span class="rot">Possível republicação</span><span class="val">' + rep + '</span><span class="sub">mesmo órgão, objeto parecido</span></div></div>' +
+      (lista.length ? '<div class="susp-lista">' + lista.map(suspensoHTML).join("") + "</div>" : '<div class="card">' + vazio("aviso", "Nenhum pregão suspenso em acompanhamento.", '<button class="btn primario" data-acao="novoSuspenso">' + ic("mais") + "Acompanhar pregão</button>") + "</div>");
+    setTimeout(() => { let mudou = false; suspensos().forEach(x => { if (x.novidade) { x.novidade = false; mudou = true; } }); if (mudou) { salvar(); atualizarNav(); } }, 1500);
+    return html;
+  }
+  function suspensoHTML(it) {
+    const d = it.dados, lendo = ui.lendo["s:" + it.id];
+    const quando = s => s ? U.fmtDataHora(s) : "—";
+    if (!d) return '<article class="card susp"><div class="susp-h"><b>' + h(it.link) + "</b>" + (lendo ? '<span class="pill info sem-ponto">Lendo…</span>' : "") + "</div>" + (it.erro ? '<p class="nota" style="color:var(--crit)">' + h(it.erro) + "</p>" : '<p class="muted">Buscando os dados do pregão…</p>') + rodapeSusp(it) + "</article>";
+    const susp = estaSuspenso(d);
+    const dias = d.desde ? -U.diasAte(U.soData(d.desde)) : null;
+    const depois = (d.documentos || []).filter(x => !d.desde || (x.data || "") >= U.soData(d.desde)).slice(-4).reverse();
+    const ev = (d.eventos || []).filter(x => !d.desde || x.data >= d.desde).slice(-3).reverse();
+    return '<article class="card susp' + (it.novidade ? " novo" : "") + '">' +
+      '<div class="susp-h"><div><b>' + h(d.numero) + "</b>" + (it.novidade ? ' <span class="pill pop sem-ponto">Novidade</span>' : "") + '<span class="org">' + h(d.orgao) + (d.municipio ? " · " + h(d.municipio) + (d.uf ? "/" + h(d.uf) : "") : "") + '</span></div><div class="chips"><span class="pill ' + (susp ? "crit" : "ok") + '">' + h(d.situacao || "—") + '</span><span class="tag-portal" style="--cor:' + corPortal(d.portal) + '">' + h(d.portal || "") + "</span></div></div>" +
+      '<p class="susp-obj">' + h(U.corta(d.objeto, 260)) + "</p>" +
+      '<dl class="datas susp-datas"><div><dt>Suspenso desde</dt><dd>' + (susp && d.desde ? U.fmtData(U.soData(d.desde)) + ' <span class="muted">(há ' + U.plural(dias, "dia", "dias") + ")</span>" : "—") + "</dd></div>" +
+      "<div><dt>Volta quando?</dt><dd>" + (d.novaData ? '<b style="color:var(--ok)">' + quando(d.novaData.data) + "</b>" : susp ? '<span class="muted">Sem nova data publicada</span>' : d.sessao && d.sessao > U.agoraISO() ? "Sessão em " + quando(d.sessao) : '<span class="muted">Confira no portal de origem</span>') + "</dd></div>" +
+      "<div><dt>Sessão original</dt><dd>" + quando(d.sessao) + "</dd></div></dl>" +
+      (d.motivo ? '<p class="susp-motivo"><b>Motivo:</b> ' + h(U.corta(d.motivo.replace(/^motivo:\s*/i, ""), 320)) + "</p>" : "") +
+      (d.novaData && d.novaData.origem ? '<p class="nota">Nova data tirada de: ' + h(d.novaData.origem) + "</p>" : "") +
+      (!susp && !it.editalId && /PNCP/.test(d.fonte) && /divulgada/i.test(d.situacao) ? '<p class="nota">No PNCP o pregão aparece como "Divulgada". Se ele está suspenso no portal de origem, a suspensão pode não ter sido lançada no PNCP: confira no Compras.gov.br.</p>' : "") +
+      (depois.length || ev.length ? '<div class="susp-bloco"><h4>' + (d.desde ? "Depois da suspensão" : "Documentos e eventos") + "</h4><ul>" + depois.map(x => "<li><time>" + (x.data ? U.fmtData(U.soData(x.data)) : "") + "</time> " + (x.url ? '<a href="' + h(x.url) + '" target="_blank" rel="noopener">' + h(U.corta(x.titulo, 110)) + "</a>" : h(U.corta(x.titulo, 110))) + "</li>").join("") + ev.map(x => "<li><time>" + U.fmtData(U.soData(x.data)) + "</time> " + h(U.corta(x.texto, 160)) + "</li>").join("") + "</ul></div>" : "") +
+      ((d.parecidos || []).length ? '<div class="susp-bloco rep"><h4>' + ic("aviso") + "Possível republicação (mesmo órgão, objeto parecido)</h4>" + d.parecidos.map(p => '<div class="rep-item"><div><b>' + h(p.numero) + "</b> · " + p.semelhanca + '% parecido · publicado em ' + U.fmtData(U.soData(p.publicacao)) + (p.sessao ? " · sessão " + U.fmtDataHora(p.sessao) : "") + ' · <span class="muted">' + h(p.situacao) + '</span><p class="muted">' + h(U.corta(p.objeto, 200)) + '</p></div><div class="linha-acoes"><a class="btn peq ghost" href="' + h(p.link) + '" target="_blank" rel="noopener">' + ic("link") + 'Abrir</a><button class="btn peq primario" data-acao="cadastrarRepublicado" data-id="' + it.id + '" data-link="' + h(p.linkPncp) + '">' + ic("mais") + "Cadastrar edital</button></div></div>").join("") + "</div>" : "") +
+      (it.obs ? '<p class="nota">Observação: ' + h(it.obs) + "</p>" : "") + rodapeSusp(it) + "</article>";
+  }
+  function rodapeSusp(it) {
+    const d = it.dados || {};
+    return '<div class="linha-acoes susp-rodape"><a class="btn peq ghost" href="' + h(it.link) + '" target="_blank" rel="noopener">' + ic("link") + "Abrir no portal</a>" +
+      (d.linkPncp && d.linkPncp !== it.link ? '<a class="btn peq ghost" href="' + h(d.linkPncp) + '" target="_blank" rel="noopener">Ver no PNCP</a>' : "") +
+      '<button class="btn peq ghost" data-acao="lerSuspenso" data-id="' + it.id + '">' + ic("atualizar") + (ui.lendo["s:" + it.id] ? "Lendo…" : "Atualizar") + "</button>" +
+      '<button class="btn peq ghost" data-acao="removerSuspenso" data-id="' + it.id + '">' + ic("lixo") + "Remover</button>" +
+      '<span class="muted" style="margin-left:auto;font-size:12.5px">' + (it.consultadoEm ? "conferido " + U.desde(U.isoDataHora(new Date(it.consultadoEm))) : "") + "</span></div>";
+  }
+
   function pgChats() {
     const cab = '<div class="cab"><div><span class="eyebrow">Operação</span><h1>Chats dos pregões</h1><p>Acompanhe o que o pregoeiro escreve. Mensagens de retomada, suspensão, convocação e recurso ficam destacadas, e qualquer menção à ' + h(apelido()) + ' acende o alerta.</p></div><div class="cab-acoes">' +
       (S.exemplo || S._exploracao ? '<button class="btn ghost" data-acao="simularMsg">' + ic("raio") + "Simular mensagem</button>" : "") + '<button class="btn primario" data-acao="novoChat">' + ic("mais") + "Monitorar pregão</button></div></div>";
@@ -1965,7 +2083,7 @@
      Roteamento e renderização
      ================================================================= */
   const PAGINAS = {
-    painel: { html: pgPainel }, editais: { html: pgEditais, depois: ligarArraste }, propostas: { html: pgPropostas }, precos: { html: pgPrecos },
+    painel: { html: pgPainel }, editais: { html: pgEditais, depois: ligarArraste }, propostas: { html: pgPropostas }, precos: { html: pgPrecos }, suspensos: { html: pgSuspensos },
     chats: { html: pgChats, depois: depoisChats }, analise: { html: pgAnalise, depois: ligarAnalise }, recursos: { html: pgRecursos },
     documentos: { html: pgDocumentos }, portais: { html: pgPortais }, alertas: { html: pgAlertas }, ajustes: { html: pgAjustes }
   };
@@ -1992,6 +2110,7 @@
     const cont = {
       editais: S.editais.filter(ativo).length,
       propostas: al.filter(a => a.tipo === "proposta" && a.nivel !== "info").length,
+      suspensos: suspensos().filter(x => x.novidade).length,
       chats: S.chats.reduce((s, c) => s + naoLidas(c).length, 0),
       recursos: al.filter(a => a.tipo === "recurso" && a.nivel !== "info").length,
       documentos: docsAtivos().filter(d => situacaoDoc(d).cls === "crit").length,
@@ -2037,6 +2156,15 @@
   }
 
   const ACOES = {
+    novoSuspenso: () => formSuspenso(),
+    atualizarSuspensos: () => { suspensos().forEach(x => { x.consultadoEm = null; }); verificarSuspensos(); toast("Conferindo os pregões suspensos", "Leva uns 15 segundos por pregão."); },
+    lerSuspenso: d => verificarSuspensos(d.id),
+    removerSuspenso: d => { const it = suspensos().find(x => x.id === d.id); confirmar("Parar de acompanhar?", "<b>" + h((it.dados && it.dados.numero) || it.link) + "</b> sai da lista de suspensos.", "Remover", () => { S.suspensos = suspensos().filter(x => x.id !== d.id); S.apagados = (S.apagados || []).concat(d.id).slice(-1000); atualizar(); }); },
+    cadastrarRepublicado: d => {
+      const it = suspensos().find(x => x.id === d.id), p = ((it && it.dados && it.dados.parecidos) || []).find(x => x.linkPncp === d.link);
+      if (!p) return;
+      formEdital(null, { numero: p.numero.replace(/^Pregão Eletrônico\s*/i, "PE ").replace(/^Dispensa\s*/i, "DE "), orgao: it.dados.orgao, municipio: it.dados.municipio, uf: it.dados.uf, objeto: p.objeto, link: p.link, sessao: p.sessao, portal: /compras|cnet|serpro/i.test(p.link) ? "Compras.gov.br" : it.dados.portal || "Outro" });
+    },
     gerarChaveRobo: () => {
       const gerar = async () => {
         const { data, error } = await nuvem.cliente.rpc("portal_gerar_chave_robo");
@@ -2361,7 +2489,7 @@
   }
   /* Junta a versão deste navegador com uma versão mais nova da nuvem (outro computador, ou dados carregados
      pelo Claude). Itens são unidos pelo id; o que foi excluído aqui não volta; mensagens de chat são unidas. */
-  const LISTAS = ["editais", "recursos", "documentos", "portais", "chats"];
+  const LISTAS = ["editais", "recursos", "documentos", "portais", "chats", "suspensos"];
   function mesclarEstados(local, remoto) {
     const apagados = new Set([].concat(local.apagados || [], remoto.apagados || []));
     const r = normalizar(remoto), out = Object.assign({}, local);
@@ -2560,14 +2688,16 @@
         toast(U.plural(criticos.length, "alerta crítico", "alertas críticos") + " hoje", criticos.slice(0, 2).map(a => a.titulo).join(" · "), "pop", { rotulo: "Ver alertas", rota: "alertas" });
       }
       garantirMonitoramento();
+      garantirSuspensos();
       verificarChats();
+      setTimeout(() => verificarSuspensos(), 5000);
       sincronizarRobo();
     }, 900);
     // A cada minuto: atualiza contadores, lê chats automáticos e redesenha telas sem formulário aberto
     let minuto = 0;
     setInterval(() => {
       minuto++;
-      if (minuto % 5 === 0) garantirMonitoramento();
+      if (minuto % 5 === 0) { garantirMonitoramento(); garantirSuspensos(); verificarSuspensos(); }
       verificarChats();
       sincronizarRobo();
       if (minuto % 2 === 0) puxarNuvem();

@@ -101,7 +101,8 @@ async function comprasGov(codigo, link) {
   for (const [q, pg] of [[uasg, 1], [num + "/" + ano, 1], [uasg, 2], [uasg, 3], [num + "/" + ano, 2], [uasg, 4], [uasg, 5]]) {
     const j = await buscaPncp(q, pg);
     const itens = (j && j.items) || [];
-    const achado = itens.find(it => String(it.unidade_codigo) === uasg && new RegExp("\\b" + num + "\\b").test(String(it.title) + " " + String(it.description) + " " + String(it.numero)));
+    // número E ano: "Edital nº 12/2026" (sem o ano, pegava o 12/2025 da mesma UASG)
+    const achado = itens.find(it => String(it.unidade_codigo) === uasg && new RegExp("\\b0*" + num + "\\s*/\\s*" + ano + "\\b").test(String(it.title)));
     if (achado) {
       const m = String(achado.item_url || "").match(/(\d{14})\/(\d{4})\/(\d+)/);
       const d = m ? await dadosPncp(m[1], m[2], m[3]) : null;
