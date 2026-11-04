@@ -455,11 +455,12 @@
     registrar(e.numero + " passou para \"" + ETAPA(alvo).nome + "\" (situação no portal: " + c.status + ").", "editais");
     notificar(e.numero + ": " + ETAPA(alvo).nome, "A etapa foi atualizada pela situação no e-compras.AM (" + c.status + ").", alvo === "ganho" ? "pop" : "", { rotulo: "Ver edital", rota: "editais", ref: e.id });
   }
-  // Começa a acompanhar sozinho todo pregão do e-compras.AM com proposta cadastrada (ou em disputa em diante)
+  // Começa a acompanhar sozinho todo pregão ativo do e-compras.AM
   const ehEcompras = e => /e-compras/i.test(e.portal || "") || /e-compras\.am\.gov\.br/i.test(e.link || "");
   function garantirMonitoramento() {
     const novos = [];
-    S.editais.filter(e => ativo(e) && ehEcompras(e) && (e.propostaStatus === "cadastrada" || ["cadastrada", "disputa", "habilitacao", "recurso"].includes(e.etapa))).forEach(e => {
+    // todo edital ativo do e-compras.AM: se a empresa aparecer no ranking, a proposta é marcada como cadastrada sozinha
+    S.editais.filter(e => ativo(e) && ehEcompras(e)).forEach(e => {
       let c = chatDoEdital(e.id);
       const link = /ident=\d+/.test(e.link || "") ? e.link : "";
       if (!c) {
