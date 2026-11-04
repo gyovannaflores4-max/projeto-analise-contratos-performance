@@ -17,7 +17,7 @@
   const PLATAFORMAS = [
     [/compras\.gov|comprasnet|comprasgovernamentais|gov\.br\/compras/, "Compras.gov.br"],
     [/\bbll\b|bolsa de licitac|bllcompras/, "BLL"],
-    [/licitacoes-e|licitacoes e\b|banco do brasil/, "Licitações-e"],
+    [/licitacoes-e\b|licitacoes-e\.com|licitacoes e do banco do brasil/, "Licitações-e"],
     [/portal de compras publicas|portaldecompraspublicas/, "Portal de Compras Públicas"],
     [/\bbnc\b|bolsa nacional de compras|bnccompras/, "BNC"],
     [/licitanet/, "Licitanet"],
@@ -184,6 +184,65 @@
     return itens.length >= 1 && itens.some(x => x.descricao) ? itens : [];
   }
 
+  /* Tabela linha a linha, com a descrição quebrada em várias linhas:
+       TR:      Item | Quantidade | Unidade | Especificação | Preço Uni. | Preço Total
+                01 12 MÊS / Contratação de empresa ... (várias linhas) / R$:25.796,84 R$ / 309.562,08
+       Minuta:  ITEM UNID. DESCRIÇÃO QUANT. VALOR UN. VALOR TOTAL
+                01 MÊS CONTRATAÇÃO DE EMPRESA ... / 12 R$ ---------- R$ ------------
+     Ignora cabeçalhos e rodapés repetidos em todas as páginas. Fica com a tabela mais completa. */
+  function tabelaLinhas(o) {
+    const L0 = o.replace(/\r/g, "").replace(/[\ue000-\uf8ff\u2022\u25aa\u25cf]/g, " ").split("\n").map(x => x.replace(/\s+/g, " ").trim()).filter(Boolean);
+    const freq = {};
+    L0.forEach(x => { freq[x] = (freq[x] || 0) + 1; });
+    const L = L0.filter(x => !(freq[x] >= 3 && x.length < 120 && !/^\d/.test(x)));
+    const U2 = "(M[ÊE]S(?:ES)?|UNID(?:ADES?)?|UN|UND|HORAS?|SERVI[ÇC]OS?|CONSULTAS?|PLANT[ÃA]O|PLANT[ÕO]ES|EXAMES?|SESS[ÃA]O|SESS[ÕO]ES|PROCEDIMENTOS?|DI[ÁA]RIAS?|GLOBAL)\\.?";
+    const rowQtdUn = new RegExp("^(\\d{1,3})[.)]?\\s+(\\d[\\d.]*(?:,\\d+)?)\\s+" + U2 + "(?:\\s+(.*))?$", "i");
+    const rowUn = new RegExp("^(\\d{1,3})[.)]?\\s+" + U2 + "\\s+(\\D.*)$", "i");
+    const qtdDepois = /^(\d[\d.]*(?:,\d+)?)(?:\s+R\$.*)?$/;
+    const fim = /^(?:total\b|valor (?:total|global)|cl[áa]usula|\d+(?:\.\d+)+\.?\s|\d+\.\s+[A-ZÀ-Ú]|anexo\b|observa[çc]|justificativa)/i;
+    const moedas = x => (x.match(/\d{1,3}(?:\.\d{3})*,\d{2}/g) || []).map(numeroBR);
+    const tabelas = [];
+    for (let i = 0; i < L.length; i++) {
+      if (!/^item\b/i.test(L[i])) continue;
+      const cab = L.slice(i, i + 9).join(" ");
+      if (!/quant|qtd|qtde|qte/i.test(cab) || !/unid|\bun\b|und/i.test(cab)) continue;
+      const itens = [];
+      let atual = null, k = i + 1;
+      const fecha = () => {
+        if (!atual) return;
+        let d = atual.desc.join(" ").replace(/\s+/g, " ").trim();
+        if (d && d === d.toUpperCase()) d = d.toLowerCase().replace(/(^|[.!?]\s+)(\S)/g, (z, a, b) => a + b.toUpperCase()); // texto todo em maiúsculas
+        if (d.length >= 5) itens.push(Object.assign(atual.item, { descricao: d }));
+        atual = null;
+      };
+      for (; k < L.length && k < i + 200; k++) {
+        const x = L[k];
+        let m;
+        if ((m = rowQtdUn.exec(x)) && !/^\d{1,3}(?:\.\d{3})*,\d{2}/.test(m[2])) { fecha(); atual = { item: { item: m[1], qtd: numeroBR(m[2]), unidade: m[3], valorUnit: null, valorTotal: null }, desc: m[4] ? [m[4]] : [] }; continue; }
+        if ((m = rowUn.exec(x))) { fecha(); atual = { item: { item: m[1], qtd: null, unidade: m[2], valorUnit: null, valorTotal: null }, desc: [m[3]] }; continue; }
+        if (!atual) { if (k > i + 9) break; continue; }
+        if (fim.test(x)) break;
+        if (/R\$|^\d{1,3}(?:\.\d{3})*,\d{2}$/.test(x)) { // valores (ou "12 R$ ---- R$ ----", com a quantidade na frente)
+          const q = qtdDepois.exec(x);
+          if (q && atual.item.qtd === null && !/,\d{2}$/.test(q[1])) atual.item.qtd = numeroBR(q[1]);
+          moedas(x).forEach(v => { if (atual.item.valorUnit === null) atual.item.valorUnit = v; else if (atual.item.valorTotal === null) atual.item.valorTotal = v; });
+          continue;
+        }
+        if (atual.item.qtd === null && /^\d[\d.]*(?:,\d+)?$/.test(x)) { atual.item.qtd = numeroBR(x); continue; }
+        atual.desc.push(x);
+      }
+      fecha();
+      if (itens.length) {
+        itens.forEach(it => { it.unidade = it.unidade.charAt(0).toUpperCase() + it.unidade.slice(1).toLowerCase().replace(/\.$/, ""); });
+        const nota = itens.reduce((s, it) => s + (it.qtd ? 2 : 0) + (it.valorUnit ? 2 : 0) + (it.valorTotal ? 1 : 0), 0) / itens.length;
+        tabelas.push({ itens, nota });
+      }
+      i = k;
+    }
+    tabelas.sort((a, b) => b.nota - a.nota);
+    return tabelas.length ? tabelas[0].itens : [];
+  }
+
   A.analisarEdital = function (original, opcoes) {
     opcoes = opcoes || {};
     const o = String(original || "");
@@ -192,14 +251,14 @@
     const risco = (nivel, titulo, detalhe, pos) => riscos.push({ nivel, titulo, detalhe: detalhe || "", trecho: pos ? recorte(o, pos.i, pos.m[0].length) : "" });
 
     /* ---- Identificação ---- */
-    let p = primeiro(t, /\b(pregao eletronico|pregao presencial|pregao|concorrencia eletronica|concorrencia|dispensa de licitacao eletronica(?:\s*\(dle\))?|dispensa eletronica|dle|credenciamento|chamamento publico)\s*(?:srp\s*)?(?:n[º°o.]*|numero)?\s*[:\-]?\s*(\d{1,5}\s*\/\s*\d{2,4})/);
+    let p = primeiro(t, /\b(pregao eletronico|pregao presencial|pregao|concorrencia eletronica|concorrencia|dispensa de licitacao eletronica(?:\s*\(dle\))?|dispensa eletronica|dle|credenciamento|chamamento publico)\s*(?:srp\s*)?(?:n[º°o.]*|numero)?\s*[:\-]?\s*(\d{1,5}\s*\/\s*(?:[a-z]{2,8}\s*\/\s*)?\d{2,4})/);
     if (p) {
       const mod = p.m[1];
       const sigla = /pregao/.test(mod) ? (/presencial/.test(mod) ? "PP" : "PE") : /concorrencia/.test(mod) ? "CE" : /dle/.test(mod) ? "DLE" : /dispensa/.test(mod) ? "DE" : "CH";
-      campos.numero = sigla + " " + p.m[2].replace(/\s/g, "");
+      campos.numero = sigla + " " + p.m[2].replace(/\s/g, "").replace(/\/[a-z]{2,8}\//, "/"); // 018/FMS/2026 → 018/2026
       campos.modalidade = /pregao/.test(mod) ? (/presencial/.test(mod) || (!/eletronico/.test(mod) && /pregao presencial/.test(t)) ? "Pregão presencial" : "Pregão eletrônico") : /concorrencia/.test(mod) ? "Concorrência eletrônica" : /dispensa|dle/.test(mod) ? "Dispensa eletrônica" : "Credenciamento";
     }
-    p = primeiro(t, /processo(?: administrativo| licitatorio| sei)?\s*(?:n[º°o.]*|numero)?\s*[:\-]?\s*([\d][\d.\/-]{5,30}\d)/);
+    p = primeiro(t, /processo(?: administrativo| licitatorio| sei)?\s*(?:n[º°o.]*|numero)?\s*[:\-]?\s*(\d[\d.\/-]{5,30}\d|\d{1,6}\/[a-z]{2,8}\/\d{2,4})/);
     if (p) campos.processo = o.substr(p.i + p.m[0].length - p.m[1].length, p.m[1].length);
     // Órgão: primeira linha com cara de nome de órgão
     const linhas = o.split(/\n/).slice(0, 40);
@@ -219,7 +278,7 @@
     if (linhaOrgao) campos.orgao = linhaOrgao.replace(/\s+/g, " ").trim().replace(/[–-]\s*$/, "");
     // Objeto: rótulo "OBJETO:" do quadro-resumo do início; depois "tem por objeto ..." / "o objeto da presente licitação é ..."
     const rotObj = /(?:^|\n)[ \t]*OBJETO[ \t]*:[ \t]*(?=\S)/.exec(o.slice(0, 8000));
-    p = rotObj ? { m: rotObj, i: rotObj.index } : primeiro(t, /(?:tem (?:como|por) objeto|o objeto (?:da presente (?:licitacao|dle|dispensa|contratacao)|desta (?:licitacao|dispensa)|deste (?:pregao|edital|certame|termo)|do presente (?:pregao|certame|edital|termo)) (?:e|consiste (?:em|na|no)|sera))\s+(?:a\s+|o\s+)?/)
+    p = rotObj ? { m: rotObj, i: rotObj.index } : primeiro(t, /(?:tem (?:como|por) objeto|constitui(?:-se)? (?:o )?objeto d[ao] presente (?:licitacao|pregao|certame|edital)(?: a| o)?|o objeto (?:da presente (?:licitacao|dle|dispensa|contratacao)|desta (?:licitacao|dispensa)|deste (?:pregao|edital|certame|termo)|do presente (?:pregao|certame|edital|termo)) (?:e|consiste (?:em|na|no)|sera))\s+(?:a\s+|o\s+)?/)
       || primeiro(t, /(?:^|\n)[ \t]*(?:\d+(?:\.\d+)*\.?[ \t]*)?(?:do |- )?objeto[ \t]*[:.\-–][ \t]*(?=\S)/);
     if (p) {
       const ini = p.i + p.m[0].length;
@@ -232,9 +291,12 @@
 
     /* ---- Datas ---- */
     // Forma "às 10:00 horas do dia 18 de novembro de 2026 (...) será realizada a sessão"
-    for (const x of todos(t, /\bas \d{1,2}(?::\d{2}|h\d{0,2})? ?(?:horas|hs|h)?,? (?:do |de |no )?(?:dia )?(?=\d)/)) {
+    for (const x of todos(t, /\bas \d{1,2}(?::\d{2}|h\d{0,2}(?:min)?)? ?(?:horas|hs|h)?,? (?:do |de |no )?(?:dia )?(?=\d)/)) {
+      const antes = t.slice(Math.max(0, x.i - 70), x.i);
+      // "Início às 8h do dia 30/10 até às 8h15min do dia 18/11" é o período de recebimento das propostas, não a sessão
+      if (/recebimento|acolhimento|envio das|cadastramento|inicio as|a partir d|\bate $|\bate as $/.test(antes) && !/sessao|disputa|abertura/.test(antes.slice(-45))) continue;
       const d = dataPerto(t, x.i, 90);
-      if (d && /sessao|abertura|disputa|recebimento das propostas|lances/.test(t.slice(x.i, x.i + 400))) { campos.sessao = d; break; }
+      if (d && /sessao|abertura|disputa|recebimento das propostas|lances/.test(antes.slice(-60) + t.slice(x.i, x.i + 400))) { campos.sessao = d; break; }
     }
     const chavesSessao = [/data (?:e hora )?(?:da |de |do )?(?:licitacao|abertura|realizacao|inicio|disputa|certame)(?: da sessao| do certame| das propostas)?/, /sessao publica/, /abertura da sessao|abertura das propostas/, /inicio da (?:sessao|disputa)/, /data da sessao/];
     for (const re of campos.sessao ? [] : chavesSessao) {
@@ -243,6 +305,15 @@
     }
     for (const x of todos(t, /(?:limite|prazo final|ate)[^.\n]{0,40}(?:recebimento|cadastr|envio|acolhimento)[^.\n]{0,20}propostas?|recebimento das propostas ate/)) {
       const d = dataPerto(t, x.i); if (d) { campos.limiteProposta = d; break; }
+    }
+    if (!campos.limiteProposta) { // "RECEBIMENTO DAS PROPOSTAS: Início às 8h do dia 30/10/2026 até às 8h15min do dia 18/11/2026"
+      for (const x of todos(t, /recebimento\s+(?:das|de)\s+propostas/)) {
+        const j = t.slice(x.i, x.i + 220).replace(/\s+/g, " "), a = /\bate (?:as )?/.exec(j);
+        if (!a) continue;
+        const m = /^(?:(\d{1,2})\s*(?:h|:)\s*(\d{2})?\s*(?:min(?:utos)?)?\s*(?:horas\s*)?,?\s*(?:do |de )?(?:dia )?)?(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(j.slice(a.index + a[0].length));
+        if (m) { campos.limiteProposta = m[5] + "-" + U.pad(+m[4]) + "-" + U.pad(+m[3]) + (m[1] ? "T" + U.pad(+m[1]) + ":" + U.pad(m[2] ? +m[2] : 0) : ""); break; }
+        const d = dataPerto(j, a.index); if (d) { campos.limiteProposta = d; break; }
+      }
     }
     if (campos.sessao) {
       campos.impugnacaoAte = U.subtrairDiasUteis(campos.sessao, 3);
@@ -302,21 +373,38 @@
       if (!campos.uf) { const ms = new RegExp("(?:/|–|- )\\s*(" + SIGLAS + ")\\b").exec(o.slice(0, 4000)); if (ms) campos.uf = ms[1]; }
     }
     const ml = /\b(?:n[oa]s?)\s+((?:Unidade Hospitalar|Hospital|UPA|Unidade de Pronto Atendimento|Pronto[- ]Socorro|Pronto Atendimento|Unidade B[áa]sica de Sa[úu]de|UBS|Centro de Sa[úu]de|Policl[íi]nica|Maternidade|Santa Casa|Ambulat[óo]rio|Centro Cir[úu]rgico|Unidade de Terapia Intensiva|UTI)\b[^.;:\n]{0,110})/i.exec(o);
-    const mlc = /servi[çc]os (?:solicitados |contratados )?(?:ser[ãa]o|dever[ãa]o ser) (?:prestados|executados|realizados)\s+((?:n[oa]s?|em)\s+(?!seguinte hor)(?:[^.;]|(?<=(?:^|[\s–-])[A-ZÀ-Ú])\.){5,220})/i.exec(o); // "D. Pedro" não encerra a frase
+    const mlc = /servi[çc]os (?:solicitados |contratados )?(?:ser[ãa]o|dever[ãa]o ser) (?:prestados|executados|realizados)\s+((?:n[oa]s?|em)\s+(?!seguinte hor|conformidade|observ[âa]ncia|conson[âa]ncia|acordo|estrita|perfeit)(?:[^.;]|(?<=(?:^|[\s–-])[A-ZÀ-Ú])\.){5,320})/i.exec(o); // "D. Pedro" não encerra a frase
     if (mlc) campos.local = (mlc[1].charAt(0).toUpperCase() + mlc[1].slice(1)).replace(/\s+/g, " ").replace(/\s*,?\s*obedecendo\b.*$/i, "").trim();
     else if (ml) campos.local = ml[1].charAt(0).toUpperCase() + ml[1].slice(1).replace(/\s*,?\s*(?:conforme|de acordo|mediante|contemplando|para|com|sendo)\b.*$/i, "").replace(/[,\s]+$/, "").trim();
-    const frases = o.replace(/\r/g, "").split(/(?<=[.;])\s+|\n+/).map(x => x.replace(/^\s*(?:\d+(?:\.\d+)*\.?|[a-z]\))\s*/i, "").replace(/\s+/g, " ").trim());
+    // Junta as linhas que o PDF quebrou no meio da frase (a próxima linha não começa cláusula nem título)
+    const unido = o.replace(/\r/g, "").split("\n").filter(x => !RUIDO_PDF.test(x.trim())).join("\n").replace(/([^.;:\n])[ \t]*\n(?![ \t]*(?:\d+(?:\.\d+)*[.)]?\s|[a-z]\)\s|CL[ÁA]USULA\b|[A-ZÀ-Ú][A-ZÀ-Ú ,–-]{12,}\n))/g, "$1 ");
+    const frases = unido.split(/(?<=[.;])\s+|\n+/).map(x => x.replace(/^\s*(?:\d+(?:\.\d+)*\.?|[a-z]\))\s*/i, "").replace(/\s+/g, " ").trim());
+    const pareceTabela = f => { const tk = f.split(/\s+/); return tk.length > 6 && tk.filter(x => /^[\d.,•]+$/.test(x)).length / tk.length > 0.2; };
+    const caixaAlta = f => { const l = f.replace(/[^A-Za-zÀ-ú]/g, ""); return l.length > 10 && l.replace(/[^A-ZÀ-Ú]/g, "").length / l.length > 0.6; };
+    // Frase longa: fica só o trecho (entre vírgulas) que fala do horário
+    const enxuga = f => {
+      if (f.length <= 240) return f;
+      const partes = f.split(/,\s+/), i = partes.findIndex(x => RE_HORARIO.test(x));
+      if (i < 0) return f.slice(0, 240);
+      let r = partes[i];
+      if (partes[i + 1] && (RE_HORARIO.test(partes[i + 1]) || /^(?:inclusive|aos?|nos?|de|em)\b/i.test(partes[i + 1])) && (r + partes[i + 1]).length < 260) r += ", " + partes[i + 1];
+      r = r.replace(/^(?:de modo a (?:assegurar|garantir)|assegurando|garantindo|bem como|e)\s+/i, "").trim();
+      return r.charAt(0).toUpperCase() + r.slice(1);
+    };
     // Horários: frases com dias, turnos, escalas ou carga horária. Primeiro nas cláusulas de execução;
     // se não houver, nos trechos do objeto (ex.: "atendimento regular de segunda a sexta-feira e sobreaviso 24 horas").
     const RE_HORARIO = /segunda[- ]feira a sexta|segunda a sexta|segunda a s[áa]bado|segunda a domingo|todos os dias|ininterrupt|s[áa]bados?,|domingos|finais de semana|fins de semana|sobreaviso|plant[ãa]o de \d|plant[õo]es de \d|plant[õo]es? (?:diurnos?|noturnos?|presenciais?)|horas di[áa]rias|horas semanais|horas mensais|carga hor[áa]ria|h\/dia|h\/semana|per[íi]odo (?:da )?(?:manh|tarde|noite|diurno|noturno)|\\bturnos?\\b|\\bescala de|\\bescalas? (?:de trabalho|mensal|semanal)|\b12 ?x ?36\b|\b24 ?x ?(?:48|72)\b|\bdas \d{1,2} ?(?:h|:\d{2}|horas)(?:\d{2})? (?:[àa]s|até) \d{1,2}|\b24 ?(?:h|horas)\b|\b12 ?(?:h|horas)\b|\b6 ?(?:h|horas) di|\b4 ?(?:h|horas) di/i;
-    const EXCLUI_HORARIO = /menor(?:es)? de (?:18|dezoito|16|dezesseis)|trabalho noturno, perigoso|insalubre|n[ãa]o emprega|declara|valor|R\$|multa|pagamento|prazo de|licita[çc][ãa]o [ée]|ser[ãa]o (?:prestados|executados) n(?!o seguinte hor|os seguintes hor)|ap[óo]s a assinatura|sess[ãa]o p[úu]blica|impugna|proposta|habilita|recurso|nota fiscal|telefone|whatsapp|e-?mail|@|extraordin[áa]ria/i;
-    let horarios = frases.filter(f => f.length >= 20 && f.length <= 320 && RE_HORARIO.test(f) && !EXCLUI_HORARIO.test(f) && !/objeto/i.test(f));
+    const EXCLUI_HORARIO = /menor(?:es)? de (?:18|dezoito|16|dezesseis)|trabalho noturno, perigoso|insalubre|n[ãa]o emprega|declara|valor|R\$|multa|pagamento|prazo de|licita[çc][ãa]o [ée]|ser[ãa]o (?:prestados|executados) n(?!o seguinte hor|os seguintes hor)|ap[óo]s a assinatura|sess[ãa]o p[úu]blica|impugna|proposta|habilita[çc][ãa]o|recurso|nota fiscal|telefone|whatsapp|e-?mail|@|extraordin[áa]ria|descri[çc][ãa]o\s*:/i;
+    let horarios = frases.filter(f => f.length >= 20 && f.length <= 700 && RE_HORARIO.test(f) && !EXCLUI_HORARIO.test(f) && !/objeto/i.test(f) && !caixaAlta(f) && !pareceTabela(f)).map(enxuga).map(f => f.replace(/[.;]$/, "") + ".");
     if (!horarios.length && campos.objetoCompleto) {
       const pedacos = campos.objetoCompleto.split(/,\s*(?=contemplando|incluindo|com |sendo|em regime|nos? (?:per[íi]odos?|turnos?|hor[áa]rios?))|;\s*/i);
       horarios = pedacos.map(x => x.replace(/^(?:contemplando|incluindo|sendo)\s+/i, "").trim()).filter(x => x.length >= 15 && RE_HORARIO.test(x) && !/^contrata[çc][ãa]o/i.test(x));
       if (!horarios.length) { const m = RE_HORARIO.exec(campos.objetoCompleto); if (m) horarios = [campos.objetoCompleto.slice(Math.max(0, campos.objetoCompleto.lastIndexOf(",", m.index) + 1), (campos.objetoCompleto.indexOf(",", m.index) + 1 || campos.objetoCompleto.length + 1) - 1).trim()]; }
       horarios = horarios.map(x => x.charAt(0).toUpperCase() + x.slice(1).replace(/\.$/, ""));
     }
+    // Primeiro as frases com carga horária ou horário explícito ("12 horas diárias", "das 7h às 19h")
+    const temHora = x => /\d{1,2}\s*(?:\([^)]{2,12}\)\s*)?(?:h\b|hs\b|horas|:\d{2})/i.test(x);
+    horarios = horarios.map((x, i) => ({ x, i })).sort((a, b) => (temHora(b.x) - temHora(a.x)) || (a.i - b.i)).map(o2 => o2.x);
     campos.horarios = [...new Set(horarios)].slice(0, 3);
 
     /* ---- Itens (tabela de preços) ---- */
@@ -332,6 +420,7 @@
     if (!campos.itens.length) campos.itens = itensEmBlocos(o);
     if (!campos.itens.length) campos.itens = tabelaEmColunas(o);
     if (!campos.itens.length) campos.itens = tabelaQtdAntes(o);
+    if (!campos.itens.length) campos.itens = tabelaLinhas(o);
     // Termo de Referência publicado em arquivo separado: itens, local e horários ficam nele
     campos.trSeparado = !campos.itens.length && /termo de refer[êe]ncia\s*\((?:em )?anexo\)|termo de refer[êe]ncia (?:segue )?em (?:arquivo|anexo) (?:separado|pr[óo]prio)|termo de refer[êe]ncia[^.\n]{0,40}(?:dispon[íi]vel|publicado) (?:em arquivo|separadamente)/i.test(o);
     // Sem cláusula de horário: usa a rotina descrita nos itens ("20 atendimentos por dia; 1 médico no período")
@@ -343,7 +432,7 @@
     const chaveTxt = x => U.semAcento(String(x).toLowerCase()).replace(/^de\s+/, "").replace(/\s+/g, " ").slice(0, 45);
     campos.horarios = campos.horarios.filter(x => !campos.itens.some(i => U.semAcento(i.descricao.toLowerCase()).includes(chaveTxt(x))));
     // Escala por turno ("DIURNO ... 07 às 19 hs", "Noturno 19:00 às 07:00", "Manhã 07:00 às 13:00")
-    if (!campos.horarios.length) {
+    {
       const plano = t.replace(/\s+/g, " "), turnos = {};
       const reT = /\b(diurno|noturno|manha|tarde|vespertino|matutino)\b[^.;]{0,60}?\b(\d{1,2})(?::(\d{2}))?\s*(?:h|hs|horas)?\s*(?:as|a|ate)\s*(\d{1,2})(?::(\d{2}))?\s*(?:h|hs|horas)?\b/g;
       let mt;
@@ -354,19 +443,23 @@
         if (Object.values(turnos).some(x => x.startsWith(nome))) continue;
         turnos[mt[1]] = nome + ": " + U.pad(a) + "h" + (mt[3] && mt[3] !== "00" ? mt[3] : "") + " às " + U.pad(b) + "h" + (mt[5] && mt[5] !== "00" ? mt[5] : "");
       }
-      campos.horarios = Object.values(turnos);
+      const lista = Object.values(turnos);
+      if (lista.length >= 2 || (!campos.horarios.length && lista.length)) campos.horarios = lista;
     }
     if (!campos.valorEstimado && campos.itens.length && campos.itens.every(x => x.valorTotal || (x.qtd && x.valorUnit))) campos.valorEstimado = Math.round(campos.itens.reduce((s, x) => s + (x.valorTotal || x.qtd * x.valorUnit), 0) * 100) / 100;
 
     /* ---- Disputa ---- */
     if ((p = primeiro(t, /menor preco (?:global|por item|por lote|por grupo|unitario)?|maior desconto|tecnica e preco|melhor tecnica|maior retorno economico/))) {
       const s = p.m[0];
-      campos.criterio = s.charAt(0).toUpperCase() + o.substr(p.i + 1, s.length - 1).toLowerCase();
+      campos.criterio = s.charAt(0).toUpperCase() + o.substr(p.i + 1, s.length - 1).toLowerCase().trim();
     }
     if ((p = primeiro(t, /modo de disputa\s*(?:sera\s*)?(?:o\s*)?[:\-]?\s*["“]?(aberto e fechado|fechado e aberto|aberto|fechado)/)) || (p = primeiro(t, /\b(aberto e fechado|fechado e aberto)\b/))) {
       campos.modoDisputa = p.m[1].charAt(0).toUpperCase() + p.m[1].slice(1);
     }
-    for (const [re, nome] of PLATAFORMAS) { if (re.test(t)) { campos.plataforma = nome; break; } }
+    { // a plataforma mais citada (o edital costuma repetir o endereço do portal da disputa)
+      let melhor = 0;
+      for (const [re, nome] of PLATAFORMAS) { const n = todos(t, re).length; if (n > melhor) { melhor = n; campos.plataforma = nome; } }
+    }
     campos.srp = /registro de precos|\bsrp\b|ata de registro/.test(t);
     if ((p = primeiro(t, /(?:participacao )?exclusiva?(?:mente)? (?:para |a |as |de )?(?:participacao de )?(?:microempresas|\bme\b|me\/epp|me e epp)/))) {
       campos.exclusivaME = true;
@@ -452,6 +545,8 @@
     riscos.sort((a, b) => ordem[a.nivel] - ordem[b.nivel]);
 
     const preenchidos = ["numero", "orgao", "objeto", "sessao", "criterio", "plataforma", "valorEstimado"].filter(k => campos[k]).length;
+    // Item único sem preço na tabela (minuta do contrato): unitário = valor estimado ÷ quantidade
+    if (campos.itens.length === 1 && campos.valorEstimado && campos.itens[0].qtd && !campos.itens[0].valorUnit) campos.itens[0].valorUnit = Math.round(campos.valorEstimado / campos.itens[0].qtd * 100) / 100;
     return { campos, habilitacao, riscos, termometro, pontos, preenchidos, caracteres: o.length, analisadoEm: U.agoraISO() };
   };
 
