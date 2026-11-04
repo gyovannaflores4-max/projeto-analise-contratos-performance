@@ -1,0 +1,216 @@
+{
+  "fcecon-dle-061-26": {
+    "numero": "DLE 061/26",
+    "modalidade": "Dispensa eletrônica",
+    "orgao": "FUNDAÇÃO CENTRO DE CONTROLE DE ONCOLOGIA DO ESTADO DO AMAZONAS - FCECON",
+    "sessao": "2026-11-05T09:00",
+    "limiteProposta": "2026-11-04T23:59",
+    "plataforma": "e-compras AM",
+    "valorEstimado": null,
+    "municipio": "Manaus",
+    "uf": "AM",
+    "local": "Em regime de plantões ininterruptos nas dependências da Fundação Centro de Controle de Oncologia - FCECON, situado a Rua Francisco Orellana, nº 215 – D. Pedro - Manaus - Amazonas",
+    "horarios": [
+      "Diurno: 07h às 19h",
+      "Noturno: 19h às 07h",
+      "Manhã: 07h às 13h"
+    ],
+    "vigencia": "06 meses",
+    "itens": [
+      {
+        "item": "01",
+        "descricao": "Urgência e emergência, plantão de 12 horas, DIURNO",
+        "unidade": "Plantão",
+        "qtd": 543,
+        "valorUnit": null
+      },
+      {
+        "item": "02",
+        "descricao": "Urgência e emergência, plantão de 12 horas, NOTURNO",
+        "unidade": "Plantão",
+        "qtd": 543,
+        "valorUnit": null
+      },
+      {
+        "item": "03",
+        "descricao": "Urgência e emergência, plantão de 06 horas (07:00 às 13:00)",
+        "unidade": "Plantão",
+        "qtd": 90.5,
+        "valorUnit": null
+      }
+    ],
+    "conferenciaCrit": []
+  },
+  "fisio-bauru": {
+    "numero": "PE 90150/2026",
+    "modalidade": "Pregão eletrônico",
+    "orgao": "Departamento Regional de Saúde de Bauru - DRS VI",
+    "sessao": "2026-11-18T09:00",
+    "limiteProposta": null,
+    "plataforma": "Compras.gov.br",
+    "valorEstimado": null,
+    "municipio": "Bauru",
+    "uf": "SP",
+    "local": "No endereço do contratado, que deverá estar localizado no município da residência da paciente (Bauru)",
+    "horarios": [
+      "Os serviços serão prestados no seguinte horário: das 7:00 às 19:00 horas."
+    ],
+    "vigencia": "12 meses",
+    "itens": [
+      {
+        "item": "1",
+        "descricao": "FISIOTERAPIA MÉTODO PEDIASUIT - 03 MÓDULOS INTENSIVOS ASSOCIADOS AO BOBATH – SEN",
+        "unidade": "Hora",
+        "qtd": 240,
+        "valorUnit": null
+      }
+    ],
+    "conferenciaCrit": []
+  },
+  "florestopolis": {
+    "numero": "PP 045/2026",
+    "modalidade": "Pregão presencial",
+    "orgao": "PREFEITURA MUNICIPAL DE FLORESTÓPOLIS",
+    "sessao": "2026-09-16T09:00",
+    "limiteProposta": null,
+    "plataforma": "Compras.gov.br",
+    "valorEstimado": 283800,
+    "municipio": "Florestópolis",
+    "uf": "PR",
+    "local": "Na Unidade Hospitalar do Município de Florestópolis/PR, conforme escala definida pela Secretaria de Saúde",
+    "horarios": [
+      "O atendimento regular ocorrerá de segunda a sexta-feira, com 01 profissional no período da manhã por 4 horas diárias e 01 profissional no período da tarde por 4 horas diárias.",
+      "A cobertura em sobreaviso 24 horas inclui finais de semana e feriados, com comparecimento quando acionado."
+    ],
+    "vigencia": null,
+    "itens": [
+      {
+        "item": "1",
+        "descricao": "Serviços de Radiologia – equipe mínima indicada: 03 profissionais, sendo 01 no p",
+        "unidade": "Mês",
+        "qtd": 12,
+        "valorUnit": 23650
+      }
+    ],
+    "conferenciaCrit": []
+  },
+  "papagaios-edital-tr": {
+    "numero": "PE 114/2026",
+    "modalidade": "Pregão eletrônico",
+    "orgao": "PREFEITURA MUNICIPAL DE PAPAGAIOS",
+    "sessao": "2026-11-18T10:00",
+    "limiteProposta": null,
+    "plataforma": "Licitar Digital",
+    "valorEstimado": null,
+    "municipio": "Papagaios",
+    "uf": "MG",
+    "local": "Nos respectivos setores requisitantes",
+    "horarios": [
+      "Conforme os itens: 40 consultas mensais; 20 atendimentos por dia; 1 médico no período; 4 atendimentos por mês"
+    ],
+    "vigencia": null,
+    "itens": [
+      {
+        "item": "1",
+        "descricao": "Atendimento Neurologista para todas as idades – 40 consultas mensais; 20 atendim",
+        "unidade": "Unid.",
+        "qtd": 960,
+        "valorUnit": null
+      },
+      {
+        "item": "2",
+        "descricao": "Atendimento Pediatria – 40 consultas mensais; 20 atendimentos por dia; 1 médico ",
+        "unidade": "Unid.",
+        "qtd": 960,
+        "valorUnit": null
+      },
+      {
+        "item": "3",
+        "descricao": "Atendimento Geriatria – 40 consultas mensais; 20 atendimentos por dia; 1 médico ",
+        "unidade": "Unid.",
+        "qtd": 960,
+        "valorUnit": null
+      },
+      {
+        "item": "4",
+        "descricao": "Atendimento Endocrinologista – 20 atendimentos por dia; 1 médico no período; 6 a",
+        "unidade": "Unid.",
+        "qtd": 1440,
+        "valorUnit": null
+      }
+    ],
+    "conferenciaCrit": []
+  },
+  "papagaios-edital": {
+    "numero": "PE 114/2026",
+    "modalidade": "Pregão eletrônico",
+    "orgao": "PREFEITURA MUNICIPAL DE PAPAGAIOS",
+    "sessao": "2026-11-18T10:00",
+    "limiteProposta": null,
+    "plataforma": "Licitar Digital",
+    "valorEstimado": null,
+    "municipio": "Papagaios",
+    "uf": "MG",
+    "local": null,
+    "horarios": [],
+    "vigencia": null,
+    "itens": [],
+    "conferenciaCrit": []
+  },
+  "sao-joao-batista-pe18-tr": {
+    "numero": "PE 018/2026",
+    "modalidade": "Pregão eletrônico",
+    "orgao": "MUNICÍPIO DE SÃO JOÃO BATISTA",
+    "sessao": "2026-11-18T08:30",
+    "limiteProposta": "2026-11-18T08:15",
+    "plataforma": "Portal de Compras Públicas",
+    "valorEstimado": 309562.08,
+    "municipio": "São João Batista",
+    "uf": "SC",
+    "local": "Nas dependências do Hospital Monsenhor José Locks, vinculado ao Fundo Municipal de Saúde de São João Batista/SC, localizado na Rua Leopoldina Brasil, nº 112, Centro, São João Batista/SC, bem como em demais unidades da rede municipal de saúde, conforme necessidade da Administração Municipal",
+    "horarios": [
+      "A cobertura presencial dos serviços de radiologia nas dependências do Hospital Monsenhor José Locks pelo período mínimo de 12 (doze) horas diárias.",
+      "A contratada deverá garantir a continuidade dos serviços de radiologia durante todos os dias da semana.",
+      "Quando acionada para atendimento em regime de plantão ou sobreaviso."
+    ],
+    "vigencia": "12 meses",
+    "itens": [
+      {
+        "item": "01",
+        "descricao": "Contratação de empresa especializada para prestação de serviços técnicos em Radi",
+        "unidade": "Mês",
+        "qtd": 12,
+        "valorUnit": 25796.84
+      }
+    ],
+    "conferenciaCrit": []
+  },
+  "sao-joao-batista-pe18": {
+    "numero": "PE 018/2026",
+    "modalidade": "Pregão eletrônico",
+    "orgao": "MUNICÍPIO DE SÃO JOÃO BATISTA",
+    "sessao": "2026-11-18T08:30",
+    "limiteProposta": "2026-11-18T08:15",
+    "plataforma": "Portal de Compras Públicas",
+    "valorEstimado": 309562.08,
+    "municipio": "São João Batista",
+    "uf": "SC",
+    "local": "Nas dependências do Hospital Monsenhor José Locks, vinculado ao Fundo Municipal de Saúde de São João Batista/SC, localizado na Rua Leopoldina Brasil, nº 112, Centro, São João Batista/SC, bem como em demais unidades da rede municipal de saúde, conforme necessidade da Administração Municipal",
+    "horarios": [
+      "A cobertura presencial dos serviços de radiologia nas dependências do Hospital Monsenhor José Locks pelo período mínimo de 12 (doze) horas diárias.",
+      "A contratada deverá garantir a continuidade dos serviços de radiologia durante todos os dias da semana.",
+      "Quando acionada para atendimento em regime de plantão ou sobreaviso."
+    ],
+    "vigencia": "30 dias",
+    "itens": [
+      {
+        "item": "01",
+        "descricao": "Contratação de empresa especializada para prestação de serviços técnicos em radi",
+        "unidade": "Mês",
+        "qtd": 12,
+        "valorUnit": 25796.84
+      }
+    ],
+    "conferenciaCrit": []
+  }
+}

@@ -391,9 +391,118 @@
     } finally { clearTimeout(t); }
   }
 
+  /* ---------- Disputa no e-compras.AM: fase, ranking e posição da empresa ----------
+     A página pública de acompanhamento lista, por lote, as empresas em ordem de valor, com os sinais
+     de melhor lance, habilitada e vencedora. O portal acha a empresa do grupo nessa lista, mostra a
+     posição, avisa quando ela muda e avança a etapa do edital sozinho (sem voltar etapa). */
+  const FASES = [
+    [/recurs/i, "Fase recursal", "recurso"],
+    [/inscri[çc][ãa]o de propostas|recebimento de propostas|publicad|aberto para propostas|agendad/i, "Recebendo propostas", "cadastrada"],
+    [/disputa|lances|sess[ãa]o (?:aberta|em andamento)|em andamento|negocia/i, "Em disputa", "disputa"],
+    [/classifica|aceita|an[áa]lise|julgamento|habilita|dilig/i, "Análise das propostas e habilitação", "habilitacao"],
+    [/aguardando homologa|adjudica/i, "Aguardando homologação", null],
+    [/homologad/i, "Homologado", "fim"],
+    [/fracassad|desert/i, "Fracassada / deserta", null],
+    [/anulad|revogad|cancelad/i, "Anulada / revogada", null],
+    [/suspens/i, "Suspensa", null]
+  ];
+  const faseDe = st => { const f = FASES.find(([re]) => re.test(st || "")); return f ? { nome: f[1], etapa: f[2] } : st ? { nome: st, etapa: null } : null; };
+  // Nomes da empresa e do grupo como aparecem nos portais (Ajustes → Empresa)
+  function termosGrupo() {
+    const t = termos.filter(x => !/^\d+$/.test(x));
+    String(S.empresa.grupo || "").split(/\n|;/).map(x => U.semAcento(x).toLowerCase().replace(/\s+/g, " ").trim()).filter(x => x.length >= 3).forEach(x => t.push(x));
+    return [...new Set(t)];
+  }
+  const ehNossa = nome => { const n = U.semAcento(nome || "").toLowerCase(); return termosGrupo().some(x => new RegExp("(^|[^a-z0-9])" + x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "([^a-z0-9]|$)").test(n)); };
+  function posicaoDisputa(c) {
+    const d = c && c.disputa;
+    if (!d || !d.lotes) return [];
+    return d.lotes.map(l => {
+      const ps = (l.participantes || []).slice().sort((a, b) => ((a.negociado || a.valor || 9e15) - (b.negociado || b.valor || 9e15)));
+      const i = ps.findIndex(p => ehNossa(p.nome)), nossa = i >= 0 ? ps[i] : null;
+      const aFrente = i > 0 ? ps.slice(0, i) : [];
+      const nomeLote = String(l.nome || "Lote " + l.numero).split(",")[0].replace(/\s+/g, " ").trim();
+      return { lote: nomeLote.length > 70 ? nomeLote.slice(0, 68) + "…" : nomeLote, situacao: l.situacao || "", ps, total: ps.length, pos: i >= 0 ? i + 1 : null, nossa,
+        melhor: ps.find(p => p.melhor) || ps[0] || null, venc: ps.find(p => p.vencedor) || null, vencemos: !!(nossa && nossa.vencedor),
+        foraAFrente: aFrente.filter(p => p.habilitado === false || p.exame2 === false).length, semLances: !!l.semLances };
+    });
+  }
+  const resumoPosicao = c => posicaoDisputa(c).filter(x => x.pos).map(x => x.lote + ": " + x.pos + "º de " + x.total + (x.nossa.melhor ? ", melhor lance" : "") + (x.nossa.habilitado === true ? ", habilitada" : x.nossa.habilitado === false ? ", inabilitada" : "") + (x.vencemos ? ", vencedora" : x.venc ? ", vencedora: " + x.venc.nome : "")).join(" · ");
+  function atualizarDisputa(c, d) {
+    const antes = c.disputa ? resumoPosicao(c) : null;
+    c.disputa = d; c.disputaEm = new Date().toISOString();
+    const depois = resumoPosicao(c);
+    if (antes !== null && depois && depois !== antes) {
+      registrar(c.titulo + ": posição na disputa — " + depois + ".", "chats");
+      notificar(c.titulo + ": a posição na disputa mudou", depois, posicaoDisputa(c).some(x => x.vencemos) ? "pop" : "", { rotulo: "Ver disputa", rota: "chats", ref: c.id });
+    }
+  }
+  const ORDEM_ETAPAS = ["triagem", "analise", "proposta", "cadastrada", "disputa", "habilitacao", "recurso", "ganho", "perdido"];
+  function avancarEtapa(c) {
+    const e = c.editalId && edital(c.editalId);
+    if (!e || ETAPA(e.etapa).final) return;
+    const f = faseDe(c.status), pos = posicaoDisputa(c);
+    const participamos = pos.some(x => x.pos);
+    let alvo = f && f.etapa;
+    if (alvo === "fim") alvo = pos.some(x => x.vencemos) ? "ganho" : pos.some(x => x.venc) && participamos ? "perdido" : null;
+    if (!alvo) return;
+    if (e.propostaStatus !== "cadastrada" && !participamos) return; // só segue o pregão se a proposta é nossa
+    if (participamos && e.propostaStatus !== "cadastrada") e.propostaStatus = "cadastrada";
+    if (ORDEM_ETAPAS.indexOf(alvo) <= ORDEM_ETAPAS.indexOf(e.etapa)) return; // nunca volta etapa
+    const de = ETAPA(e.etapa).nome;
+    e.etapa = alvo;
+    (e.historico = e.historico || []).unshift({ data: U.hojeISO(), texto: "Etapa atualizada sozinha pelo e-compras.AM: " + de + " → " + ETAPA(alvo).nome + " (" + c.status + ")." });
+    registrar(e.numero + " passou para \"" + ETAPA(alvo).nome + "\" (situação no portal: " + c.status + ").", "editais");
+    notificar(e.numero + ": " + ETAPA(alvo).nome, "A etapa foi atualizada pela situação no e-compras.AM (" + c.status + ").", alvo === "ganho" ? "pop" : "", { rotulo: "Ver edital", rota: "editais", ref: e.id });
+  }
+  // Começa a acompanhar sozinho todo pregão do e-compras.AM com proposta cadastrada (ou em disputa em diante)
+  const ehEcompras = e => /e-compras/i.test(e.portal || "") || /e-compras\.am\.gov\.br/i.test(e.link || "");
+  function garantirMonitoramento() {
+    const novos = [];
+    S.editais.filter(e => ativo(e) && ehEcompras(e) && (e.propostaStatus === "cadastrada" || ["cadastrada", "disputa", "habilitacao", "recurso"].includes(e.etapa))).forEach(e => {
+      let c = chatDoEdital(e.id);
+      const link = /ident=\d+/.test(e.link || "") ? e.link : "";
+      if (!c) {
+        c = { id: U.uid(), editalId: e.id, titulo: e.numero, orgao: e.orgao, portal: "e-compras AM", processo: link || e.numero, link, auto: true, status: "", mensagens: [] };
+        S.chats.push(c); novos.push(c);
+        registrar("Acompanhamento automático do " + e.numero + " no e-compras.AM iniciado.", "chats");
+      } else if (!c.auto) {
+        c.auto = true;
+        c.processo = /^\d+$/.test(c.ident || "") ? "https://www.e-compras.am.gov.br/publico/licitacoes_acompanhamento.asp?ident=" + c.ident : link || c.processo || e.numero;
+        novos.push(c);
+      }
+    });
+    if (novos.length) { salvar(); novos.forEach(c => { c.consultadoEm = null; }); setTimeout(() => verificarChats(), 400); }
+    return novos.length;
+  }
+  function disputaHTML(c, compacto) {
+    if (!c || (!c.status && !c.disputa)) return "";
+    const f = faseDe(c.status), pos = posicaoDisputa(c);
+    const sinal = (v, sim, nao) => v === true && sim ? '<span class="pill ok sem-ponto">' + sim + "</span>" : v === false && nao ? '<span class="pill crit sem-ponto">' + nao + "</span>" : "";
+    const cabLote = x => '<div class="lote-cab"><b>' + h(x.lote) + "</b>" + (x.situacao ? '<span class="pill neutral sem-ponto">' + h(x.situacao) + "</span>" : "") + "</div>";
+    const pct = (a, b) => (a && b ? ((a / b - 1) * 100).toFixed(1).replace(".", ",") + "%" : "");
+    const lotes = pos.map(x => {
+      if (x.semLances || !x.total) return '<div class="lote-disp">' + cabLote(x) + '<p class="muted">A lista de participantes aparece quando a sessão abrir.</p></div>';
+      const n = x.nossa;
+      const linhaNossa = n ? "<p class=\"pos-nossa\"><b>" + x.pos + "º de " + x.total + "</b> por valor · " + U.moeda(n.negociado || n.valor) + " " + sinal(n.melhor, "Melhor lance agora", "") + sinal(n.habilitado, "Habilitada", "Inabilitada") + (n.exame2 === false ? '<span class="pill crit sem-ponto">Desclassificada</span>' : "") + (x.vencemos ? '<span class="pill pop sem-ponto">🏆 Vencedora</span>' : "") + "</p>"
+        : '<p class="muted">A empresa não aparece entre as ' + x.total + " participantes. Se ela usa outro nome no portal, informe em Ajustes → Empresa → Empresas do grupo.</p>";
+      const ref = x.melhor && n && x.melhor !== n && !x.vencemos ? "<p class=\"muted\">Melhor lance: " + h(x.melhor.nome) + " · " + U.moeda(x.melhor.negociado || x.melhor.valor) + " (o nosso está " + pct(n.negociado || n.valor, x.melhor.negociado || x.melhor.valor) + " acima)" + (x.foraAFrente ? " · " + U.plural(x.foraAFrente, "empresa à frente já está inabilitada ou desclassificada", "empresas à frente já estão inabilitadas ou desclassificadas") : "") + "</p>" : "";
+      const venc = x.venc && !x.vencemos ? '<p class="muted">Vencedora: <b>' + h(x.venc.nome) + "</b> · " + U.moeda(x.venc.negociado || x.venc.valor) + "</p>" : "";
+      const tabela = compacto ? "" : '<details><summary class="link-btn">Ver as ' + x.total + ' empresas</summary><div class="tabela-wrap" style="margin-top:8px"><table class="tabela tabela-disp"><thead><tr><th>#</th><th>Empresa</th><th style="text-align:right">Valor</th><th>Situação</th></tr></thead><tbody>' +
+        x.ps.map((p, i) => '<tr class="' + (ehNossa(p.nome) ? "nossa" : "") + '"><td class="num">' + (i + 1) + "</td><td>" + h(p.nome) + (p.vencedor ? " 🏆" : "") + '</td><td class="num" style="text-align:right">' + U.moeda(p.negociado || p.valor) + "</td><td>" + [p.melhor ? "melhor lance" : "", p.habilitado === true ? "habilitada" : p.habilitado === false ? "inabilitada" : "", p.exame2 === false ? "desclassificada" : ""].filter(Boolean).join(", ") + "</td></tr>").join("") + "</tbody></table></div></details>";
+      return '<div class="lote-disp">' + cabLote(x) + linhaNossa + ref + venc + tabela + "</div>";
+    }).join("");
+    return '<div class="disputa' + (compacto ? " compacto" : "") + '"><div class="disputa-h"><span class="eyebrow">Fase no portal</span><b>' + h(f ? f.nome : "—") + "</b>" + (f && f.nome !== c.status && c.status ? ' <span class="muted">(' + h(c.status) + ")</span>" : "") +
+      (c.disputaEm ? '<span class="muted" style="margin-left:auto;font-size:12.5px">atualizado ' + U.desde(U.isoDataHora(new Date(c.disputaEm))) + "</span>" : "") + "</div>" + (lotes || "") + "</div>";
+  }
+
   async function verificarChats(soEste) {
     const lista = S.chats.filter(c => c.auto && c.processo && (!soEste || c.id === soEste));
     if (!lista.length) return;
+    if (!soEste) { if (ui.lendoChats) return; ui.lendoChats = true; } // uma leitura geral por vez
+    try { await lerChatsDaLista(lista, soEste); } finally { if (!soEste) ui.lendoChats = false; }
+  }
+  async function lerChatsDaLista(lista, soEste) {
     if (!soEste && Date.now() - ui.apiFalhouEm < 10 * 60000) return;
     const intervalo = Math.max(2, +S.ajustes.intervaloChat || 5) * 60000;
     let mudou = false;
@@ -402,7 +511,7 @@
       ui.lendo[c.id] = true;
       if (soEste) render();
       try {
-        mesclarChat(c, await api("/api/chat?" + consultaChat(c.processo)));
+        mesclarChat(c, await api("/api/chat?" + consultaDoChat(c)));
         c.erro = "";
       } catch (e) {
         c.erro = e.message;
@@ -437,6 +546,7 @@
         if (ed && !S.chats.some(x => x !== c && x.editalId === ed.id && x.mensagens.length)) { c.editalId = ed.id; c.orgao = c.orgao || ed.orgao; }
       }
       c.ident = ident; c.robo = true; c.roboEm = dados.atualizado_em || null; c.roboOrigem = origem;
+      if (p.disputa && (!c.disputaEm || (dados.atualizado_em && dados.atualizado_em > c.disputaEm))) atualizarDisputa(c, p.disputa);
       mesclarChat(c, { pregao: { status: p.status, objeto: p.objeto, link: p.link }, mensagens: p.mensagens || [] });
     });
     return novos;
@@ -470,6 +580,13 @@
   }
 
   // "408/26" -> processo=408/26; link de acompanhamento ou número interno -> ident=256066
+  // Pelo número (ex.: DLE 061/26) o mesmo número existe em vários órgãos: manda órgão e objeto para achar o certo
+  function consultaDoChat(c) {
+    const q = consultaChat(c.processo);
+    if (!/^processo=/.test(q)) return q;
+    const e = c.editalId && edital(c.editalId);
+    return q + "&orgao=" + encodeURIComponent((e && e.orgao) || c.orgao || "") + "&objeto=" + encodeURIComponent(U.corta((e && e.objeto) || "", 160));
+  }
   function consultaChat(ref) {
     ref = String(ref || "").trim();
     const ident = (ref.match(/ident=(\d+)/i) || [])[1] || (/^\d{5,}$/.test(ref) ? ref : "");
@@ -500,7 +617,13 @@
       if (st) c.status = st;
       if (!c.orgao && (j.pregao.orgao || j.pregao.objeto)) c.orgao = U.corta(j.pregao.orgao || j.pregao.objeto, 90);
       if (j.pregao.link && /ident=\d+/.test(j.pregao.link) && (!c.link || /ident=(?!\d)/i.test(c.link))) c.link = j.pregao.link;
+      if (j.pregao.id && /^\d+$/.test(String(j.pregao.id))) {
+        c.ident = String(j.pregao.id);
+        if (c.processo && !/ident=\d+/.test(c.processo) && j.pregao.link) c.processo = j.pregao.link; // fixa o pregão achado
+      }
+      if (j.pregao.disputa) atualizarDisputa(c, j.pregao.disputa);
     }
+    avancarEtapa(c);
     if (novas.length && !primeira) avisarNovas(c, novas);
   }
   function avisarNovas(c, novas) {
@@ -697,6 +820,7 @@
       '<div class="bloco"><h3>Proposta</h3><div class="ferramentas"><select data-mudar="propStatus" data-id="' + e.id + '" aria-label="Situação da proposta">' + PROP_STATUS.map(p => '<option value="' + p[0] + '"' + (p[0] === e.propostaStatus ? " selected" : "") + ">" + p[1] + "</option>").join("") + "</select>" +
       '<span class="muted" style="font-size:13px">' + progresso(e) + " de " + CHECK_PROPOSTA.length + ' itens prontos</span></div><div class="progresso"><i style="width:' + Math.round(100 * progresso(e) / CHECK_PROPOSTA.length) + '%"></i></div>' + checklistHTML(e) + "</div>" +
 
+      (chat && (chat.status || chat.disputa) ? '<div class="bloco"><h3>Acompanhamento no portal</h3>' + disputaHTML(chat, true) + "</div>" : "") +
       '<div class="bloco"><h3>Atalhos</h3><div class="linha-acoes">' +
       (e.link ? '<a class="btn peq ghost" href="' + h(e.link) + '" target="_blank" rel="noopener">' + ic("link") + "Abrir no portal</a>" : "") +
       (chat ? '<a class="btn peq ghost" href="#chats" data-acao="ir" data-rota="chats" data-ref="' + chat.id + '">' + ic("chats") + "Ver chat" + (naoLidas(chat).length ? " (" + naoLidas(chat).length + " novas)" : "") + "</a>" : '<button class="btn peq ghost" data-acao="monitorarChat" data-id="' + e.id + '">' + ic("chats") + "Monitorar chat</button>") +
@@ -1066,6 +1190,15 @@
     if (ok) { sel.removeAllRanges(); toast("Resumo copiado", "Cole no e-mail."); } else toast("Selecionei o resumo", "Use Ctrl+C para copiar.");
   }
 
+  /* Conferência automática da leitura: aparece antes do resumo, com o que parece errado */
+  function conferenciaHTML(r) {
+    const lista = (r.conferencia || []).filter(x => x.nivel !== "info"), infos = (r.conferencia || []).filter(x => x.nivel === "info");
+    if (!lista.length) return '<section class="card conferencia ok"><div class="card-h"><h2>' + ic("check") + 'Conferência automática</h2></div><p class="muted">Data da sessão, prazo da proposta, itens, valor e portal conferidos: nada fora do lugar.' + (infos.length ? " " + infos.map(x => h(x.texto)).join(" ") : "") + "</p></section>";
+    const crit = lista.filter(x => x.nivel === "crit").length;
+    return '<section class="card conferencia ' + (crit ? "crit" : "warn") + '"><div class="card-h"><h2>' + ic("aviso") + "Conferência automática</h2><span class=\"pill " + (crit ? "crit" : "warn") + ' sem-ponto">' + (crit ? U.plural(crit, "provável erro", "prováveis erros") : U.plural(lista.length, "ponto a conferir", "pontos a conferir")) + "</span></div>" +
+      '<p class="muted" style="margin-bottom:8px">O portal conferiu a própria leitura e achou o que está abaixo. Confira no edital antes de copiar o resumo ou cadastrar.</p><ul class="conf-lista">' +
+      lista.concat(infos).map(x => '<li class="' + x.nivel + '"><span class="nivel ' + (x.nivel === "crit" ? "alto" : x.nivel === "warn" ? "medio" : "baixo") + '"></span>' + h(x.texto) + "</li>").join("") + "</ul></section>";
+  }
   function resultadoAnalise(r) {
     const c = r.campos, t = r.termometro;
     const niveis = t.nivel === "ok" ? 1 : t.nivel === "medio" ? 2 : 3;
@@ -1084,7 +1217,7 @@
       return Object.assign({ st: "crit", rot: "Vence antes da sessão (" + U.fmtData(docs[0].validade) + ")" }, x);
     });
     const okCount = pasta.filter(x => x.st === "ok").length;
-    return resumoCartao(r) + '<section class="termometro ' + t.nivel + '"><div class="escala" aria-hidden="true"><i style="height:18px" class="' + (niveis >= 1 ? "on" : "") + '"></i><i style="height:28px" class="' + (niveis >= 2 ? "on" : "") + '"></i><i style="height:38px" class="' + (niveis >= 3 ? "on" : "") + '"></i></div>' +
+    return conferenciaHTML(r) + resumoCartao(r) + '<section class="termometro ' + t.nivel + '"><div class="escala" aria-hidden="true"><i style="height:18px" class="' + (niveis >= 1 ? "on" : "") + '"></i><i style="height:28px" class="' + (niveis >= 2 ? "on" : "") + '"></i><i style="height:38px" class="' + (niveis >= 3 ? "on" : "") + '"></i></div>' +
       "<div><span class=\"eyebrow\" style=\"color:inherit;opacity:.7\">Termômetro do edital</span><h3>" + t.rotulo + "</h3><p>" + t.texto + "</p></div></section>" +
       '<section class="card"><div class="card-h"><h2>Dados do certame</h2><div class="linha-acoes"><button class="btn peq ghost" data-acao="copiarAnalise">' + ic("copiar") + 'Copiar análise</button><button class="btn peq primario" data-acao="criarDaAnalise">' + ic("mais") + "Criar edital</button></div></div>" +
       '<dl class="dados">' + dado("Número", h(c.numero)) + dado("Modalidade", h(c.modalidade)) + dado("Órgão", h(c.orgao), true) + dado("Objeto", h(c.objeto), true) +
@@ -1108,7 +1241,8 @@
     ui.cidade = null;
     $("#resultado-analise").innerHTML = resultadoAnalise(ui.analise);
     buscarCidade(ui.analise.campos.municipio, ui.analise.campos.uf, ui.analise.campos.cidades);
-    toast("Edital analisado", ui.analise.preenchidos + " de 7 dados principais encontrados · " + U.plural(ui.analise.riscos.length, "ponto de atenção", "pontos de atenção"));
+    const errosLeitura = (ui.analise.conferencia || []).filter(x => x.nivel === "crit").length;
+    toast("Edital analisado", ui.analise.preenchidos + " de 7 dados principais encontrados · " + U.plural(ui.analise.riscos.length, "ponto de atenção", "pontos de atenção") + (errosLeitura ? " · " + U.plural(errosLeitura, "item da leitura para conferir", "itens da leitura para conferir") : ""), errosLeitura ? "pop" : "");
     if (window.innerWidth < 1180) $("#resultado-analise").scrollIntoView({ behavior: "smooth", block: "start" });
   }
   function carregarScript(src) {
@@ -1240,6 +1374,7 @@
       (ret ? '<div class="retomada-box">' + ic("relogio") + "Retomada informada pelo pregoeiro: " + h(ret) + "</div>" : "") +
       (c.erro ? '<div class="retomada-box" style="background:var(--crit-soft);color:var(--crit)">' + ic("aviso") + h(c.erro) + "</div>" : "") +
       '<div class="conversa-f"><div class="chips" role="group" aria-label="Filtrar mensagens">' + filtros.map(([id, nome]) => '<button class="chip" data-acao="filtroChat" data-f="' + id + '" aria-pressed="' + (ui.chatFiltro === id) + '">' + h(nome) + "</button>").join("") + '</div><label class="sr" for="busca-chat">Buscar no chat</label><input type="search" id="busca-chat" data-digitar="buscaChat" placeholder="Buscar no chat…" value="' + h(ui.chatBusca) + '"></div>' +
+      disputaHTML(c) +
       '<div class="mensagens" id="msgs" aria-live="polite">' + mensagensHTML(c) + "</div>" +
       (c.robo && !c.auto ? '<div class="conversa-f" style="border-top:1px solid var(--line);border-bottom:0;font-size:12.5px;color:var(--ink-3)">' + (/^pncp-/.test(c.ident || "") ? "Movimentações oficiais do PNCP (situação, documentos e resultado), lidas pelo robô do GitHub. As mensagens do pregoeiro no Compras.gov.br entram por Colar mensagens" : "Mensagens do robô do GitHub (as mesmas dos e-mails)") + (c.roboEm ? " · robô atualizou " + U.desde(U.isoDataHora(new Date(c.roboEm))) : "") + (c.roboOrigem && c.roboOrigem !== "ao vivo" ? " · " + h(c.roboOrigem) : " · o portal confere a cada " + (S.ajustes.intervaloChat || 5) + " min") + ' · <button class="link-btn" data-acao="sincRobo">sincronizar agora</button></div>' : "") +
       (c.auto ? '<div class="conversa-f" style="border-top:1px solid var(--line);border-bottom:0;font-size:12.5px;color:var(--ink-3)">Leitura automática do e-compras.AM a cada ' + (S.ajustes.intervaloChat || 5) + " min enquanto o portal estiver aberto" + (c.consultadoEm ? " · última leitura " + U.desde(U.isoDataHora(new Date(c.consultadoEm))) : "") + "</div>" : "") +
@@ -1514,19 +1649,29 @@
         const v = k => (col[k] >= 0 ? r[col[k]] : null);
         const emissao = typeof v("emissao") === "number" ? dataExcel(v("emissao")) : "";
         const dias = String(v("validade") || "").trim();
+        // A coluna "Vencimento" manda: "IND" (indeterminado) vale mesmo que "Validade" tenha dias
+        const vencInd = /^ind/i.test(String(v("venc") || "").trim());
         let validade = typeof v("venc") === "number" ? dataExcel(v("venc")) : "";
-        if (!validade && emissao && /^\d+$/.test(dias)) validade = U.addDias(emissao, +dias);
+        if (!validade && !vencInd && emissao && /^\d+$/.test(dias)) validade = U.addDias(emissao, +dias);
         const obs = [];
-        if (/^ind/i.test(dias)) obs.push("validade indeterminada");
+        if (/^ind/i.test(dias) || vencInd) obs.push("validade indeterminada");
         else if (/^\d+$/.test(dias)) obs.push("validade de " + dias + " dias");
         if (!emissao && v("emissao")) obs.push(String(v("emissao")).trim().toLowerCase());
         if (typeof v("previsao") === "number") obs.push("renovação prevista para " + U.fmtData(dataExcel(v("previsao"))));
         const st = String(v("status") || "").trim().toUpperCase();
         if (st === "REGULAR" && validade && U.diasAte(validade) < 0) obs.push("na planilha consta REGULAR");
+        if (st === "VENCIDO" && (!validade || U.diasAte(validade) >= 0)) obs.push("na planilha consta VENCIDO");
         lidos.push({ nome, tipo: tipoDoDocumento(nome), empresa, setor: col.setor >= 0 ? String(r[col.setor] || "").trim() : "", emissao, validade, obs: obs.join("; "), arquivado: encerrada, origem: "planilha" });
       });
     });
-    return lidos;
+    // O mesmo documento repetido na aba (a linha antiga e a renovada): fica a mais recente
+    const porChave = new Map();
+    lidos.forEach(x => {
+      const k = chaveDoc(x), atual = porChave.get(k);
+      const recente = (a, b) => (a.emissao || "") !== (b.emissao || "") ? (a.emissao || "") > (b.emissao || "") : (a.validade || "9999") > (b.validade || "9999");
+      if (!atual || recente(x, atual)) porChave.set(k, x);
+    });
+    return [...porChave.values()];
   }
   const chaveDoc = d => [d.empresa, d.nome].map(x => U.semAcento(x || "").toLowerCase().replace(/\W+/g, "")).join("|");
   async function importarDocs(el) {
@@ -1789,7 +1934,8 @@
       '<div class="ajustes"><section class="card"><h2>Empresa</h2><p>O nome, o apelido e o CNPJ são usados para detectar quando o pregoeiro cita a empresa no chat.</p>' +
       campo("aj-nome", "Razão social", e.nome, "empresa.nome") + campo("aj-apelido", "Como a empresa aparece no chat (apelido)", e.apelido, "empresa.apelido", 'placeholder="Ex.: Vitalis"') + campo("aj-cnpj", "CNPJ", e.cnpj, "empresa.cnpj", 'inputmode="numeric"') +
       '<div class="campo"><label for="aj-porte">Porte</label><select id="aj-porte" data-mudar="ajuste" data-chave="empresa.porte"><option value="demais"' + (e.porte !== "me" ? " selected" : "") + '>Demais portes</option><option value="me"' + (e.porte === "me" ? " selected" : "") + ">ME / EPP</option></select><small>Usado na análise de editais exclusivos para ME/EPP.</small></div>" +
-      campo("aj-equipe", "Como chamar a equipe no painel", e.equipe, "empresa.equipe") + "</section>" +
+      campo("aj-equipe", "Como chamar a equipe no painel", e.equipe, "empresa.equipe") +
+      '<div class="campo"><label for="aj-grupo">Empresas do grupo (como aparecem nos portais)</label><textarea id="aj-grupo" rows="3" data-mudar="ajuste" data-chave="empresa.grupo" placeholder="DIMPI GESTAO EM SAUDE LTDA&#10;RC ...&#10;CETUS SERVICOS LTDA">' + h(e.grupo || "") + "</textarea><small>Uma por linha. O portal acha essas empresas no ranking da disputa e mostra a posição.</small></div></section>" +
       '<section class="card"><h2>Alertas</h2><p>Quando cada aviso começa a aparecer.</p>' +
       campo("aj-dprop", "Avisar propostas com quantos dias de antecedência", a.diasProposta, "ajustes.diasProposta", 'type="number" min="1" max="30"') +
       campo("aj-ddoc", "Avisos de documentos (dias antes do vencimento)", Array.isArray(a.diasDoc) ? a.diasDoc.join(", ") : a.diasDoc, "ajustes.diasDoc", "", "Ex.: 30, 15, 7") +
@@ -1996,7 +2142,9 @@
       CHECK_PROPOSTA.forEach(k => { (e.checklist = e.checklist || {})[k] = true; });
       (e.historico = e.historico || []).unshift({ data: U.hojeISO(), texto: "Proposta cadastrada no portal." });
       registrar("Proposta do " + e.numero + " cadastrada no " + e.portal + ".", "propostas");
-      atualizar(); toast("Proposta cadastrada!", e.numero + " · sessão " + U.fmtDataHora(e.sessao), "pop");
+      atualizar();
+      const auto = garantirMonitoramento();
+      toast("Proposta cadastrada!", e.numero + " · sessão " + U.fmtDataHora(e.sessao) + (auto ? " · acompanhamento automático no e-compras.AM iniciado" : ""), "pop");
     },
     vista: d => { ui.editaisVista = d.v; gravarPref("vista", d.v); render(); },
     filtrarEtapa: d => { ui.fEd.etapa = d.etapa; if (ETAPA(d.etapa).final) ui.editaisVista = "lista"; irPara("editais"); },
@@ -2019,7 +2167,8 @@
         ui.analise = r; ui.analiseTexto = texto; // fica disponível na Análise de edital
         return Object.assign({ numero: c.numero, modalidade: c.modalidade, orgao: c.orgao, municipio: c.municipio, uf: c.uf, objeto: c.objetoCompleto || c.objeto,
           sessao: c.sessao && c.sessao.length > 10 ? c.sessao : c.sessao ? c.sessao + "T09:00" : "", limiteProposta: c.limiteProposta && c.limiteProposta.length > 10 ? c.limiteProposta : "",
-          valorEstimado: c.valorEstimado, portal: (extra && extra.portal) || c.plataforma, processo: c.processo, link: extra && extra.link }, {});
+          valorEstimado: c.valorEstimado, portal: (extra && extra.portal) || c.plataforma, processo: c.processo, link: extra && extra.link,
+          aviso: (r.conferencia || []).filter(x => x.nivel === "crit").map(x => x.texto).join(" ") }, {});
       };
       try {
         const j = await api("/api/importar?url=" + encodeURIComponent(v), 45000);
@@ -2409,6 +2558,7 @@
         gravarPref("avisado", U.hojeISO());
         toast(U.plural(criticos.length, "alerta crítico", "alertas críticos") + " hoje", criticos.slice(0, 2).map(a => a.titulo).join(" · "), "pop", { rotulo: "Ver alertas", rota: "alertas" });
       }
+      garantirMonitoramento();
       verificarChats();
       sincronizarRobo();
     }, 900);
@@ -2416,6 +2566,7 @@
     let minuto = 0;
     setInterval(() => {
       minuto++;
+      if (minuto % 5 === 0) garantirMonitoramento();
       verificarChats();
       sincronizarRobo();
       if (minuto % 2 === 0) puxarNuvem();

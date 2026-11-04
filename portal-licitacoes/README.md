@@ -14,9 +14,10 @@ Portal para a equipe de licitações acompanhar, num lugar só, tudo o que tem p
 | **Formação de preço** | Planilha de custos de cada edital: itens (plantão, hora, mês, consulta…), profissionais × horas × valor da hora, outros custos por unidade, encargos, BDI no formato do TCU e tributos (lucro presumido, Simples ou lucro real). Mostra preço unitário e global, margem, desconto sobre o estimado, **alerta de inexequibilidade** (abaixo de 50% do estimado para serviços, IN SEGES 73/2022; os 75% da Lei 14.133 valem para obras e engenharia), **lance mínimo** (com o lucro mínimo que você define), ponto de equilíbrio, tabela de lances com a margem de cada degrau e simulador de lance. Traz os itens da última análise de edital, copia a planilha para o Excel e grava o valor como "nossa proposta". |
 | **Chats dos pregões** | Conversa de cada pregão com destaque para retomada, suspensão, convocação, recurso, habilitação, diligência, resultado e desclassificação. Avisa quando o pregoeiro **cita a empresa** (nome, apelido ou CNPJ) e mostra a data de retomada informada. Pregões do **e-compras.AM** são lidos sozinhos; dos outros portais, cole as mensagens. |
 | **Análise de edital** | Cole o texto ou envie o PDF. Extrai número, órgão, objeto, sessão, critério, modo de disputa, plataforma, valor, vigência, pagamento; calcula o prazo de impugnação; compara a habilitação exigida com a pasta de documentos (válido no dia da sessão?) e lista pontos de atenção (atestado acima de 50%, visita obrigatória, índices acima de 1, garantia, multa alta, prazo curto de convocação, falta de reajuste…). Tudo roda no navegador. |
+| **Conferência automática** (dentro da Análise de edital) | A cada análise, o portal confere a própria leitura e mostra, antes do resumo, o que parece errado: data da sessão que não bate com outra data de "sessão/disputa" do edital, limite da proposta depois da sessão, tabela de itens que não foi lida ou que veio misturada com assinaturas e cronogramas, soma dos itens diferente do valor estimado, portal escolhido diferente do mais citado, e o que não foi encontrado. Os mesmos avisos aparecem ao importar um edital por link. |
 | **Resumo para e-mail** (dentro da Análise de edital) | Monta o resumo no formato da equipe ("Dra. Cláudia, Boa tarde, Este processo trata-se da…"): modalidade e objeto; cidade, capital, distância por rodovia e tempo de viagem até a capital, e população (IBGE, estimativa mais recente); local e horários de execução; tabela de itens (item, descrição/equipe mínima, unidade, quantidade, valor unitário); valor global; data e hora; prazo de impugnação; portal. O texto é editável, o que não foi achado fica em amarelo, e o botão **Copiar resumo** cola no Outlook ou Gmail com a tabela formatada. |
 | **Recursos e contrarrazões** | Linha do tempo de cada recurso com prazos em dias úteis (Lei 14.133/2021, art. 165) ou corridos (Lei 10.520/2002), descontando feriados. Calculadora de prazos de recurso e de impugnação. |
-| **Documentos** | Certidões e documentos de cada empresa e filial, com validade, setor responsável, aviso em 30/15/7 dias (ajustável), aviso quando algo vence **antes de uma sessão marcada** e botão **Renovar**. Filtro por empresa, busca e documentos arquivados (filiais encerradas não geram alerta). **Importar planilha** lê o "Controle de Certidões" (.xlsx/.xlsm, uma aba por empresa); inscrições e referências bancárias não são lidas. |
+| **Documentos** | Certidões e documentos de cada empresa e filial, com validade, setor responsável, aviso em 30/15/7 dias (ajustável), aviso quando algo vence **antes de uma sessão marcada** e botão **Renovar**. Filtro por empresa, busca e documentos arquivados (filiais encerradas não geram alerta). **Importar planilha** lê o "Controle de Certidões" (.xlsx/.xlsm, uma aba por empresa): vale a coluna **Vencimento** ("IND" = sem vencimento) e, quando o mesmo documento aparece duas vezes na aba, fica a linha mais recente. Inscrições e referências bancárias não são lidas. |
 | **Portais** | Cadastros nos portais de cada empresa e filial, com usuário, responsável e vencimento; resumo de vencidos e filtro por empresa. **Importar planilha** lê o controle de acessos (.xlsx, uma aba por empresa) e **ignora as colunas de senha, pergunta e resposta secreta**. O portal não guarda senhas. |
 | **Central de alertas** | Todos os alertas agrupados por urgência, com "resolvido" e "lembrar amanhã", notificações do navegador, som e exportação da agenda em `.ics` (Google Agenda, Outlook). |
 | **Resumo diário por e-mail** (em Ajustes) | Todo dia útil, a partir das 7h, o robô do GitHub manda um e-mail com as sessões da semana, propostas a cadastrar, último dia para impugnar, prazos de recurso e contrarrazões, documentos e portais vencendo e as mensagens dos chats nas últimas 24 h. Usa as mesmas regras de prazo do portal. Para ligar: **Gerar chave do robô** e cadastrar a chave no GitHub como segredo `PORTAL_CHAVE_ROBO`. |
@@ -45,6 +46,18 @@ Depois abra http://localhost:3000.
 ### Publicado na Vercel (gratuito)
 
 Igual ao Radar de Licitações: em **Add New… → Project**, escolha este repositório e, em **Root Directory**, a pasta `portal-licitacoes`. Framework Preset: **Other**. Sem comando de build.
+
+## Acompanhamento automático (e-compras.AM)
+
+Não precisa cadastrar o chat à mão. Todo edital do **e-compras.AM** com a proposta marcada como **cadastrada** (ou na etapa Cadastrada, Em disputa, Habilitação ou Recurso) entra sozinho no acompanhamento: o portal acha o pregão pelo link ou pelo número (modalidade + número + órgão, porque o mesmo número existe em vários órgãos, como a DLE 061/26 da FCECON e a do HEMOAM) e, a cada leitura:
+
+- mostra a **fase no portal** (recebendo propostas, em disputa, análise e habilitação, fase recursal, aguardando homologação, homologado);
+- lê o **ranking de cada lote** da página pública de acompanhamento e mostra a **posição da empresa** (ex.: 6º de 13 por valor), se ela tem o melhor lance, se está habilitada ou inabilitada e quem venceu;
+- **avisa quando a posição muda** e **avança a etapa do edital sozinho** (nunca volta etapa; ganho ou perdido só depois de homologado).
+
+A empresa é reconhecida no ranking pelo nome e apelido de Ajustes → Empresa; outras empresas do grupo entram no campo **Empresas do grupo**. Com o portal fechado, o robô do GitHub faz o mesmo e manda e-mail (precisa do segredo `PORTAL_CHAVE_ROBO`, o mesmo do resumo diário).
+
+Compras.gov.br não tem página pública com o ranking: lá o acompanhamento continua pelo PNCP e pelas mensagens coladas.
 
 ## Monitorar um pregão do e-compras.AM
 
@@ -90,9 +103,20 @@ O backup (Ajustes → Exportar backup) continua disponível como cópia extra.
 - `api/importar.js`: importa por qualquer link (PNCP, Compras.gov.br pela UASG e número da compra, e-compras.AM, PDF/ZIP do edital ou página de outros portais). Só acessa endereços públicos.
 - `api/municipio.js` e `api/_municipios.json`: dados da cidade do órgão para o resumo (população pelo IBGE/SIDRA, rota até a capital pelo OSRM, coordenadas dos 5.571 municípios).
 - `servidor-local.js`: roda o portal e as APIs no seu computador.
+- `testes/analise.test.js`: teste de regressão da Análise de edital com editais reais.
 - `assets/config.js`: endereço e chave pública do Supabase (login e dados na nuvem).
 - `api/_auth.js`: confere o login antes de responder nas APIs.
 - `supabase/estrutura.sql`: tabelas e regras de segurança do banco.
+
+## Teste da Análise de edital
+
+Os editais que já deram problema ficam em `testes/editais/` (sem nomes e CPFs das assinaturas), com o resultado certo em `testes/esperado.json`. Antes de publicar qualquer mudança no leitor:
+
+```bash
+node testes/analise.test.js
+```
+
+Ao corrigir um edital novo, salve o texto dele em `testes/editais/`, rode `node testes/analise.test.js --atualizar`, confira o `esperado.json` e faça o commit junto.
 
 ## Observações
 
