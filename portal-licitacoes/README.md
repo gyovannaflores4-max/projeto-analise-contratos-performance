@@ -49,7 +49,7 @@ Igual ao Radar de Licitações: em **Add New… → Project**, escolha este repo
 
 ## Acompanhamento automático (e-compras.AM)
 
-Não precisa cadastrar o chat à mão. Todo edital do **e-compras.AM** com a proposta marcada como **cadastrada** (ou na etapa Cadastrada, Em disputa, Habilitação ou Recurso) entra sozinho no acompanhamento: o portal acha o pregão pelo link ou pelo número (modalidade + número + órgão, porque o mesmo número existe em vários órgãos, como a DLE 061/26 da FCECON e a do HEMOAM) e, a cada leitura:
+Não precisa cadastrar o chat à mão. Todo edital ativo do **e-compras.AM** entra sozinho no acompanhamento (quando a sessão abre e a empresa aparece no ranking, a proposta é marcada como cadastrada sem precisar clicar): o portal acha o pregão pelo link ou pelo número (modalidade + número + órgão, porque o mesmo número existe em vários órgãos, como a DLE 061/26 da FCECON e a do HEMOAM) e, a cada leitura:
 
 - mostra a **fase no portal** (recebendo propostas, em disputa, análise e habilitação, fase recursal, aguardando homologação, homologado);
 - lê o **ranking de cada lote** da página pública de acompanhamento e mostra a **posição da empresa** (ex.: 6º de 13 por valor), se ela tem o melhor lance, se está habilitada ou inabilitada e quem venceu;

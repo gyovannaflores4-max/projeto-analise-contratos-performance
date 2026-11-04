@@ -10,8 +10,8 @@ Usa as mesmas variáveis de ambiente de alerta_resenhas.py (PROCESSOS, SMTP_*,
 EMAIL_TO, GITHUB_TOKEN). TESTE_CHAT=1 envia um e-mail de exemplo com as últimas
 mensagens de todos os pregões, sem alterar o estado.
 
-Com PORTAL_CHAVE_ROBO (a mesma chave do resumo diário), os pregões do e-compras.AM com
-proposta cadastrada no portal Pregão em Dia entram sozinhos no acompanhamento, junto com
+Com PORTAL_CHAVE_ROBO (a mesma chave do resumo diário), os pregões ativos do e-compras.AM
+cadastrados no portal Pregão em Dia entram sozinhos no acompanhamento, junto com
 PROCESSOS. O robô também lê o ranking de cada lote (empresas em ordem de valor, melhor lance,
 habilitada, vencedora), avisa quando a posição da empresa muda e grava tudo em chats.json.
 """
@@ -200,7 +200,7 @@ def posicao(disputa, termos):
 
 
 def pregoes_do_portal():
-    """Pregões do e-compras.AM com proposta cadastrada no portal Pregão em Dia (ou em disputa em diante)."""
+    """Pregões ativos do e-compras.AM cadastrados no portal Pregão em Dia."""
     chave = os.environ.get("PORTAL_CHAVE_ROBO", "").strip()
     if not chave:
         return [], set()
@@ -216,8 +216,6 @@ def pregoes_do_portal():
     for e in dados.get("editais") or []:
         e_compras = re.search(r"e-compras", e.get("portal") or "", re.I) or "e-compras.am.gov.br" in (e.get("link") or "")
         if not e_compras or e.get("etapa") in finais:
-            continue
-        if e.get("propostaStatus") != "cadastrada" and e.get("etapa") not in ("cadastrada", "disputa", "habilitacao", "recurso"):
             continue
         c = chats.get(e.get("id")) or {}
         ident = (re.search(r"ident=(\d+)", (e.get("link") or "") + " " + (c.get("processo") or "") + " " + (c.get("link") or "")) or [None, None])[1] \
@@ -405,7 +403,7 @@ def main():
         if not any(a["numero"] and re.sub(r"\D", "", a["numero"]) == re.sub(r"\D", "", p["numero"]) and not a["ident"] for a in alvos) or p["ident"]:
             alvos.append(p)
     if do_portal:
-        log(f"Portal: {len(do_portal)} pregão(ões) do e-compras.AM com proposta cadastrada entram no acompanhamento.")
+        log(f"Portal: {len(do_portal)} pregão(ões) ativos do e-compras.AM entram no acompanhamento.")
     vistos_ident = set()
     for alvo in alvos:
         rotulo = alvo["numero"] or f"ident {alvo['ident']}"
