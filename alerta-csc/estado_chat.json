@@ -543,10 +543,26 @@
     },
     "256855": {
       "edital": "DLE 061/26",
-      "status": "Classificação",
+      "status": "Em Negociação",
       "posicao": "",
-      "vistas": []
+      "vistas": [
+        "03da850f815a",
+        "0ffba2807c2b",
+        "25456e88dc37",
+        "2baff6602c0d",
+        "331aa35aedb0",
+        "45460505cadd",
+        "4f568b398985",
+        "5121dda960f2",
+        "548bdd9a2cb0",
+        "7c68a294e5bb",
+        "a022665c0975",
+        "a350e4919f9e",
+        "b177475569dd",
+        "bb0ecdae3ce1",
+        "fa30498398f6"
+      ]
     }
   },
-  "atualizado_em": "2026-11-05T10:44:49+00:00"
+  "atualizado_em": "2026-11-05T18:22:00+00:00"
 }

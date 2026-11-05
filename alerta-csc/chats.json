@@ -1,6 +1,6 @@
 {
  "fonte": "e-compras.AM (robô alerta-csc)",
- "atualizado_em": "2026-11-05T10:44:48+00:00",
+ "atualizado_em": "2026-11-05T18:21:57+00:00",
  "pregoes": {
   "255223": {
    "edital": "PE 328/26",
@@ -2979,22 +2979,98 @@
   },
   "256855": {
    "edital": "DLE 061/26",
-   "status": "Classificação",
+   "status": "Em Negociação",
    "objeto": "SERV MEDICINA URGÊNCIA E EMERGÊNCIA-FCEC",
    "disputa": {
-    "situacao": "Classificação",
+    "situacao": "Em Negociação",
     "lotes": [
      {
       "numero": "1",
       "nome": "Lote 1",
-      "situacao": "Pendente",
+      "situacao": "Encerrado",
       "participantes": [],
-      "semLances": true
+      "semLances": false
      }
     ]
    },
    "link": "https://www.e-compras.am.gov.br/publico/licitacoes_acompanhamento.asp?ident=256855",
-   "mensagens": []
+   "mensagens": [
+    {
+     "hora": "05/11/2026 09:17:36",
+     "autor": "Sistema",
+     "texto": "Sessão do Chat Fechada"
+    },
+    {
+     "hora": "05/11/2026 09:12:26",
+     "autor": "Auxiliar",
+     "texto": "A SESSÃO ESTÁ SUSPENSA PARA A ANÁLISE DOCUMENTAL E SERÁ RETOMADA DIA 06/11/26 ÀS 09H00(HORÁRIO DE MANAUS/AM)."
+    },
+    {
+     "hora": "05/11/2026 09:11:44",
+     "autor": "Proponente 4",
+     "texto": "Bom dia!"
+    },
+    {
+     "hora": "05/11/2026 09:11:08",
+     "autor": "Proponente 2",
+     "texto": "Bom dia Sr. Pregoeiro!"
+    },
+    {
+     "hora": "05/11/2026 09:10:55",
+     "autor": "Proponente 5",
+     "texto": "Bom dia"
+    },
+    {
+     "hora": "05/11/2026 09:09:28",
+     "autor": "Auxiliar",
+     "texto": "BOM DIA"
+    },
+    {
+     "hora": "05/11/2026 09:02:33",
+     "autor": "Sistema",
+     "texto": "Classificação Encerrada"
+    },
+    {
+     "hora": "05/11/2026 09:01:16",
+     "autor": "Sistema",
+     "texto": "CLASSIFICAÇÃO DAS PROPOSTAS FINALIZADA."
+    },
+    {
+     "hora": "05/11/2026 09:01:02",
+     "autor": "Sistema",
+     "texto": "Proponente 2, classificado para o lote 1 no Exame de Conformidade 2"
+    },
+    {
+     "hora": "05/11/2026 09:01:02",
+     "autor": "Sistema",
+     "texto": "Proponente 6, classificado para o lote 1 no Exame de Conformidade 2"
+    },
+    {
+     "hora": "05/11/2026 09:01:02",
+     "autor": "Sistema",
+     "texto": "Proponente 5, classificado para o lote 1 no Exame de Conformidade 2"
+    },
+    {
+     "hora": "05/11/2026 09:01:02",
+     "autor": "Sistema",
+     "texto": "Proponente 1, classificado para o lote 1 no Exame de Conformidade 2"
+    },
+    {
+     "hora": "05/11/2026 09:01:02",
+     "autor": "Sistema",
+     "texto": "Proponente 3, classificado para o lote 1 no Exame de Conformidade 2"
+    },
+    {
+     "hora": "05/11/2026 09:01:02",
+     "autor": "Sistema",
+     "texto": "Proponente 4, classificado para o lote 1 no Exame de Conformidade 2"
+    },
+    {
+     "hora": "05/11/2026 09:00:16",
+     "autor": "Sistema",
+     "texto": "ABERTURA DA SESSÃO REALIZADA."
+    }
+   ]
   }
  }
 }
