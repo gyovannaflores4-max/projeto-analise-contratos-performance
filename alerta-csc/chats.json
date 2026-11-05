@@ -1,6 +1,6 @@
 {
  "fonte": "e-compras.AM (robô alerta-csc)",
- "atualizado_em": "2026-11-04T17:29:42+00:00",
+ "atualizado_em": "2026-11-05T10:44:48+00:00",
  "pregoes": {
   "255223": {
    "edital": "PE 328/26",
@@ -2979,10 +2979,10 @@
   },
   "256855": {
    "edital": "DLE 061/26",
-   "status": "Inscrição de Propostas",
+   "status": "Classificação",
    "objeto": "SERV MEDICINA URGÊNCIA E EMERGÊNCIA-FCEC",
    "disputa": {
-    "situacao": "Inscrição de Propostas",
+    "situacao": "Classificação",
     "lotes": [
      {
       "numero": "1",
