@@ -1100,7 +1100,16 @@
   const PORTAL_RESUMO = { "Compras.gov.br": "COMPRASGOV", "BLL": "BLL", "BNC": "BNC", "Licitações-e": "LICITAÇÕES-E", "Portal de Compras Públicas": "PORTAL DE COMPRAS PÚBLICAS", "Licitanet": "LICITANET", "Licitar Digital": "LICITAR DIGITAL", "e-compras AM": "E-COMPRAS AM" };
   const CAPITAIS = { AC: "Rio Branco", AL: "Maceió", AP: "Macapá", AM: "Manaus", BA: "Salvador", CE: "Fortaleza", DF: "Brasília", ES: "Vitória", GO: "Goiânia", MA: "São Luís", MT: "Cuiabá", MS: "Campo Grande", MG: "Belo Horizonte", PA: "Belém", PB: "João Pessoa", PR: "Curitiba", PE: "Recife", PI: "Teresina", RJ: "Rio de Janeiro", RN: "Natal", RS: "Porto Alegre", RO: "Porto Velho", RR: "Boa Vista", SC: "Florianópolis", SP: "São Paulo", SE: "Aracaju", TO: "Palmas" };
   const falta = t => '<mark style="background:#FFE7A3;color:#5A3D00;padding:0 3px;border-radius:3px">[' + h(t) + "]</mark>";
-  const minusculaInicial = t => t ? t.charAt(0).toLowerCase() + t.slice(1) : t;
+  // "CONTRATAÇÃO DE EMPRESA..." (tudo em maiúsculas) vira "contratação de empresa..."; senão, só a 1ª letra
+  const minusculaInicial = t => {
+    if (!t) return t;
+    const l = t.replace(/[^A-Za-zÀ-ú]/g, "");
+    if (l.length > 12 && l.replace(/[^A-ZÀ-Ú]/g, "").length / l.length > 0.6) return t.toLowerCase();
+    // começo em maiúsculas e o resto normal: "CONTRATAÇÃO DE EMPRESA PARA ..., objetivando" -> "contratação de empresa para ..., objetivando"
+    const m = t.match(/^([^a-zà-ú]{15,}?)(?=[,;:]?\s+[a-zà-ú])/);
+    if (m && m[1] === m[1].toUpperCase()) return m[1].toLowerCase() + t.slice(m[1].length);
+    return t.charAt(0).toLowerCase() + t.slice(1);
+  };
   function tempoViagem(min) { if (!min) return ""; const r = Math.round(min / 10) * 10, hh = Math.floor(r / 60), mm = r % 60; return hh ? hh + "h" + (mm ? String(mm).padStart(2, "0") : "") : mm + " min"; }
   function resumoEmailHTML(r) {
     const c = r.campos, m = ui.cidade || {};
@@ -1230,7 +1239,7 @@
     return conferenciaHTML(r) + resumoCartao(r) + '<section class="termometro ' + t.nivel + '"><div class="escala" aria-hidden="true"><i style="height:18px" class="' + (niveis >= 1 ? "on" : "") + '"></i><i style="height:28px" class="' + (niveis >= 2 ? "on" : "") + '"></i><i style="height:38px" class="' + (niveis >= 3 ? "on" : "") + '"></i></div>' +
       "<div><span class=\"eyebrow\" style=\"color:inherit;opacity:.7\">Termômetro do edital</span><h3>" + t.rotulo + "</h3><p>" + t.texto + "</p></div></section>" +
       '<section class="card"><div class="card-h"><h2>Dados do certame</h2><div class="linha-acoes"><button class="btn peq ghost" data-acao="copiarAnalise">' + ic("copiar") + 'Copiar análise</button><button class="btn peq primario" data-acao="criarDaAnalise">' + ic("mais") + "Criar edital</button></div></div>" +
-      '<dl class="dados">' + dado("Número", h(c.numero)) + dado("Modalidade", h(c.modalidade)) + dado("Órgão", h(c.orgao), true) + dado("Objeto", h(c.objeto), true) +
+      '<dl class="dados">' + dado("Número", h(c.numero) + (c.numeroPortal ? ' <span class="muted">· no ' + h(c.plataforma || "portal") + ": " + h(c.numeroPortal) + "</span>" : "")) + dado("Modalidade", h(c.modalidade)) + dado("Órgão", h(c.orgao), true) + dado("Objeto", h(c.objeto), true) +
       dado("Sessão pública", c.sessao ? U.fmtDataHora(c.sessao) + " " + chipSessao(c.sessao) : "") + dado("Impugnar / esclarecer até", c.impugnacaoAte ? U.fmtData(c.impugnacaoAte) + " " + chip(c.impugnacaoAte) : "") +
       dado("Critério de julgamento", h(c.criterio)) + dado("Modo de disputa", h(c.modoDisputa)) + dado("Plataforma", h(c.plataforma)) + dado("Valor estimado", c.valorEstimado ? U.moeda(c.valorEstimado) : c.orcamentoSigiloso ? "Sigiloso" : "") +
       dado("Registro de preços", c.srp ? "Sim" : "Não identificado") + dado("Processo", h(c.processo)) + dado("Vigência", h(c.vigencia)) + dado("Validade da proposta", h(c.validadeProposta)) +
