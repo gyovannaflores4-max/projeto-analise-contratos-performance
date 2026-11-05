@@ -1,4 +1,201 @@
 {
+  "belem-sesma-pe12-tr": {
+    "numero": "PE 12/2026",
+    "modalidade": "Pregão eletrônico",
+    "orgao": "MUNICÍPIO DE BELÉM",
+    "sessao": "2026-10-09T09:00",
+    "limiteProposta": null,
+    "plataforma": "Compras.gov.br",
+    "valorEstimado": 7923960,
+    "municipio": "Belém",
+    "uf": "PA",
+    "local": "Hospital Pronto Socorro Municipal",
+    "horarios": [
+      "Médico(a) Nefrologista sobreaviso 24h por dia.",
+      "Enfermeiro(a) nefrologista, Sobreaviso 24h por dia.",
+      "Técnico(s) de HD sobreaviso 24h por dia."
+    ],
+    "vigencia": "12 meses",
+    "itens": [
+      {
+        "item": "1",
+        "descricao": "PRESTAÇÃO DO SERVIÇO DE DIALISE AGUDA: Considerando atender leitos para diálise ",
+        "unidade": "Serviço",
+        "qtd": 8004,
+        "valorUnit": 990
+      }
+    ],
+    "conferenciaCrit": []
+  },
+  "campinas-mario-gatti-pe82": {
+    "numero": "PE 82/2026",
+    "modalidade": "Pregão eletrônico",
+    "orgao": "Rede Municipal Dr. Mário Gatti de Urgência, Emergência e Hospitalar.",
+    "sessao": "2026-11-03T09:00",
+    "limiteProposta": null,
+    "plataforma": "Compras.gov.br",
+    "valorEstimado": 224595295.72,
+    "municipio": "Campinas",
+    "uf": "SP",
+    "local": "UPA Carlos Lourenço, considerando a existência de quadro próprio de profissionais",
+    "horarios": [
+      "12h Diurno (Segunda a domingo)",
+      "12h Diurno (sábado e domingo)",
+      "12h Noturno (Segunda a Domingo)",
+      "12h Noturno (Sábado e Domingo)"
+    ],
+    "vigencia": "36 meses",
+    "itens": [
+      {
+        "item": "1",
+        "descricao": "Médico Adulto Emergência (Referência Técnica) – 12h Diurno (Segunda a domingo)",
+        "unidade": "Posto de trabalho",
+        "qtd": 3,
+        "valorUnit": null
+      },
+      {
+        "item": "2",
+        "descricao": "Médico Adulto Emergência (Referência Técnica) – 12h Diurno (sábado e domingo)",
+        "unidade": "Posto de trabalho",
+        "qtd": 1,
+        "valorUnit": null
+      },
+      {
+        "item": "3",
+        "descricao": "Médico Adulto Emergência – 12h Diurno (Segunda a Domingo)",
+        "unidade": "Posto de trabalho",
+        "qtd": 3,
+        "valorUnit": null
+      },
+      {
+        "item": "4",
+        "descricao": "Médico Adulto Emergência – 12h Noturno (Segunda a Domingo)",
+        "unidade": "Posto de trabalho",
+        "qtd": 6,
+        "valorUnit": null
+      },
+      {
+        "item": "5",
+        "descricao": "Médico Adulto Emergência – 12h Noturno (Sábado e Domingo)",
+        "unidade": "Posto de trabalho",
+        "qtd": 1,
+        "valorUnit": null
+      },
+      {
+        "item": "6",
+        "descricao": "Médico Adulto (Plantonista) – 12h Diurno (Segunda a Domingo)",
+        "unidade": "Posto de trabalho",
+        "qtd": 12,
+        "valorUnit": null
+      },
+      {
+        "item": "7",
+        "descricao": "Médico Adulto (Plantonista) – 12h Noturno (Segunda a Domingo)",
+        "unidade": "Posto de trabalho",
+        "qtd": 9,
+        "valorUnit": null
+      },
+      {
+        "item": "8",
+        "descricao": "Médico Adulto (Plantonista) – 12h Diurno (Sábado e Domingo)",
+        "unidade": "Posto de trabalho",
+        "qtd": 4,
+        "valorUnit": null
+      },
+      {
+        "item": "9",
+        "descricao": "Médico Adulto (Plantonista) – 12h Noturno (Sábado e Domingo)",
+        "unidade": "Posto de trabalho",
+        "qtd": 3,
+        "valorUnit": null
+      },
+      {
+        "item": "10",
+        "descricao": "Médico Pediatra Emergência (Referência Técnica) – 12h Diurno (Segunda a Domingo)",
+        "unidade": "Posto de trabalho",
+        "qtd": 3,
+        "valorUnit": null
+      },
+      {
+        "item": "11",
+        "descricao": "Médico Pediatra Emergência – 12h Noturno (Segunda a Domingo)",
+        "unidade": "Posto de trabalho",
+        "qtd": 3,
+        "valorUnit": null
+      },
+      {
+        "item": "12",
+        "descricao": "Médico Pediatra (Plantonista) – 12h Diurno (Segunda a Domingo)",
+        "unidade": "Posto de trabalho",
+        "qtd": 6,
+        "valorUnit": null
+      },
+      {
+        "item": "13",
+        "descricao": "Médico Pediatra (Plantonista) – 12h Noturno (Segunda a Domingo)",
+        "unidade": "Posto de trabalho",
+        "qtd": 3,
+        "valorUnit": null
+      },
+      {
+        "item": "14",
+        "descricao": "Médico Psiquiatra (Plantonista) /Sábado e Domingo) – 12h Diurno (Quarta/Quinta/S",
+        "unidade": "Posto de trabalho",
+        "qtd": 1,
+        "valorUnit": null
+      },
+      {
+        "item": "15",
+        "descricao": "ta/Sexta e Sábado) – 12h Noturno (Segunda/Quarta/Quin",
+        "unidade": "Posto de trabalho",
+        "qtd": 1,
+        "valorUnit": null
+      },
+      {
+        "item": "16",
+        "descricao": "Enfermeiro Assistencial (Coordenador) – 08h Diurno (Segunda a Sexta)",
+        "unidade": "Posto de trabalho",
+        "qtd": 4,
+        "valorUnit": null
+      },
+      {
+        "item": "17",
+        "descricao": "Enfermeiro Assistencial – 12h Diurno (Segunda a Domingo)",
+        "unidade": "Posto de trabalho",
+        "qtd": 15,
+        "valorUnit": null
+      },
+      {
+        "item": "18",
+        "descricao": "Enfermeiro Assistencial – 12h Noturno (Segunda a Domingo)",
+        "unidade": "Posto de trabalho",
+        "qtd": 13,
+        "valorUnit": null
+      },
+      {
+        "item": "19",
+        "descricao": "Enfermeiro Assistencial – 12h Diurno (Segunda a Domingo)",
+        "unidade": "Posto de trabalho",
+        "qtd": 62,
+        "valorUnit": null
+      },
+      {
+        "item": "20",
+        "descricao": "Enfermeiro Assistencial – 12h Noturno Segunda a Domingo)",
+        "unidade": "Posto de trabalho",
+        "qtd": 45,
+        "valorUnit": null
+      },
+      {
+        "item": "21",
+        "descricao": "Assistente Social – 12h Diurno (Segunda a Domingo)",
+        "unidade": "Posto de trabalho",
+        "qtd": 4,
+        "valorUnit": null
+      }
+    ],
+    "conferenciaCrit": []
+  },
   "fcecon-dle-061-26": {
     "numero": "DLE 061/26",
     "modalidade": "Dispensa eletrônica",
@@ -94,6 +291,108 @@
     ],
     "conferenciaCrit": []
   },
+  "funeas-pr-pe86-itens": {
+    "numero": "PE 86/2026",
+    "modalidade": "Pregão eletrônico",
+    "orgao": "FUNDAÇÃO ESTATAL DE ATENÇÃO EM SAÚDE DO PARANÁ",
+    "sessao": "2026-07-29T10:00",
+    "limiteProposta": null,
+    "plataforma": "Compras.gov.br",
+    "valorEstimado": 2328030,
+    "municipio": "Curitiba",
+    "uf": "PR",
+    "local": "No Hospital Regional Do Sudoeste Walter Alberto Pecóits – HRS, na forma, nos prazos e de acordo com as especificações técnicas contidas no Termo de Referência, que integra o presente contrato para todos os fins",
+    "horarios": [
+      "A empresa deverá disponibilizar os serviços diariamente (24 horas/dia), com equipe completa de profissionais técnicos para a perfeita realização dos procedimentos.",
+      "A escala de trabalho deverá garantir cobertura assistencial 24 horas por dia, sete dias por semana, com profissionais aptos a atuar em ambiente de terapia intensiva e situações de urgência e emergência.",
+      "Horário de Funcionamento: segunda a sexta 8h-17h."
+    ],
+    "vigencia": "12 meses",
+    "itens": [
+      {
+        "item": "1",
+        "descricao": "Contratação de prestação de serviços de Hemodiálise",
+        "unidade": "Sessão",
+        "qtd": 1500,
+        "valorUnit": 1552.02
+      }
+    ],
+    "conferenciaCrit": []
+  },
+  "inova-capixaba-pe100": {
+    "numero": "PE 100/2026",
+    "modalidade": "Pregão eletrônico",
+    "orgao": "Fundação Estadual de Inovação em Saúde – iNOVA Capixaba",
+    "sessao": "2026-10-22T10:01",
+    "limiteProposta": null,
+    "plataforma": "Portal de Compras Públicas",
+    "valorEstimado": 7826319.36,
+    "municipio": "Colatina",
+    "uf": "ES",
+    "local": "Nas dependências da Unidade Hospitalar a seguir: LOTE 01 MUNICÍPIO LOCAL ENDEREÇO Colatina Hospital Estadual Silvio Avidos - HESA Rua Cassiano Castelo, 307, Centro, Colatina/ES, CEP: 29700-060 6",
+    "horarios": [
+      "Diurno: 07h às 19h",
+      "Noturno: 19h às 07h"
+    ],
+    "vigencia": "24 meses",
+    "itens": [
+      {
+        "item": "1",
+        "descricao": "SERVICOS MEDICOS ESPECIALIZADOS EM NEUROCIRURGIA. ALOCAÇÃO: PRESENCIAL",
+        "unidade": "Hora",
+        "qtd": 26976,
+        "valorUnit": 228.86
+      },
+      {
+        "item": "2",
+        "descricao": "SERVICOS MEDICOS ESPECIALIZADOS EM NEUROCIRURGIA. ALOCAÇÃO: SOBREAVISO",
+        "unidade": "Hora",
+        "qtd": 17568,
+        "valorUnit": 76.28
+      },
+      {
+        "item": "3",
+        "descricao": "SERVICOS MEDICOS ESPECIALIZADOS EM NEUROCIRURGIA. ALOCAÇÃO: COORDENADOR MÉDICO",
+        "unidade": "Hora",
+        "qtd": 1272,
+        "valorUnit": 245.68
+      }
+    ],
+    "conferenciaCrit": []
+  },
+  "macae-fms-pe82-hemodialise": {
+    "numero": "PE 095/2026",
+    "modalidade": "Pregão eletrônico",
+    "orgao": "Município de Macaé",
+    "sessao": "2026-10-26T10:00",
+    "limiteProposta": null,
+    "plataforma": "Compras.gov.br",
+    "valorEstimado": 5661386.1,
+    "municipio": "Macaé",
+    "uf": "RJ",
+    "local": null,
+    "horarios": [
+      "Deverá estar disponível 24(vinte e quatro) horas todos os dias da semana, inclusive aos sábados."
+    ],
+    "vigencia": "1 ano",
+    "itens": [
+      {
+        "item": "1.1",
+        "descricao": "Nefrologia – Hemodiálise; Dados adicionais: hemodiálise intermitente em ambiente",
+        "unidade": "Und",
+        "qtd": 6030,
+        "valorUnit": 830.17
+      },
+      {
+        "item": "1.2",
+        "descricao": "Nefrologia – Hemodiálise; Dados adicionais: hemodiálise prolongada (até 12 horas",
+        "unidade": "Und",
+        "qtd": 603,
+        "valorUnit": 1087
+      }
+    ],
+    "conferenciaCrit": []
+  },
   "papagaios-edital-tr": {
     "numero": "PE 114/2026",
     "modalidade": "Pregão eletrônico",
@@ -155,6 +454,72 @@
     "horarios": [],
     "vigencia": null,
     "itens": [],
+    "conferenciaCrit": []
+  },
+  "santa-casa-para-pe15-tr": {
+    "numero": "PE 15/2026",
+    "modalidade": "Pregão eletrônico",
+    "orgao": "FUNDAÇÃO SANTA CASA DE MISERICÓRDIA DO PARÁ",
+    "sessao": "2026-10-30T09:30",
+    "limiteProposta": null,
+    "plataforma": "Compras.gov.br",
+    "valorEstimado": 10407300,
+    "municipio": "Ananindeua",
+    "uf": "PA",
+    "local": "Em regime presencial, mediante cobertura assistencial contínua e ininterrupta durante as 24 (vinte e quatro) horas do dia, inclusive sábados, domingos e feriados, por meio de escalas organizadas pela contratada, assegurando a disponibilidade permanente dos profissionais necessários à adequada execução do objeto",
+    "horarios": [],
+    "vigencia": "12 meses",
+    "itens": [
+      {
+        "item": "1",
+        "descricao": "Cobertura médica plantonista para UTI Adulto com perfil materno, com cobertura a",
+        "unidade": "Mês",
+        "qtd": 12,
+        "valorUnit": null
+      },
+      {
+        "item": "2",
+        "descricao": "Cobertura médica diarista para UTI Adulto com perfil materno",
+        "unidade": "Mês",
+        "qtd": 12,
+        "valorUnit": null
+      },
+      {
+        "item": "3",
+        "descricao": "Cobertura médica de coordenação para UTI Adulto com perfil materno",
+        "unidade": "Mês",
+        "qtd": 12,
+        "valorUnit": null
+      },
+      {
+        "item": "4",
+        "descricao": "Cobertura médica plantonista para UTI Neonatal, com cobertura assistencial inint",
+        "unidade": "Mês",
+        "qtd": 12,
+        "valorUnit": null
+      },
+      {
+        "item": "5",
+        "descricao": "Cobertura médica diarista para UTI Neonatal",
+        "unidade": "Mês",
+        "qtd": 12,
+        "valorUnit": null
+      },
+      {
+        "item": "6",
+        "descricao": "Cobertura médica de coordenação para UTI Neonatal",
+        "unidade": "Mês",
+        "qtd": 12,
+        "valorUnit": null
+      },
+      {
+        "item": "7",
+        "descricao": "Cobertura médica pediátrica para salas de parto e alojamento conjunto, com cober",
+        "unidade": "Mês",
+        "qtd": 12,
+        "valorUnit": null
+      }
+    ],
     "conferenciaCrit": []
   },
   "sao-joao-batista-pe18-tr": {
