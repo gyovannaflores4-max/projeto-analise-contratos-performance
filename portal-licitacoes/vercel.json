@@ -17,6 +17,9 @@
     },
     "api/suspensos.js": {
       "maxDuration": 60
+    },
+    "api/resultados.js": {
+      "maxDuration": 60
     }
   }
 }
