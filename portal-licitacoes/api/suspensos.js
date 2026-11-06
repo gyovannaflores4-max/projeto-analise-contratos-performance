@@ -254,3 +254,4 @@ module.exports = async (req, res) => {
 };
 module.exports.acompanhar = acompanhar;
 module.exports.semelhanca = semelhanca;
+module.exports.pncpDoComprasGov = pncpDoComprasGov;

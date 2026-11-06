@@ -118,3 +118,40 @@ end;
 $$;
 revoke execute on function public.portal_estado_robo(text) from public, authenticated;
 grant execute on function public.portal_estado_robo(text) to anon;
+-- Garimpo: editais abertos achados pelo robô no PNCP, por pessoa
+create table public.portal_garimpo (
+  user_id uuid not null references auth.users (id) on delete cascade,
+  id text not null,
+  dados jsonb not null,
+  nota integer not null default 0,
+  achado_em timestamptz not null default now(),
+  primary key (user_id, id)
+);
+alter table public.portal_garimpo enable row level security;
+create policy "Cada pessoa lê só o próprio garimpo" on public.portal_garimpo
+  for select to authenticated using ((select auth.uid()) = user_id);
+create policy "Cada pessoa apaga só o próprio garimpo" on public.portal_garimpo
+  for delete to authenticated using ((select auth.uid()) = user_id);
+
+-- O robô grava com a chave do portal (a mesma do resumo diário). Devolve quantos são novos.
+create or replace function public.portal_garimpo_robo(chave text, itens jsonb)
+returns integer language plpgsql security definer set search_path = '' as $$
+declare
+  uid uuid;
+  novos integer;
+begin
+  if chave is null or length(chave) < 40 or jsonb_typeof(itens) <> 'array' or jsonb_array_length(itens) > 2000 then return null; end if;
+  select c.user_id into uid from public.portal_robo_chave c where c.hash = encode(sha256(convert_to(chave, 'UTF8')), 'hex');
+  if uid is null then return null; end if;
+  select count(*) into novos from jsonb_array_elements(itens) x
+   where not exists (select 1 from public.portal_garimpo g where g.user_id = uid and g.id = x->>'id');
+  insert into public.portal_garimpo (user_id, id, dados, nota)
+  select uid, x->>'id', x->'dados', coalesce((x->>'nota')::int, 0) from jsonb_array_elements(itens) x where coalesce(x->>'id', '') <> ''
+  on conflict (user_id, id) do update set dados = excluded.dados, nota = excluded.nota;
+  -- tira o que já encerrou há mais de 2 dias
+  delete from public.portal_garimpo g where g.user_id = uid and (g.dados->>'encerramento') < to_char(now() - interval '2 days', 'YYYY-MM-DD');
+  return novos;
+end;
+$$;
+revoke all on function public.portal_garimpo_robo(text, jsonb) from public;
+grant execute on function public.portal_garimpo_robo(text, jsonb) to anon, authenticated;

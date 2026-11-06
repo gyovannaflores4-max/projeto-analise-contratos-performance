@@ -217,6 +217,19 @@
         titulo: (s.dias < 0 ? "Documento vencido: " : "Renovar documento: ") + d.nome + (d.empresa ? " (" + empresaCurta(d.empresa) + ")" : ""),
         detalhe: s.rotulo + (afeta ? " · antes da sessão do " + afeta.numero : ""), rota: "documentos", ref: d.id });
     });
+    // Habilitação: edital com sessão nos próximos 10 dias e documento faltando ou vencendo antes dela
+    S.editais.filter(e => ativo(e) && e.etapa !== "triagem" && e.sessao && !U.passou(e.sessao) && U.diasAte(e.sessao) <= 10).forEach(e => {
+      const pk = pacoteHabilitacao(e);
+      if (!pk.problemas.length || !pk.empresa) return;
+      add({ id: "hab:" + e.id + ":" + pk.problemas.map(x => x.ref.chave + x.st).join(","), tipo: "documento", icone: "documentos", quando: U.soData(e.sessao), nivel: "atencao",
+        titulo: "Habilitação do " + e.numero + ": " + U.plural(pk.problemas.length, "pendência", "pendências"), detalhe: pk.problemas.map(x => x.ref.nome + " (" + HAB_ST[x.st][1].toLowerCase() + ")").join(", ") + " · " + empresaCurta(pk.empresa), rota: "editais", ref: e.id });
+    });
+    // Contratos: prorrogação (120 dias antes do fim), reajuste (45 dias antes do aniversário) e garantia (30 dias)
+    contratosVigentes().forEach(c => marcosContrato(c).forEach(m => {
+      if (m.dias < -5 || m.dias > ALERTA_MARCO[m.tipo]) return;
+      add({ id: "ctr:" + c.id + ":" + m.tipo + ":" + m.data, tipo: "contrato", icone: "documentos", quando: m.data, nivel: m.dias <= 30 ? "critico" : "atencao",
+        titulo: m.acao + ": contrato " + c.numero, detalhe: U.corta(c.orgao, 50) + " · " + m.rot.toLowerCase() + " em " + U.fmtData(m.data), rota: "contratos", ref: c.id });
+    }));
     // Cadastro e plano dos portais: só informativo (não entra em prioridades, alertas críticos nem resumo)
     S.portais.forEach(p => {
       [["validadeCadastro", "Cadastro"], ["validadePlano", "Plano/mensalidade"]].forEach(([campo, rot]) => {
@@ -836,6 +849,7 @@
       '<div class="bloco"><h3>Proposta</h3><div class="ferramentas"><select data-mudar="propStatus" data-id="' + e.id + '" aria-label="Situação da proposta">' + PROP_STATUS.map(p => '<option value="' + p[0] + '"' + (p[0] === e.propostaStatus ? " selected" : "") + ">" + p[1] + "</option>").join("") + "</select>" +
       '<span class="muted" style="font-size:13px">' + progresso(e) + " de " + CHECK_PROPOSTA.length + ' itens prontos</span></div><div class="progresso"><i style="width:' + Math.round(100 * progresso(e) / CHECK_PROPOSTA.length) + '%"></i></div>' + checklistHTML(e) + "</div>" +
 
+      (ativo(e) && e.etapa !== "triagem" ? habilitacaoHTML(e) : "") +
       (chat && (chat.status || chat.disputa) ? '<div class="bloco"><h3>Acompanhamento no portal</h3>' + disputaHTML(chat, true) + "</div>" : "") +
       '<div class="bloco"><h3>Atalhos</h3><div class="linha-acoes">' +
       (e.link ? '<a class="btn peq ghost" href="' + h(e.link) + '" target="_blank" rel="noopener">' + ic("link") + "Abrir no portal</a>" : "") +
@@ -888,7 +902,7 @@
       salvar: v => {
         if (e) { Object.assign(e, v); (e.historico = e.historico || []).unshift({ data: U.hojeISO(), texto: "Dados do edital atualizados." }); }
         else {
-          const novo = Object.assign({ id: U.uid(), checklist: {}, notas: "", criadoEm: U.hojeISO(), historico: [{ data: U.hojeISO(), texto: "Edital cadastrado no portal." }] }, v);
+          const novo = Object.assign({ id: U.uid(), checklist: {}, notas: "", criadoEm: U.hojeISO(), historico: [{ data: U.hojeISO(), texto: "Edital cadastrado no portal." }] }, preset && preset.exigidos && preset.exigidos.length ? { exigidos: preset.exigidos } : {}, v);
           S.editais.push(novo);
           registrar("Novo edital cadastrado: " + novo.numero + ".", "editais");
           const ident = ui.importChat && (ui.importChat.link.match(/ident=(\d+)/) || [])[1];
@@ -1592,7 +1606,8 @@
     ui.lendoRes = true; if (rotaAtual() === "resultados") renderSeLivre();
     try {
       const d = await api("/api/resultados?cnpj=" + cnpjs.join(",") + "&ano=" + ano + "&nome=" + encodeURIComponent(nomesGrupo().join(",")), 90000);
-      resCache()[ano] = { consultadoEm: d.consultadoEm, tentadoEm: U.agoraISO(), processos: d.processos, erro: "" };
+      const falhos = (d.processos || []).filter(p => p.erro).length; // ex.: PNCP limitou as consultas (429): tenta de novo em 30 min
+      resCache()[ano] = { consultadoEm: d.consultadoEm, tentadoEm: U.agoraISO(), processos: d.processos, erro: falhos ? U.plural(falhos, "processo não carregou", "processos não carregaram") + " no PNCP; tento de novo em 30 minutos" : "" };
       const mud = incorporarGanhos(d.processos);
       const novos = mud.filter(m => m.tipo !== "substituido"), subst = mud.filter(m => m.tipo === "substituido");
       if (novos.length) notificar(U.plural(novos.length, "ganho novo", "ganhos novos") + " no PNCP", novos.map(m => m.e.numero + " · " + U.corta(m.e.orgao, 40)).join("; ") + ". Já estão nos editais, na etapa Ganho.", "pop", { rotulo: "Ver resultados", rota: "resultados" });
@@ -1712,6 +1727,328 @@
     return '<div class="bloco"><h3>Depois do ganho</h3>' +
       (r ? '<p class="muted" style="font-size:13px">Homologado em ' + U.fmtData(r.data) + " · " + U.moeda(r.valor) + " · itens " + h((r.itens || []).filter(x => x.vigente).map(x => x.numero).join(", ")) + (r.vigente === false ? ' · <b style="color:var(--crit)">resultado substituído no PNCP</b>' : "") + "</p>" : "") +
       '<div class="checklist">' + CHECK_GANHO.map((k, i) => '<label class="' + (c[k] ? "feito" : "") + '"><input type="checkbox" data-mudar="checkGanho" data-id="' + e.id + '" data-item="' + i + '"' + (c[k] ? " checked" : "") + "><span>" + h(k) + "</span></label>").join("") + "</div></div>";
+  }
+
+  /* ---------- Pacote de habilitação do edital ---------- */
+  // Cruza os documentos exigidos (da análise do edital, ou a lista padrão) com a pasta da empresa
+  // que vai participar (matriz ou filial) e mostra o que falta ou vence antes da sessão.
+  const HAB_PADRAO = ["contrato_social", "cnd_federal", "fgts", "cndt", "estadual", "municipal", "falencia", "balanco", "conselho", "atestado", "declaracoes"];
+  const HAB_FORA_PASTA = ["balanco", "atestado", "declaracoes", "responsavel_tecnico"]; // costumam ser montados para cada edital
+  const empresasDocs = () => [...new Set(docsAtivos().map(d => d.empresa).filter(Boolean))].sort();
+  // Empresa sugerida: filial da mesma UF/cidade do órgão, senão a matriz da empresa principal
+  function empresaSugerida(e) {
+    const lista = empresasDocs(), ap = U.semAcento(S.empresa.apelido || S.empresa.nome || "").toLowerCase().split(/\s+/)[0] || "";
+    const norm = x => U.semAcento(x).toLowerCase();
+    const minhas = lista.filter(x => !ap || norm(x).includes(ap));
+    const base = minhas.length ? minhas : lista;
+    const cidade = norm(e.municipio || ""), uf = norm(e.uf || "");
+    return (cidade && base.find(x => norm(x).includes("filial") && norm(x).includes(cidade))) ||
+      (uf && base.find(x => new RegExp("filial\\s+" + uf + "\\b").test(norm(x)))) ||
+      base.find(x => /matriz/.test(norm(x))) || base[0] || "";
+  }
+  function pacoteHabilitacao(e) {
+    const empresa = e.empresaHab || empresaSugerida(e);
+    const limite = U.soData(e.sessao || limiteDe(e) || "") || U.hojeISO();
+    const docs = docsAtivos().filter(d => d.empresa === empresa);
+    const exigidos = (e.exigidos && e.exigidos.length ? e.exigidos : HAB_PADRAO).filter(k => k !== "declaracoes" || true);
+    const itens = exigidos.map(k => {
+      const ref = A.HABILITACAO.find(x => x.chave === k) || { chave: k, nome: k, grupo: "Outros" };
+      const cands = docs.filter(d => d.tipo === k).sort((a, b) => (b.validade ? b.validade : "9999").localeCompare(a.validade ? a.validade : "9999"));
+      const marcado = (e.habOk || {})[k];
+      if (!cands.length) return { ref, st: marcado ? "ok" : HAB_FORA_PASTA.includes(k) ? "manual" : "falta", docs: [] };
+      // Vários documentos do mesmo tipo (ex.: estadual: ICMS e dívida ativa): vale o pior
+      const pior = cands.reduce((p, d) => (d.validade && (!p.validade || d.validade < p.validade) ? d : p), cands[0]);
+      const st = !pior.validade || pior.validade >= limite ? "ok" : pior.validade < U.hojeISO() ? "vencido" : "antes";
+      return { ref, st, docs: cands, pior };
+    });
+    if (/compras\.gov/i.test(e.portal || "")) {
+      const sicaf = docs.find(d => /sicaf/i.test(d.nome));
+      itens.push({ ref: { chave: "sicaf", nome: "SICAF", grupo: "Cadastro" }, st: !sicaf ? "falta" : !sicaf.validade || sicaf.validade >= limite ? "ok" : sicaf.validade < U.hojeISO() ? "vencido" : "antes", docs: sicaf ? [sicaf] : [], pior: sicaf });
+    }
+    const problemas = itens.filter(x => ["falta", "vencido", "antes"].includes(x.st));
+    return { empresa, limite, itens, problemas, padrao: !(e.exigidos && e.exigidos.length) };
+  }
+  const HAB_ST = { ok: ["ok", "Em dia"], antes: ["warn", "Vence antes da sessão"], vencido: ["crit", "Vencido"], falta: ["crit", "Não está na pasta"], manual: ["info", "Montar para o edital"] };
+  function habilitacaoHTML(e) {
+    const p = pacoteHabilitacao(e), lista = empresasDocs();
+    return '<div class="bloco"><h3>Habilitação</h3>' +
+      '<div class="ferramentas"><select data-mudar="empresaHab" data-id="' + e.id + '" aria-label="Empresa que participa">' + (lista.length ? lista.map(x => '<option' + (x === p.empresa ? " selected" : "") + ">" + h(x) + "</option>").join("") : "<option>Nenhuma empresa na pasta de documentos</option>") + "</select>" +
+      '<span class="muted" style="font-size:13px">' + (p.problemas.length ? '<b style="color:var(--crit)">' + U.plural(p.problemas.length, "pendência", "pendências") + "</b>" : "tudo em dia") + " para " + U.fmtData(p.limite) + "</span></div>" +
+      (p.padrao ? '<p class="nota">Lista padrão. Analise o edital (Análise de edital → Criar edital) para usar os documentos exigidos nele.</p>' : "") +
+      '<ul class="hab-lista">' + p.itens.map(x => {
+        const [cls, rot] = HAB_ST[x.st];
+        const det = x.pior ? (x.docs.length > 1 ? x.docs.map(d => d.nome + " (" + (d.validade ? U.fmtData(d.validade) : "IND") + ")").join(" · ") : x.pior.nome + " · " + (x.pior.validade ? "vence " + U.fmtData(x.pior.validade) : "validade indeterminada")) : "";
+        return '<li><span class="pill ' + cls + '">' + rot + "</span><div><b>" + h(x.ref.nome) + "</b>" + (det ? '<small class="muted">' + h(det) + "</small>" : "") + "</div>" +
+          (x.st === "manual" || x.st === "falta" && HAB_FORA_PASTA.includes(x.ref.chave) || (e.habOk || {})[x.ref.chave] ? '<label class="hab-ok"><input type="checkbox" data-mudar="habOk" data-id="' + e.id + '" data-chave="' + x.ref.chave + '"' + ((e.habOk || {})[x.ref.chave] ? " checked" : "") + "> pronto</label>" : "") + "</li>";
+      }).join("") + "</ul>" +
+      '<div class="linha-acoes"><button class="btn peq ghost" data-acao="copiarHab" data-id="' + e.id + '">' + ic("copiar") + 'Copiar lista</button><a class="btn peq ghost" href="#documentos">' + ic("documentos") + "Abrir documentos</a></div></div>";
+  }
+  function textoHab(e) {
+    const p = pacoteHabilitacao(e);
+    return ["Habilitação · " + e.numero + " · " + e.orgao, "Empresa: " + p.empresa + " · documentos válidos até " + U.fmtData(p.limite), ""]
+      .concat(p.itens.map(x => (x.st === "ok" ? "[ok] " : "[  ] ") + x.ref.nome + " — " + HAB_ST[x.st][1] + (x.pior && x.pior.validade ? " (vence " + U.fmtData(x.pior.validade) + ")" : ""))).join("\n");
+  }
+
+  /* ---------- Concorrência ---------- */
+  // Quem disputa e ganha os pregões em que participamos: resultados do PNCP (Compras.gov.br) e
+  // ranking da disputa do e-compras.AM. Mostra os concorrentes mais frequentes e onde perdemos.
+  const ETAPAS_COM_RESULTADO = ["habilitacao", "recurso", "ganho", "perdido"];
+  const refCompra = e => e.pncpId || ((String(e.link || "").match(/compra=\d{17}|pncp\.gov\.br\/app\/editais\/\d{14}\/\d{4}\/\d+/) || [])[0] ? e.link : "");
+  const nomeConc = s => U.semAcento(String(s || "")).toUpperCase().replace(/[.,]/g, " ").replace(/\b(LTDA|EIRELI|ME|EPP|S\s?A|SS|SOCIEDADE SIMPLES|LIMITADA)\b/g, " ").replace(/\s+/g, " ").trim();
+  const ehDoGrupo = (nome, cnpj) => ehNossa(nome) || (cnpj && cnpjsGrupo().some(c => c.slice(0, 8) === String(cnpj).replace(/\D/g, "").slice(0, 8)));
+  async function verificarConcorrencia(forcar) {
+    if (ui.lendoConc) return;
+    const prazo = e => (ETAPA(e.etapa).final ? 7 : 1) * 86400000;
+    const lista = S.editais.filter(e => ETAPAS_COM_RESULTADO.includes(e.etapa) && refCompra(e) && (forcar || !e.concorrencia || Date.now() - new Date(e.concorrencia.lidoEm).getTime() > prazo(e)));
+    if (!lista.length) { if (forcar) toast("Nada para atualizar", "Os pregões do Compras.gov.br/PNCP já estão lidos."); return; }
+    ui.lendoConc = true; if (rotaAtual() === "concorrencia") renderSeLivre();
+    let erros = 0;
+    try {
+      for (const e of lista) {
+        try {
+          const d = await api("/api/concorrentes?ref=" + encodeURIComponent(refCompra(e)) + "&sessao=" + encodeURIComponent(e.sessao || ""), 65000);
+          e.concorrencia = { lidoEm: d.lidoEm, linkPncp: d.linkPncp, itens: d.itens };
+          if (!e.pncpId && d.pncp) e.pncpId = d.pncp.cnpj + "-1-" + String(d.pncp.seq).padStart(6, "0") + "/" + d.pncp.ano;
+        } catch (er) { erros++; e.concorrencia = Object.assign({}, e.concorrencia || {}, { lidoEm: new Date().toISOString(), erro: er.message }); }
+        salvar(); if (rotaAtual() === "concorrencia") renderSeLivre();
+      }
+    } finally { ui.lendoConc = false; if (rotaAtual() === "concorrencia") renderSeLivre(); }
+    if (forcar) toast("Concorrência atualizada", U.plural(lista.length, "pregão lido", "pregões lidos") + (erros ? " · " + erros + " com erro" : ""));
+  }
+  // Uma linha por disputa (item do PNCP ou lote do e-compras) com os participantes conhecidos
+  function disputasConhecidas() {
+    const out = [];
+    S.editais.forEach(e => {
+      ((e.concorrencia && e.concorrencia.itens) || []).forEach(it => {
+        if (!it.vencedor) return;
+        out.push({ e, fonte: "PNCP", nome: "Item " + it.numero + " · " + U.corta(it.descricao, 60), estimado: it.valorEstimado,
+          participantes: [{ nome: it.vencedor.nome, cnpj: it.vencedor.cnpj, valor: it.vencedor.valor, vencedor: true }].concat((it.anteriores || []).map(a => ({ nome: a.nome, cnpj: a.cnpj, valor: a.valor, desclassificado: !!a.cancelado }))) });
+      });
+      const c = chatDoEdital(e.id);
+      posicaoDisputa(c).forEach(l => {
+        if (!l.ps.length) return;
+        out.push({ e, fonte: "e-compras.AM", nome: l.lote, estimado: null,
+          participantes: l.ps.map(p => ({ nome: p.nome, valor: p.negociado || p.valor, vencedor: !!p.vencedor, desclassificado: p.exame2 === false || p.habilitado === false })) });
+      });
+    });
+    return out;
+  }
+  function mapaConcorrentes() {
+    const mapa = new Map();
+    disputasConhecidas().forEach(dp => {
+      const nos = dp.participantes.find(p => ehDoGrupo(p.nome, p.cnpj)), vistos = new Set();
+      dp.participantes.slice().sort((x, y) => (y.vencedor ? 1 : 0) - (x.vencedor ? 1 : 0)).forEach(p => {
+        if (ehDoGrupo(p.nome, p.cnpj)) return;
+        const k = nomeConc(p.nome); if (!k || vistos.has(k)) return; // a mesma empresa conta uma vez por disputa
+        vistos.add(k);
+        const c = mapa.get(k) || { nome: p.nome, cnpj: p.cnpj || "", processos: new Set(), orgaos: new Set(), disputas: 0, vitorias: 0, valor: 0, descontos: [], contraNos: 0, ganhouDeNos: 0, desclass: 0 };
+        if (!c.cnpj && p.cnpj) c.cnpj = p.cnpj;
+        c.processos.add(dp.e.id); c.orgaos.add(empresaCurta(dp.e.orgao)); c.disputas++;
+        if (p.desclassificado) c.desclass++;
+        if (p.vencedor) { c.vitorias++; c.valor += Number(p.valor) || 0; if (dp.estimado && p.valor) c.descontos.push(1 - p.valor / dp.estimado); }
+        if (nos) { c.contraNos++; if (p.vencedor) c.ganhouDeNos++; }
+        mapa.set(k, c);
+      });
+    });
+    return [...mapa.values()].map(c => Object.assign(c, { nProc: c.processos.size, desconto: c.descontos.length ? c.descontos.reduce((a, b) => a + b, 0) / c.descontos.length : null }))
+      .sort((a, b) => b.vitorias - a.vitorias || b.nProc - a.nProc || b.valor - a.valor);
+  }
+  // Onde perdemos: vencedor e distância para o nosso preço
+  function ondePerdemos() {
+    const out = [];
+    disputasConhecidas().forEach(dp => {
+      const venc = dp.participantes.find(p => p.vencedor);
+      if (!venc || ehDoGrupo(venc.nome, venc.cnpj)) return;
+      const nos = dp.participantes.find(p => ehDoGrupo(p.nome, p.cnpj));
+      // PNCP só mostra o vencedor: nosso valor vem do edital quando a compra tem um item só
+      const nossoValor = nos ? nos.valor : dp.fonte === "PNCP" && dp.e.etapa === "perdido" ? ((dp.e.concorrencia.itens || []).length === 1 && Number(dp.e.nossoValor)) || null : undefined;
+      if (nossoValor === undefined) return; // não participamos dessa disputa
+      out.push({ e: dp.e, disputa: dp.nome, fonte: dp.fonte, vencedor: venc, nosso: nossoValor, estimado: dp.estimado,
+        dif: nossoValor && venc.valor ? 100 * (nossoValor / venc.valor - 1) : null });
+    });
+    return out.sort((a, b) => String(b.e.sessao || "").localeCompare(String(a.e.sessao || "")));
+  }
+  function pgConcorrencia() {
+    const conc = mapaConcorrentes(), perdas = ondePerdemos(), disputas = disputasConhecidas();
+    const pend = S.editais.filter(e => ETAPAS_COM_RESULTADO.includes(e.etapa) && refCompra(e) && !e.concorrencia).length;
+    const top = conc.filter(c => c.ganhouDeNos).sort((a, b) => b.ganhouDeNos - a.ganhouDeNos)[0];
+    const difs = perdas.filter(p => p.dif !== null).map(p => p.dif);
+    return '<div class="cab"><div><span class="eyebrow">Análise e jurídico</span><h1>Concorrência</h1><p>Quem disputa com a ' + h(apelido()) + ', quem ganha e por quanto. Junta o ranking da disputa do e-compras.AM e os resultados publicados no PNCP (Compras.gov.br).</p></div>' +
+      '<div class="cab-acoes"><button class="btn primario" data-acao="atualizarConcorrencia"' + (ui.lendoConc ? " disabled" : "") + ">" + ic("atualizar") + (ui.lendoConc ? "Lendo resultados…" : "Atualizar resultados") + "</button></div></div>" +
+      (pend ? '<p class="muted res-status">' + U.plural(pend, "pregão ainda não lido", "pregões ainda não lidos") + " no PNCP." + (ui.lendoConc ? " Lendo agora…" : "") + "</p>" : "") +
+      '<section class="kpis" aria-label="Indicadores"><div class="kpi destaque"><span class="rot">Concorrentes mapeados</span><span class="val">' + conc.length + '</span><span class="sub">em ' + U.plural(new Set(disputas.map(d => d.e.id)).size, "pregão", "pregões") + "</span></div>" +
+      '<div class="kpi"><span class="rot">Disputas perdidas</span><span class="val">' + perdas.length + '</span><span class="sub">itens ou lotes com vencedor de fora</span></div>' +
+      '<div class="kpi"><span class="rot">Distância média</span><span class="val">' + (difs.length ? pctRes(difs.reduce((a, b) => a + b, 0) / difs.length) : "–") + '</span><span class="sub">nosso preço acima do vencedor</span></div>' +
+      '<div class="kpi"><span class="rot">Quem mais ganhou de nós</span><span class="val" style="font-size:18px;line-height:1.3">' + (top ? h(U.corta(top.nome, 34)) : "–") + '</span><span class="sub">' + (top ? U.plural(top.ganhouDeNos, "vez", "vezes") : "sem dados ainda") + "</span></div></section>" +
+      '<section class="card"><div class="card-h"><h2>Concorrentes</h2><span class="muted">mais vitórias primeiro</span></div>' +
+      (conc.length ? '<div class="tabela-wrap"><table class="tabela res-tabela"><thead><tr><th>Empresa</th><th style="text-align:right">Pregões</th><th style="text-align:right">Contra nós</th><th style="text-align:right">Vitórias</th><th style="text-align:right">Valor ganho</th><th style="text-align:right">Desconto médio</th></tr></thead><tbody>' +
+        conc.slice(0, 40).map(c => "<tr><td><b>" + h(c.nome) + "</b>" + '<span class="sub">' + h([c.cnpj ? c.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5") : "", [...c.orgaos].slice(0, 2).map(o => U.corta(o, 40)).join(" · ")].filter(Boolean).join(" · ")) + (c.desclass ? " · " + U.plural(c.desclass, "desclassificação", "desclassificações") : "") + "</span></td>" +
+          '<td class="num" style="text-align:right">' + c.nProc + '</td><td class="num" style="text-align:right">' + c.contraNos + (c.ganhouDeNos ? '<span class="sub">ganhou ' + c.ganhouDeNos + "</span>" : "") + '</td><td class="num" style="text-align:right">' + c.vitorias + '</td><td class="num" style="text-align:right">' + U.moeda(c.valor || null) + '</td><td class="num" style="text-align:right">' + (c.desconto === null ? "—" : pctRes(100 * c.desconto)) + "</td></tr>").join("") + "</tbody></table></div>"
+        : vazio("analise", "Ainda sem dados de concorrência. Os pregões do e-compras.AM com chat e os do Compras.gov.br/PNCP com resultado aparecem aqui.")) + "</section>" +
+      '<section class="card"><div class="card-h"><h2>Onde perdemos</h2><span class="muted">vencedor e distância para o nosso preço</span></div>' +
+      (perdas.length ? '<div class="tabela-wrap"><table class="tabela res-tabela"><thead><tr><th>Pregão</th><th>Disputa</th><th>Vencedor</th><th style="text-align:right">Valor vencedor</th><th style="text-align:right">Nosso valor</th></tr></thead><tbody>' +
+        perdas.slice(0, 60).map(p => '<tr class="clicavel" data-acao="abrirEdital" data-id="' + p.e.id + '"><td class="forte">' + h(p.e.numero) + '<span class="sub">' + h(U.corta(empresaCurta(p.e.orgao), 40)) + " · " + p.fonte + "</span></td><td>" + h(p.disputa) + "</td><td>" + h(U.corta(p.vencedor.nome, 50)) + '</td><td class="num" style="text-align:right">' + U.moeda(p.vencedor.valor) + (p.estimado ? '<span class="sub">' + pctRes(100 * (1 - p.vencedor.valor / p.estimado)) + " abaixo do estimado</span>" : "") +
+          '</td><td class="num" style="text-align:right">' + U.moeda(p.nosso) + (p.dif !== null ? '<span class="sub">' + (p.dif >= 0 ? pctRes(p.dif) + " acima" : pctRes(-p.dif) + " abaixo") + "</span>" : "") + "</td></tr>").join("") + "</tbody></table></div>"
+        : vazio("check", "Nenhuma disputa perdida com dados.")) +
+      '<p class="nota">Fontes: ranking do e-compras.AM (chats monitorados) e resultados dos itens no PNCP. No PNCP aparecem só o vencedor e os que foram desclassificados antes dele; o valor da nossa proposta vem do campo "Nossa proposta" do edital quando a disputa é do Compras.gov.br.</p></section>';
+  }
+
+  /* ---------- Garimpo ---------- */
+  // Editais com proposta aberta achados todo dia pelo robô no PNCP (tabela portal_garimpo no Supabase).
+  async function carregarGarimpo(forcar) {
+    if (!nuvem.cliente || !nuvem.usuario) { ui.garimpo = { erro: "Entre no portal (login) para ver o garimpo." }; return; }
+    if (ui.garimpo && ui.garimpo.carregando) return;
+    if (!forcar && ui.garimpo && ui.garimpo.lidoEm && Date.now() - ui.garimpo.lidoEm < 10 * 60000) return;
+    ui.garimpo = Object.assign({}, ui.garimpo, { carregando: true });
+    try {
+      const { data, error } = await nuvem.cliente.from("portal_garimpo").select("id,dados,nota,achado_em").order("nota", { ascending: false }).limit(1500);
+      if (error) throw error;
+      ui.garimpo = { itens: data || [], lidoEm: Date.now() };
+    } catch (e) { ui.garimpo = { erro: "Não consegui ler o garimpo agora (" + (e.message || e) + ")." }; }
+    if (rotaAtual() === "garimpo") renderSeLivre();
+  }
+  const perfilGarimpo = () => (S.ajustes.garimpo = S.ajustes.garimpo || {});
+  function garimpoVisiveis() {
+    const g = ui.garimpo || {}, f = ui.fGar || (ui.fGar = { uf: "", busca: "", min: 4 });
+    const ja = new Set(S.editais.map(e => e.pncpId).concat(S.editais.map(e => e.link)).filter(Boolean));
+    const b = U.semAcento(f.busca).toLowerCase();
+    return (g.itens || []).filter(x => {
+      const d = x.dados || {};
+      if (ja.has(x.id) || ja.has(d.link) || ja.has(d.linkPncp) || (S.apagados || []).includes("gar:" + x.id)) return false;
+      if (d.encerramento && d.encerramento.slice(0, 10) < U.hojeISO()) return false;
+      return (!f.uf || d.uf === f.uf) && x.nota >= f.min && (!b || U.semAcento([d.numero, d.orgao, d.objeto, d.municipio].join(" ")).toLowerCase().includes(b));
+    }).sort((a, b2) => b2.nota - a.nota || String(a.dados.encerramento).localeCompare(String(b2.dados.encerramento)));
+  }
+  function pgGarimpo() {
+    carregarGarimpo();
+    const g = ui.garimpo || {}, f = ui.fGar || (ui.fGar = { uf: "", busca: "", min: 4 }), pf = perfilGarimpo();
+    const lista = garimpoVisiveis(), ufs = [...new Set((g.itens || []).map(x => x.dados.uf).filter(Boolean))].sort();
+    const novos = lista.filter(x => Date.now() - new Date(x.achado_em).getTime() < 86400000 * 1.2).length;
+    const card = x => {
+      const d = x.dados, dias = d.encerramento ? U.diasAte(d.encerramento.slice(0, 10)) : null;
+      return '<article class="card gar"><div class="susp-h"><div><b>' + h(d.numero) + "</b> " + (Date.now() - new Date(x.achado_em).getTime() < 86400000 * 1.2 ? '<span class="pill pop sem-ponto">Novo</span>' : "") +
+        '<span class="org">' + h(d.orgao || "") + (d.municipio ? " · " + h(d.municipio) + "/" + h(d.uf || "") : "") + "</span></div>" +
+        '<div class="chips"><span class="pill ' + (x.nota >= 8 ? "ok" : x.nota >= 6 ? "info" : "neutral") + ' sem-ponto">Aderência ' + x.nota + "</span><span class=\"pill neutral sem-ponto\">" + h(d.modalidade || "") + "</span></div></div>" +
+        '<p class="susp-obj">' + h(U.corta(d.objeto, 300)) + "</p>" +
+        '<dl class="datas susp-datas"><div><dt>Propostas até</dt><dd>' + (d.encerramento ? U.fmtDataHora(d.encerramento) + (dias !== null ? ' <span class="muted">(' + (dias <= 0 ? "hoje" : "em " + U.plural(dias, "dia", "dias")) + ")</span>" : "") : "—") + "</dd></div>" +
+        "<div><dt>Valor estimado</dt><dd>" + U.moeda(d.valorEstimado || null) + "</dd></div><div><dt>Termos</dt><dd>" + h((d.termos || []).join(", ") || "—") + "</dd></div></dl>" +
+        '<div class="linha-acoes susp-rodape"><button class="btn peq primario" data-acao="garimpoTriagem" data-id="' + h(x.id) + '">' + ic("mais") + 'Levar para a triagem</button>' +
+        '<a class="btn peq ghost" href="' + h(d.linkPncp) + '" target="_blank" rel="noopener">' + ic("link") + "PNCP</a>" + (d.link ? '<a class="btn peq ghost" href="' + h(d.link) + '" target="_blank" rel="noopener">' + ic("link") + "Portal de origem</a>" : "") +
+        '<button class="btn peq ghost" data-acao="garimpoDescartar" data-id="' + h(x.id) + '">' + ic("lixo") + "Descartar</button></div></article>";
+    };
+    return '<div class="cab"><div><span class="eyebrow">Operação</span><h1>Garimpo de editais</h1><p>Todo dia de manhã o robô lê no PNCP as licitações com proposta aberta nas UFs do perfil e separa as que têm a ver com a equipe, com uma nota de aderência.</p></div>' +
+      '<div class="cab-acoes"><button class="btn ghost" data-acao="recarregarGarimpo">' + ic("atualizar") + "Recarregar</button></div></div>" +
+      '<section class="card"><div class="card-h"><h2>Perfil da busca</h2><span class="muted">o robô usa na próxima rodada</span></div><div class="grade-form">' +
+      '<div class="campo"><label for="gar-ufs">UFs</label><input id="gar-ufs" data-mudar="garimpoPerfil" data-campo="ufs" value="' + h(pf.ufs || "") + '" placeholder="AM, RJ, PA, RN, PR"><small>Vazio: as UFs dos editais cadastrados + AM e RJ.</small></div>' +
+      '<div class="campo"><label for="gar-termos">Termos que interessam</label><input id="gar-termos" data-mudar="garimpoPerfil" data-campo="termos" value="' + h(pf.termos || "") + '" placeholder="serviços médicos, plantão, UTI, hemodiálise"><small>Vazio: serviços médicos, plantões, UTI, hemodiálise, anestesia, pediatria e afins.</small></div>' +
+      '<div class="campo"><label for="gar-excluir">Termos que tiram o edital</label><input id="gar-excluir" data-mudar="garimpoPerfil" data-campo="excluir" value="' + h(pf.excluir || "") + '" placeholder="aquisição, medicamentos, manutenção"><small>Vazio: compras de material, medicamentos, obras, manutenção…</small></div></div></section>' +
+      '<div class="ferramentas"><label class="campo-busca"><span class="sr">Buscar</span>' + ic("busca") + '<input type="search" data-digitar="garBusca" value="' + h(f.busca) + '" placeholder="Órgão, objeto, cidade…"></label>' +
+      '<select data-mudar="garUf" aria-label="UF"><option value="">Todas as UFs</option>' + ufs.map(u => "<option" + (f.uf === u ? " selected" : "") + ">" + u + "</option>").join("") + "</select>" +
+      '<select data-mudar="garMin" aria-label="Aderência mínima">' + [[4, "Aderência 4+"], [6, "Aderência 6+"], [8, "Aderência 8+"]].map(([v, r]) => '<option value="' + v + '"' + (+f.min === v ? " selected" : "") + ">" + r + "</option>").join("") + "</select>" +
+      '<span class="muted" style="font-size:13px">' + U.plural(lista.length, "edital", "editais") + (novos ? " · " + U.plural(novos, "novo", "novos") + " hoje" : "") + "</span></div>" +
+      (g.erro ? '<div class="card">' + vazio("aviso", h(g.erro)) + "</div>" : !g.itens ? '<div class="card">' + vazio("relogio", "Carregando…") + "</div>" :
+        lista.length ? '<div class="susp-lista" id="gar-lista">' + lista.slice(0, 80).map(card).join("") + "</div>" + (lista.length > 80 ? '<p class="nota">Mostrando os 80 mais aderentes. Use a busca ou os filtros para ver os outros.</p>' : "")
+          : '<div class="card">' + vazio("check", (g.itens.length ? "Nenhum edital com esses filtros." : "O robô ainda não rodou ou não achou nada com o perfil. Ele roda todo dia às 5h23.")) + "</div>");
+  }
+  function garimpoParaTriagem(id) {
+    const x = ((ui.garimpo || {}).itens || []).find(i => i.id === id); if (!x) return;
+    const d = x.dados;
+    const novo = { id: U.uid(), pncpId: x.id, numero: d.numero, modalidade: d.modalidade, orgao: d.orgao, municipio: d.municipio, uf: d.uf, objeto: d.objeto,
+      sessao: d.encerramento || d.abertura || "", valorEstimado: d.valorEstimado || null, portal: /cnetmobile|comprasnet|compras\.gov/i.test(d.link) ? "Compras.gov.br" : /portaldecompraspublicas/i.test(d.link) ? "Portal de Compras Públicas" : /bll/i.test(d.link) ? "BLL" : /licitanet/i.test(d.link) ? "Licitanet" : "PNCP",
+      etapa: "triagem", propostaStatus: "nao_iniciada", prioridade: x.nota >= 8 ? "alta" : "media", responsavel: "", link: d.link || d.linkPncp, uasg: d.uasg, checklist: {}, notas: "", criadoEm: U.hojeISO(),
+      historico: [{ data: U.hojeISO(), texto: "Veio do garimpo (aderência " + x.nota + ")." }] };
+    S.editais.push(novo); registrar("Edital do garimpo levado para a triagem: " + novo.numero + ".", "editais");
+    atualizar(); toast("Edital na triagem", novo.numero, "", { rotulo: "Ver edital", rota: "editais", ref: novo.id });
+  }
+
+  /* ---------- Contratos ---------- */
+  // Contratos da empresa no PNCP (matriz e filiais) + o que a equipe controla: data-base do
+  // reajuste, garantia contratual, gestor. Avisa prorrogação, reajuste e garantia vencendo.
+  const INTERVALO_CTR = 12 * 3600000;
+  const ctrCache = () => (S.contratosPncp = S.contratosPncp || {});
+  const ctrInfo = id => ((S.contratosInfo = S.contratosInfo || {})[id] = S.contratosInfo[id] || {});
+  const contratosVigentes = () => (ctrCache().lista || []).filter(c => c.vigente);
+  async function buscarContratos(forcar) {
+    const cnpjs = cnpjsGrupo(), nomes = nomesGrupo(), c = ctrCache();
+    if (!cnpjs.length || !nomes.length) { if (forcar) toast("Falta o CNPJ ou o nome da empresa", "Preencha em Ajustes → Empresa.", "crit"); return; }
+    if (ui.lendoCtr || (!forcar && c.tentadoEm && Date.now() - new Date(c.tentadoEm).getTime() < (c.erro ? 30 * 60000 : INTERVALO_CTR))) return;
+    ui.lendoCtr = true; if (rotaAtual() === "contratos") renderSeLivre();
+    try {
+      const d = await api("/api/contratos?cnpj=" + cnpjs.join(",") + "&nome=" + encodeURIComponent(nomes.join(",")), 65000);
+      const antes = new Set((c.lista || []).map(x => x.id));
+      S.contratosPncp = { consultadoEm: d.consultadoEm, tentadoEm: U.agoraISO(), lista: d.contratos, erro: "" };
+      const novos = c.lista ? d.contratos.filter(x => !antes.has(x.id)) : [];
+      // liga o contrato ao edital ganho da mesma compra
+      d.contratos.forEach(ct => { const e = ct.compra && S.editais.find(x => x.pncpId === ct.compra); if (e && !e.contratoId) e.contratoId = ct.id; });
+      if (novos.length) notificar(U.plural(novos.length, "contrato novo", "contratos novos") + " no PNCP", novos.map(x => x.numero + " · " + U.corta(x.orgao, 40)).join("; "), "pop", { rotulo: "Ver contratos", rota: "contratos" });
+      else if (forcar) toast("Contratos conferidos", U.plural(d.contratos.filter(x => x.vigente).length, "contrato vigente", "contratos vigentes"));
+    } catch (e) {
+      S.contratosPncp = Object.assign({}, c, { erro: e.message, tentadoEm: U.agoraISO() });
+      if (forcar) toast("Não consegui ler os contratos", e.message, "crit");
+    } finally { ui.lendoCtr = false; salvar(); if (rotaAtual() === "contratos") renderSeLivre(); else atualizarNav(); }
+  }
+  // Próximos marcos de um contrato: fim da vigência (prorrogação), aniversário do reajuste, garantia
+  function marcosContrato(c) {
+    const inf = ctrInfo(c.id), out = [];
+    if (c.fim) { const n = U.diasAte(c.fim); out.push({ tipo: "prorrogacao", data: c.fim, dias: n, rot: n < 0 ? "Vigência encerrada" : "Fim da vigência", acao: "Negociar a prorrogação (aditivo) com o órgão" }); }
+    const base = inf.dataBase || c.assinatura || c.inicio;
+    if (base) {
+      const y = +U.hojeISO().slice(0, 4);
+      let ani = y + base.slice(4); if (ani <= U.hojeISO()) ani = (y + 1) + base.slice(4);
+      if (!c.fim || ani <= c.fim || U.diasAte(c.fim) > -1) out.push({ tipo: "reajuste", data: ani, dias: U.diasAte(ani), rot: "Aniversário do reajuste", acao: "Pedir reajuste/repactuação" + (inf.dataBase ? "" : " (data-base estimada pela assinatura)") });
+    }
+    if (inf.garantiaVence) out.push({ tipo: "garantia", data: inf.garantiaVence, dias: U.diasAte(inf.garantiaVence), rot: "Vencimento da garantia", acao: "Renovar a apólice/caução da garantia contratual" });
+    return out.sort((a, b) => a.data.localeCompare(b.data));
+  }
+  const ALERTA_MARCO = { prorrogacao: 120, reajuste: 45, garantia: 30 };
+  const dataCurta = d => d ? d.slice(8, 10) + "/" + d.slice(5, 7) + "/" + d.slice(2, 4) : "—";
+  function pgContratos() {
+    const c = ctrCache(), vig = contratosVigentes(), enc = (c.lista || []).filter(x => !x.vigente);
+    const carteira = vig.reduce((s, x) => s + (Number(x.valorGlobal) || 0), 0);
+    const marcos = vig.flatMap(x => marcosContrato(x).filter(m => m.dias >= -5 && m.dias <= ALERTA_MARCO[m.tipo]).map(m => Object.assign({ c: x }, m))).sort((a, b) => a.data.localeCompare(b.data));
+    const ganhosSem = S.editais.filter(e => e.etapa === "ganho" && e.pncpId && !(c.lista || []).some(x => x.compra === e.pncpId));
+    const linha = x => {
+      const inf = ctrInfo(x.id), tot = x.inicio && x.fim ? Math.max(1, (new Date(x.fim) - new Date(x.inicio)) / 86400000) : null;
+      const pct = tot ? Math.min(100, Math.max(0, 100 * (Date.now() - new Date(x.inicio)) / 86400000 / tot)) : null;
+      const prox = marcosContrato(x).find(m => m.dias >= 0);
+      const e = S.editais.find(ed => ed.pncpId && ed.pncpId === x.compra);
+      return '<tr><td class="forte">' + h(x.numero) + (e ? '<span class="sub"><a href="#editais" data-acao="ir" data-rota="editais" data-ref="' + e.id + '">' + h(e.numero) + "</a></span>" : "") + "</td>" +
+        "<td>" + h(U.corta(x.orgao, 60)) + (x.uf ? ' <span class="muted">(' + h(x.uf) + ")</span>" : "") + '<span class="sub">' + h(U.corta(x.objeto, 80)) + "</span></td>" +
+        '<td class="num" style="white-space:nowrap">' + dataCurta(x.inicio) + " → " + dataCurta(x.fim) + (pct !== null ? '<span class="ctr-barra"><i style="width:' + pct.toFixed(0) + '%"></i></span>' : "") + "</td>" +
+        '<td class="num" style="text-align:right">' + U.moeda(x.valorGlobal) + (x.valorParcela >= 100 && x.valorParcela < x.valorGlobal ? '<span class="sub">' + U.moeda(x.valorParcela) + "/mês</span>" : "") + "</td>" +
+        "<td>" + (prox ? '<span class="pill ' + (prox.dias <= 30 ? "crit" : prox.dias <= ALERTA_MARCO[prox.tipo] ? "warn" : "neutral") + ' sem-ponto" title="' + h(prox.rot + " em " + U.fmtData(prox.data)) + '">' + ({ prorrogacao: "Vigência", reajuste: "Reajuste", garantia: "Garantia" }[prox.tipo]) + "</span>" + '<span class="sub">em ' + U.plural(prox.dias, "dia", "dias") + "</span>" : "—") +
+        (inf.gestor ? '<span class="sub">Gestor: ' + h(inf.gestor) + "</span>" : "") + "</td>" +
+        '<td style="white-space:nowrap"><button class="btn-icone" data-acao="editarContrato" data-id="' + h(x.id) + '" title="Controle do contrato (reajuste, garantia, gestor)" aria-label="Controle do contrato">' + ic("editar") + '</button><a class="btn-icone" href="' + h(x.linkPncp) + '" target="_blank" rel="noopener" title="Ver no PNCP" aria-label="Ver no PNCP">' + ic("link") + "</a></td></tr>";
+    };
+    return '<div class="cab"><div><span class="eyebrow">Operação</span><h1>Contratos</h1><p>Contratos da ' + h(apelido()) + ' (matriz e filiais) publicados no PNCP, com os prazos de prorrogação, reajuste e garantia.</p></div>' +
+      '<div class="cab-acoes"><button class="btn primario" data-acao="buscarContratos"' + (ui.lendoCtr ? " disabled" : "") + ">" + ic("atualizar") + (ui.lendoCtr ? "Buscando…" : "Buscar no PNCP") + "</button></div></div>" +
+      '<p class="muted res-status">' + (c.consultadoEm ? "Conferido " + U.desde(U.isoDataHora(new Date(c.consultadoEm))) : ui.lendoCtr ? "Buscando os contratos…" : "Ainda não conferido.") + (c.erro ? ' · <span style="color:var(--crit)">última tentativa falhou: ' + h(c.erro) + "</span>" : "") + "</p>" +
+      '<section class="kpis" aria-label="Indicadores"><div class="kpi destaque"><span class="rot">Contratos vigentes</span><span class="val">' + vig.length + '</span><span class="sub">' + U.plural(enc.length, "encerrado", "encerrados") + " recentes</span></div>" +
+      '<div class="kpi"><span class="rot">Valor em carteira</span><span class="val">' + U.moedaCurta(carteira) + '</span><span class="sub">soma do valor global</span></div>' +
+      '<div class="kpi' + (marcos.length ? " kpi-atencao" : "") + '"><span class="rot">Prazos próximos</span><span class="val">' + marcos.length + '</span><span class="sub">prorrogação, reajuste e garantia</span></div>' +
+      '<div class="kpi' + (ganhosSem.length ? " kpi-atencao" : "") + '"><span class="rot">Ganhos sem contrato</span><span class="val">' + ganhosSem.length + '</span><span class="sub">homologados, contrato não publicado</span></div></section>' +
+      (marcos.length ? '<section class="card"><div class="card-h"><h2>O que fazer agora</h2></div><div class="alertas">' + gerarAlertas().filter(al => al.tipo === "contrato").map(al => alertaHTML(al)).join("") + "</div></section>" : "") +
+      (ganhosSem.length ? '<section class="card"><div class="card-h"><h2>Ganhos ainda sem contrato no PNCP</h2></div><ul class="hab-lista">' + ganhosSem.map(e => '<li><span class="pill warn">Assinar contrato</span><div><b>' + h(e.numero) + " · " + h(U.corta(e.orgao, 60)) + "</b><small class=\"muted\">Homologado" + (e.resultado ? " em " + U.fmtData(e.resultado.data) + " · " + U.moeda(e.resultado.valor) : "") + '</small></div><button class="btn peq ghost" data-acao="abrirEdital" data-id="' + e.id + '">Abrir</button></li>').join("") + "</ul></section>" : "") +
+      '<section class="card"><div class="card-h"><h2>Contratos vigentes</h2><span class="muted">os que acabam primeiro no topo</span></div>' +
+      (vig.length ? '<div class="tabela-wrap"><table class="tabela res-tabela"><thead><tr><th>Contrato</th><th>Órgão e objeto</th><th>Vigência</th><th style="text-align:right">Valor global</th><th>Próximo prazo</th><th></th></tr></thead><tbody>' + vig.map(linha).join("") + "</tbody></table></div>"
+        : vazio("documentos", ui.lendoCtr ? "Buscando…" : "Nenhum contrato vigente encontrado no PNCP.")) + "</section>" +
+      (enc.length ? '<section class="card"><div class="card-h"><h2>Encerrados nos últimos 6 meses</h2></div><div class="tabela-wrap"><table class="tabela res-tabela"><thead><tr><th>Contrato</th><th>Órgão e objeto</th><th>Vigência</th><th style="text-align:right">Valor global</th><th>Próximo prazo</th><th></th></tr></thead><tbody>' + enc.map(linha).join("") + "</tbody></table></div></section>" : "") +
+      '<p class="nota">Fonte: contratos publicados no PNCP com o nome da empresa e CNPJ da mesma raiz (matriz e filiais). A data-base do reajuste, quando não informada, é estimada pela assinatura; confirme no contrato (o índice e a data-base costumam estar na cláusula de reajuste).</p>';
+  }
+  function formContrato(id) {
+    const x = (ctrCache().lista || []).find(c => c.id === id); if (!x) return;
+    const inf = ctrInfo(id);
+    abrirForm({
+      titulo: "Controle do contrato " + h(x.numero), tamanho: "estreito",
+      campos: [{ nome: "gestor", rotulo: "Gestor/fiscal do contrato no órgão", span: 2 },
+        { nome: "dataBase", rotulo: "Data-base do reajuste", tipo: "date", dica: "Data do orçamento estimado ou a indicada no contrato." },
+        { nome: "indice", rotulo: "Índice", ph: "IPCA, IST, CCT…" },
+        { nome: "garantiaValor", rotulo: "Garantia contratual (R$)", tipo: "money" },
+        { nome: "garantiaVence", rotulo: "Garantia vence em", tipo: "date" },
+        { nome: "obs", rotulo: "Observações", tipo: "textarea", span: 2 }],
+      valores: inf,
+      salvar: v => { Object.assign(ctrInfo(id), v); atualizar(); toast("Controle do contrato salvo", x.numero); }
+    });
   }
 
   function pgChats() {
@@ -2328,7 +2665,7 @@
      Roteamento e renderização
      ================================================================= */
   const PAGINAS = {
-    painel: { html: pgPainel }, editais: { html: pgEditais, depois: ligarArraste }, propostas: { html: pgPropostas }, precos: { html: pgPrecos }, suspensos: { html: pgSuspensos }, resultados: { html: pgResultados },
+    painel: { html: pgPainel }, editais: { html: pgEditais, depois: ligarArraste }, propostas: { html: pgPropostas }, precos: { html: pgPrecos }, suspensos: { html: pgSuspensos }, resultados: { html: pgResultados }, concorrencia: { html: pgConcorrencia }, garimpo: { html: pgGarimpo }, contratos: { html: pgContratos },
     chats: { html: pgChats, depois: depoisChats }, analise: { html: pgAnalise, depois: ligarAnalise }, recursos: { html: pgRecursos },
     documentos: { html: pgDocumentos }, portais: { html: pgPortais }, alertas: { html: pgAlertas }, ajustes: { html: pgAjustes }
   };
@@ -2360,6 +2697,7 @@
       recursos: al.filter(a => a.tipo === "recurso" && a.nivel !== "info").length,
       documentos: docsAtivos().filter(d => situacaoDoc(d).cls === "crit").length,
       portais: 0, // cadastro de portal não é prioridade
+      contratos: al.filter(a => a.tipo === "contrato" && a.nivel === "critico").length,
       alertas: al.filter(a => a.nivel === "critico").length
     };
     Object.keys(cont).forEach(k => { const b = $('[data-cont="' + k + '"]'); if (b) { b.textContent = cont[k]; b.hidden = !cont[k]; } });
@@ -2509,6 +2847,16 @@
     editarEdital: d => formEdital(d.id),
     abrirEdital: d => abrirEdital(d.id),
     buscarResultados: () => buscarResultados(ui.resAno, true),
+    atualizarConcorrencia: () => verificarConcorrencia(true),
+    buscarContratos: () => buscarContratos(true),
+    editarContrato: d => formContrato(d.id),
+    recarregarGarimpo: () => { carregarGarimpo(true); toast("Recarregando o garimpo"); },
+    garimpoTriagem: d => garimpoParaTriagem(d.id),
+    garimpoDescartar: async d => {
+      S.apagados = (S.apagados || []).concat("gar:" + d.id).slice(-1000); salvar(); render();
+      if (nuvem.cliente) { try { await nuvem.cliente.from("portal_garimpo").delete().eq("id", d.id); } catch (e) { /* fica escondido pelo "apagados" */ } }
+    },
+    copiarHab: async d => { const t = textoHab(edital(d.id)); if (await U.copiar(t)) toast("Lista de habilitação copiada"); else mostrarTexto("Habilitação", t); },
     exportarResultados: () => exportarResultados(),
     excluirEdital: d => { const e = edital(d.id); excluir("editais", d.id, e.numero, "edital"); },
     definirEtapa: d => moverEtapa(d.id, d.etapa),
@@ -2597,7 +2945,7 @@
     copiarAnalise: async () => { const t = textoAnalise(ui.analise); if (await U.copiar(t)) toast("Resumo copiado", "Cole no e-mail, Teams ou WhatsApp."); else mostrarTexto("Resumo da análise", t); },
     criarDaAnalise: () => {
       const c = ui.analise.campos;
-      formEdital(null, { numero: c.numero, modalidade: c.modalidade, orgao: c.orgao, objeto: c.objeto, sessao: c.sessao && c.sessao.length > 10 ? c.sessao : c.sessao ? c.sessao + "T09:00" : "", limiteProposta: c.limiteProposta && c.limiteProposta.length > 10 ? c.limiteProposta : "", valorEstimado: c.valorEstimado, portal: c.plataforma || "Compras.gov.br", processo: c.processo, etapa: "analise", prioridade: ui.analise.termometro.nivel === "ok" ? "alta" : "media" });
+      formEdital(null, { numero: c.numero, modalidade: c.modalidade, orgao: c.orgao, objeto: c.objeto, sessao: c.sessao && c.sessao.length > 10 ? c.sessao : c.sessao ? c.sessao + "T09:00" : "", limiteProposta: c.limiteProposta && c.limiteProposta.length > 10 ? c.limiteProposta : "", valorEstimado: c.valorEstimado, portal: c.plataforma || "Compras.gov.br", processo: c.processo, etapa: "analise", prioridade: ui.analise.termometro.nivel === "ok" ? "alta" : "media", exigidos: ui.analise.habilitacao.filter(x => x.exigido).map(x => x.chave) });
     },
 
     filtroAlerta: d => { ui.alertaFiltro = d.f; render(); },
@@ -2649,6 +2997,11 @@
       if (e.etapa === "triagem" || e.etapa === "analise") e.etapa = "proposta";
       atualizar();
     },
+    empresaHab: el => { const e = edital(el.dataset.id); e.empresaHab = el.value; atualizar(); },
+    habOk: el => { const e = edital(el.dataset.id); (e.habOk = e.habOk || {})[el.dataset.chave] = el.checked; atualizar(); },
+    garimpoPerfil: el => { perfilGarimpo()[el.dataset.campo] = el.value.trim(); salvar(); toast("Perfil salvo", "O robô usa na próxima rodada (todo dia às 5h23)."); },
+    garUf: el => { ui.fGar.uf = el.value; render(); },
+    garMin: el => { ui.fGar.min = +el.value; render(); },
     checkGanho: el => { const e = edital(el.dataset.id); (e.posGanho = e.posGanho || {})[CHECK_GANHO[+el.dataset.item]] = el.checked; atualizar(); },
     resAno: el => { ui.resAno = el.value; render(); buscarResultados(el.value); },
     checkItem: el => { const e = edital(el.dataset.id); (e.checklist = e.checklist || {})[CHECK_PROPOSTA[+el.dataset.item]] = el.checked; atualizar(); },
@@ -2684,6 +3037,7 @@
     precoCusto: el => { const it = itemPreco(el.dataset); it.custos[+el.dataset.k][el.dataset.campo] = el.value; recalcPreco(); salvarPreco(); },
     precoPar: el => { const pr = precificacaoDe(editalPreco()); pr.parametros[el.dataset.chave] = el.value; recalcPreco(); salvarPreco(); },
     precoLance: el => { ui.precoLance = el.value; const e = editalPreco(); const r = $("#preco-lance-res"); if (e && e.precificacao && r) r.textContent = simulaLance(P.calcular(e.precificacao)); },
+    garBusca: el => { ui.fGar.busca = el.value; render(); const i = $('[data-digitar="garBusca"]'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } },
     buscaEd: el => { ui.fEd.busca = el.value; const g = $("#busca-global"); if (g) g.value = el.value; $("#ed-resultado").innerHTML = resultadoEditais(); ligarArraste(); },
     buscaDoc: el => { ui.fDoc.busca = el.value; render(); const i = $("#f-busca-doc"); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } },
     buscaPortal: el => { ui.fPortal.busca = el.value; $("#lista-portais").innerHTML = listaPortaisHTML(); },
@@ -2762,6 +3116,8 @@
     const atv = new Map([].concat(local.atividade || [], r.atividade || []).map(a => [a.quando + "|" + a.texto, a]));
     out.atividade = [...atv.values()].sort((a, b) => String(b.quando).localeCompare(String(a.quando))).slice(0, 80);
     out.resolvidos = Object.assign({}, r.resolvidos || {}, local.resolvidos || {});
+    // controle dos contratos: junta por contrato (o que foi preenchido em outro computador não se perde)
+    out.contratosInfo = Object.assign({}, r.contratosInfo || {}, local.contratosInfo || {});
     out.apagados = [...apagados].slice(-1000);
     return out;
   }
@@ -2941,6 +3297,8 @@
       verificarChats();
       setTimeout(() => verificarSuspensos(), 5000);
       setTimeout(() => buscarResultados(), 9000);
+      setTimeout(() => verificarConcorrencia(), 15000);
+      setTimeout(() => buscarContratos(), 20000);
       sincronizarRobo();
     }, 900);
     // A cada minuto: atualiza contadores, lê chats automáticos e redesenha telas sem formulário aberto
@@ -2948,6 +3306,7 @@
     setInterval(() => {
       minuto++;
       if (minuto % 5 === 0) { garantirMonitoramento(); garantirSuspensos(); verificarSuspensos(); buscarResultados(); }
+      if (minuto % 30 === 0) { verificarConcorrencia(); buscarContratos(); }
       verificarChats();
       sincronizarRobo();
       if (minuto % 2 === 0) puxarNuvem();

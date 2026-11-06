@@ -15,15 +15,30 @@ const PORTAIS = [
   [/e-?compras\.?am/i, "e-compras AM"]
 ];
 
+// O PNCP responde 429 quando chegam muitas consultas juntas: no máximo 4 ao mesmo tempo por
+// função e, no 429, espera e tenta de novo.
+let emUso = 0;
+const fila = [];
+const pegarVaga = () => emUso < 4 ? (emUso++, Promise.resolve()) : new Promise(ok => fila.push(ok));
+const soltarVaga = () => { const prox = fila.shift(); if (prox) prox(); else emUso--; };
+const esperar = ms => new Promise(ok => setTimeout(ok, ms));
+
 async function getJson(url, ms) {
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), ms);
-  try {
-    const r = await fetch(url, { signal: ctrl.signal, headers: { accept: "application/json", "user-agent": "pregao-em-dia/1.0" } });
-    if (r.status === 204 || r.status === 404) return null;
-    if (!r.ok) throw new Error("HTTP " + r.status);
-    return await r.json();
-  } finally { clearTimeout(t); }
+  const limitar = /pncp\.gov\.br/.test(url);
+  for (let tentativa = 0; ; tentativa++) {
+    if (limitar) await pegarVaga();
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), ms);
+    let r;
+    try {
+      r = await fetch(url, { signal: ctrl.signal, headers: { accept: "application/json", "user-agent": "pregao-em-dia/1.0" } });
+      if (r.status === 204 || r.status === 404) return null;
+      if (r.status === 429 && tentativa < 4) { r = null; } // tenta de novo depois da espera
+      else if (!r.ok) throw new Error("HTTP " + r.status);
+      else return await r.json();
+    } finally { clearTimeout(t); if (limitar) soltarVaga(); }
+    await esperar(1500 * (tentativa + 1));
+  }
 }
 
 // Datas do PNCP vêm no horário de Brasília: "2026-11-10T09:00:00" -> "2026-11-10T09:00"
