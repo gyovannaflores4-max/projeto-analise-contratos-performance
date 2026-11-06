@@ -1782,6 +1782,110 @@
       .concat(p.itens.map(x => (x.st === "ok" ? "[ok] " : "[  ] ") + x.ref.nome + " — " + HAB_ST[x.st][1] + (x.pior && x.pior.validade ? " (vence " + U.fmtData(x.pior.validade) + ")" : ""))).join("\n");
   }
 
+  /* ---------- Concorrência ---------- */
+  // Quem disputa e ganha os pregões em que participamos: resultados do PNCP (Compras.gov.br) e
+  // ranking da disputa do e-compras.AM. Mostra os concorrentes mais frequentes e onde perdemos.
+  const ETAPAS_COM_RESULTADO = ["habilitacao", "recurso", "ganho", "perdido"];
+  const refCompra = e => e.pncpId || ((String(e.link || "").match(/compra=\d{17}|pncp\.gov\.br\/app\/editais\/\d{14}\/\d{4}\/\d+/) || [])[0] ? e.link : "");
+  const nomeConc = s => U.semAcento(String(s || "")).toUpperCase().replace(/[.,]/g, " ").replace(/\b(LTDA|EIRELI|ME|EPP|S\s?A|SS|SOCIEDADE SIMPLES|LIMITADA)\b/g, " ").replace(/\s+/g, " ").trim();
+  const ehDoGrupo = (nome, cnpj) => ehNossa(nome) || (cnpj && cnpjsGrupo().some(c => c.slice(0, 8) === String(cnpj).replace(/\D/g, "").slice(0, 8)));
+  async function verificarConcorrencia(forcar) {
+    if (ui.lendoConc) return;
+    const prazo = e => (ETAPA(e.etapa).final ? 7 : 1) * 86400000;
+    const lista = S.editais.filter(e => ETAPAS_COM_RESULTADO.includes(e.etapa) && refCompra(e) && (forcar || !e.concorrencia || Date.now() - new Date(e.concorrencia.lidoEm).getTime() > prazo(e)));
+    if (!lista.length) { if (forcar) toast("Nada para atualizar", "Os pregões do Compras.gov.br/PNCP já estão lidos."); return; }
+    ui.lendoConc = true; if (rotaAtual() === "concorrencia") renderSeLivre();
+    let erros = 0;
+    try {
+      for (const e of lista) {
+        try {
+          const d = await api("/api/concorrentes?ref=" + encodeURIComponent(refCompra(e)) + "&sessao=" + encodeURIComponent(e.sessao || ""), 65000);
+          e.concorrencia = { lidoEm: d.lidoEm, linkPncp: d.linkPncp, itens: d.itens };
+          if (!e.pncpId && d.pncp) e.pncpId = d.pncp.cnpj + "-1-" + String(d.pncp.seq).padStart(6, "0") + "/" + d.pncp.ano;
+        } catch (er) { erros++; e.concorrencia = Object.assign({}, e.concorrencia || {}, { lidoEm: new Date().toISOString(), erro: er.message }); }
+        salvar(); if (rotaAtual() === "concorrencia") renderSeLivre();
+      }
+    } finally { ui.lendoConc = false; if (rotaAtual() === "concorrencia") renderSeLivre(); }
+    if (forcar) toast("Concorrência atualizada", U.plural(lista.length, "pregão lido", "pregões lidos") + (erros ? " · " + erros + " com erro" : ""));
+  }
+  // Uma linha por disputa (item do PNCP ou lote do e-compras) com os participantes conhecidos
+  function disputasConhecidas() {
+    const out = [];
+    S.editais.forEach(e => {
+      ((e.concorrencia && e.concorrencia.itens) || []).forEach(it => {
+        if (!it.vencedor) return;
+        out.push({ e, fonte: "PNCP", nome: "Item " + it.numero + " · " + U.corta(it.descricao, 60), estimado: it.valorEstimado,
+          participantes: [{ nome: it.vencedor.nome, cnpj: it.vencedor.cnpj, valor: it.vencedor.valor, vencedor: true }].concat((it.anteriores || []).map(a => ({ nome: a.nome, cnpj: a.cnpj, valor: a.valor, desclassificado: !!a.cancelado }))) });
+      });
+      const c = chatDoEdital(e.id);
+      posicaoDisputa(c).forEach(l => {
+        if (!l.ps.length) return;
+        out.push({ e, fonte: "e-compras.AM", nome: l.lote, estimado: null,
+          participantes: l.ps.map(p => ({ nome: p.nome, valor: p.negociado || p.valor, vencedor: !!p.vencedor, desclassificado: p.exame2 === false || p.habilitado === false })) });
+      });
+    });
+    return out;
+  }
+  function mapaConcorrentes() {
+    const mapa = new Map();
+    disputasConhecidas().forEach(dp => {
+      const nos = dp.participantes.find(p => ehDoGrupo(p.nome, p.cnpj)), vistos = new Set();
+      dp.participantes.slice().sort((x, y) => (y.vencedor ? 1 : 0) - (x.vencedor ? 1 : 0)).forEach(p => {
+        if (ehDoGrupo(p.nome, p.cnpj)) return;
+        const k = nomeConc(p.nome); if (!k || vistos.has(k)) return; // a mesma empresa conta uma vez por disputa
+        vistos.add(k);
+        const c = mapa.get(k) || { nome: p.nome, cnpj: p.cnpj || "", processos: new Set(), orgaos: new Set(), disputas: 0, vitorias: 0, valor: 0, descontos: [], contraNos: 0, ganhouDeNos: 0, desclass: 0 };
+        if (!c.cnpj && p.cnpj) c.cnpj = p.cnpj;
+        c.processos.add(dp.e.id); c.orgaos.add(empresaCurta(dp.e.orgao)); c.disputas++;
+        if (p.desclassificado) c.desclass++;
+        if (p.vencedor) { c.vitorias++; c.valor += Number(p.valor) || 0; if (dp.estimado && p.valor) c.descontos.push(1 - p.valor / dp.estimado); }
+        if (nos) { c.contraNos++; if (p.vencedor) c.ganhouDeNos++; }
+        mapa.set(k, c);
+      });
+    });
+    return [...mapa.values()].map(c => Object.assign(c, { nProc: c.processos.size, desconto: c.descontos.length ? c.descontos.reduce((a, b) => a + b, 0) / c.descontos.length : null }))
+      .sort((a, b) => b.vitorias - a.vitorias || b.nProc - a.nProc || b.valor - a.valor);
+  }
+  // Onde perdemos: vencedor e distância para o nosso preço
+  function ondePerdemos() {
+    const out = [];
+    disputasConhecidas().forEach(dp => {
+      const venc = dp.participantes.find(p => p.vencedor);
+      if (!venc || ehDoGrupo(venc.nome, venc.cnpj)) return;
+      const nos = dp.participantes.find(p => ehDoGrupo(p.nome, p.cnpj));
+      // PNCP só mostra o vencedor: nosso valor vem do edital quando a compra tem um item só
+      const nossoValor = nos ? nos.valor : dp.fonte === "PNCP" && dp.e.etapa === "perdido" ? ((dp.e.concorrencia.itens || []).length === 1 && Number(dp.e.nossoValor)) || null : undefined;
+      if (nossoValor === undefined) return; // não participamos dessa disputa
+      out.push({ e: dp.e, disputa: dp.nome, fonte: dp.fonte, vencedor: venc, nosso: nossoValor, estimado: dp.estimado,
+        dif: nossoValor && venc.valor ? 100 * (nossoValor / venc.valor - 1) : null });
+    });
+    return out.sort((a, b) => String(b.e.sessao || "").localeCompare(String(a.e.sessao || "")));
+  }
+  function pgConcorrencia() {
+    const conc = mapaConcorrentes(), perdas = ondePerdemos(), disputas = disputasConhecidas();
+    const pend = S.editais.filter(e => ETAPAS_COM_RESULTADO.includes(e.etapa) && refCompra(e) && !e.concorrencia).length;
+    const top = conc.filter(c => c.ganhouDeNos).sort((a, b) => b.ganhouDeNos - a.ganhouDeNos)[0];
+    const difs = perdas.filter(p => p.dif !== null).map(p => p.dif);
+    return '<div class="cab"><div><span class="eyebrow">Análise e jurídico</span><h1>Concorrência</h1><p>Quem disputa com a ' + h(apelido()) + ', quem ganha e por quanto. Junta o ranking da disputa do e-compras.AM e os resultados publicados no PNCP (Compras.gov.br).</p></div>' +
+      '<div class="cab-acoes"><button class="btn primario" data-acao="atualizarConcorrencia"' + (ui.lendoConc ? " disabled" : "") + ">" + ic("atualizar") + (ui.lendoConc ? "Lendo resultados…" : "Atualizar resultados") + "</button></div></div>" +
+      (pend ? '<p class="muted res-status">' + U.plural(pend, "pregão ainda não lido", "pregões ainda não lidos") + " no PNCP." + (ui.lendoConc ? " Lendo agora…" : "") + "</p>" : "") +
+      '<section class="kpis" aria-label="Indicadores"><div class="kpi destaque"><span class="rot">Concorrentes mapeados</span><span class="val">' + conc.length + '</span><span class="sub">em ' + U.plural(new Set(disputas.map(d => d.e.id)).size, "pregão", "pregões") + "</span></div>" +
+      '<div class="kpi"><span class="rot">Disputas perdidas</span><span class="val">' + perdas.length + '</span><span class="sub">itens ou lotes com vencedor de fora</span></div>' +
+      '<div class="kpi"><span class="rot">Distância média</span><span class="val">' + (difs.length ? pctRes(difs.reduce((a, b) => a + b, 0) / difs.length) : "–") + '</span><span class="sub">nosso preço acima do vencedor</span></div>' +
+      '<div class="kpi"><span class="rot">Quem mais ganhou de nós</span><span class="val" style="font-size:18px;line-height:1.3">' + (top ? h(U.corta(top.nome, 34)) : "–") + '</span><span class="sub">' + (top ? U.plural(top.ganhouDeNos, "vez", "vezes") : "sem dados ainda") + "</span></div></section>" +
+      '<section class="card"><div class="card-h"><h2>Concorrentes</h2><span class="muted">mais vitórias primeiro</span></div>' +
+      (conc.length ? '<div class="tabela-wrap"><table class="tabela res-tabela"><thead><tr><th>Empresa</th><th style="text-align:right">Pregões</th><th style="text-align:right">Contra nós</th><th style="text-align:right">Vitórias</th><th style="text-align:right">Valor ganho</th><th style="text-align:right">Desconto médio</th></tr></thead><tbody>' +
+        conc.slice(0, 40).map(c => "<tr><td><b>" + h(c.nome) + "</b>" + '<span class="sub">' + h([c.cnpj ? c.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5") : "", [...c.orgaos].slice(0, 2).map(o => U.corta(o, 40)).join(" · ")].filter(Boolean).join(" · ")) + (c.desclass ? " · " + U.plural(c.desclass, "desclassificação", "desclassificações") : "") + "</span></td>" +
+          '<td class="num" style="text-align:right">' + c.nProc + '</td><td class="num" style="text-align:right">' + c.contraNos + (c.ganhouDeNos ? '<span class="sub">ganhou ' + c.ganhouDeNos + "</span>" : "") + '</td><td class="num" style="text-align:right">' + c.vitorias + '</td><td class="num" style="text-align:right">' + U.moeda(c.valor || null) + '</td><td class="num" style="text-align:right">' + (c.desconto === null ? "—" : pctRes(100 * c.desconto)) + "</td></tr>").join("") + "</tbody></table></div>"
+        : vazio("analise", "Ainda sem dados de concorrência. Os pregões do e-compras.AM com chat e os do Compras.gov.br/PNCP com resultado aparecem aqui.")) + "</section>" +
+      '<section class="card"><div class="card-h"><h2>Onde perdemos</h2><span class="muted">vencedor e distância para o nosso preço</span></div>' +
+      (perdas.length ? '<div class="tabela-wrap"><table class="tabela res-tabela"><thead><tr><th>Pregão</th><th>Disputa</th><th>Vencedor</th><th style="text-align:right">Valor vencedor</th><th style="text-align:right">Nosso valor</th></tr></thead><tbody>' +
+        perdas.slice(0, 60).map(p => '<tr class="clicavel" data-acao="abrirEdital" data-id="' + p.e.id + '"><td class="forte">' + h(p.e.numero) + '<span class="sub">' + h(U.corta(empresaCurta(p.e.orgao), 40)) + " · " + p.fonte + "</span></td><td>" + h(p.disputa) + "</td><td>" + h(U.corta(p.vencedor.nome, 50)) + '</td><td class="num" style="text-align:right">' + U.moeda(p.vencedor.valor) + (p.estimado ? '<span class="sub">' + pctRes(100 * (1 - p.vencedor.valor / p.estimado)) + " abaixo do estimado</span>" : "") +
+          '</td><td class="num" style="text-align:right">' + U.moeda(p.nosso) + (p.dif !== null ? '<span class="sub">' + (p.dif >= 0 ? pctRes(p.dif) + " acima" : pctRes(-p.dif) + " abaixo") + "</span>" : "") + "</td></tr>").join("") + "</tbody></table></div>"
+        : vazio("check", "Nenhuma disputa perdida com dados.")) +
+      '<p class="nota">Fontes: ranking do e-compras.AM (chats monitorados) e resultados dos itens no PNCP. No PNCP aparecem só o vencedor e os que foram desclassificados antes dele; o valor da nossa proposta vem do campo "Nossa proposta" do edital quando a disputa é do Compras.gov.br.</p></section>';
+  }
+
   function pgChats() {
     const cab = '<div class="cab"><div><span class="eyebrow">Operação</span><h1>Chats dos pregões</h1><p>Acompanhe o que o pregoeiro escreve. Mensagens de retomada, suspensão, convocação e recurso ficam destacadas, e qualquer menção à ' + h(apelido()) + ' acende o alerta.</p></div><div class="cab-acoes">' +
       (S.exemplo || S._exploracao ? '<button class="btn ghost" data-acao="simularMsg">' + ic("raio") + "Simular mensagem</button>" : "") + '<button class="btn primario" data-acao="novoChat">' + ic("mais") + "Monitorar pregão</button></div></div>";
@@ -2396,7 +2500,7 @@
      Roteamento e renderização
      ================================================================= */
   const PAGINAS = {
-    painel: { html: pgPainel }, editais: { html: pgEditais, depois: ligarArraste }, propostas: { html: pgPropostas }, precos: { html: pgPrecos }, suspensos: { html: pgSuspensos }, resultados: { html: pgResultados },
+    painel: { html: pgPainel }, editais: { html: pgEditais, depois: ligarArraste }, propostas: { html: pgPropostas }, precos: { html: pgPrecos }, suspensos: { html: pgSuspensos }, resultados: { html: pgResultados }, concorrencia: { html: pgConcorrencia },
     chats: { html: pgChats, depois: depoisChats }, analise: { html: pgAnalise, depois: ligarAnalise }, recursos: { html: pgRecursos },
     documentos: { html: pgDocumentos }, portais: { html: pgPortais }, alertas: { html: pgAlertas }, ajustes: { html: pgAjustes }
   };
@@ -2577,6 +2681,7 @@
     editarEdital: d => formEdital(d.id),
     abrirEdital: d => abrirEdital(d.id),
     buscarResultados: () => buscarResultados(ui.resAno, true),
+    atualizarConcorrencia: () => verificarConcorrencia(true),
     copiarHab: async d => { const t = textoHab(edital(d.id)); if (await U.copiar(t)) toast("Lista de habilitação copiada"); else mostrarTexto("Habilitação", t); },
     exportarResultados: () => exportarResultados(),
     excluirEdital: d => { const e = edital(d.id); excluir("editais", d.id, e.numero, "edital"); },
@@ -3012,6 +3117,7 @@
       verificarChats();
       setTimeout(() => verificarSuspensos(), 5000);
       setTimeout(() => buscarResultados(), 9000);
+      setTimeout(() => verificarConcorrencia(), 15000);
       sincronizarRobo();
     }, 900);
     // A cada minuto: atualiza contadores, lê chats automáticos e redesenha telas sem formulário aberto
@@ -3019,6 +3125,7 @@
     setInterval(() => {
       minuto++;
       if (minuto % 5 === 0) { garantirMonitoramento(); garantirSuspensos(); verificarSuspensos(); buscarResultados(); }
+      if (minuto % 30 === 0) verificarConcorrencia();
       verificarChats();
       sincronizarRobo();
       if (minuto % 2 === 0) puxarNuvem();

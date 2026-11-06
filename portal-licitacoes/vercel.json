@@ -20,6 +20,9 @@
     },
     "api/resultados.js": {
       "maxDuration": 60
+    },
+    "api/concorrentes.js": {
+      "maxDuration": 60
     }
   }
 }
