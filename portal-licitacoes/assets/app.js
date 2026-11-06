@@ -683,7 +683,9 @@
     const frase = partes.length ? "Hoje tem " + partes.slice(0, -1).join(", ") + (partes.length > 1 ? " e " : "") + partes[partes.length - 1] + "."
       : "Dia tranquilo por aqui. Bom momento para garimpar editais novos.";
 
-    const prioridades = al.filter(a => a.nivel !== "info").slice(0, 6);
+    // Prioridade da equipe: propostas para cadastrar e recursos/contrarrazões para responder (o resto fica na Central de alertas)
+    const ehPrioridade = a => ((a.tipo === "proposta" && a.id.startsWith("prop:") && !/encerrado/.test(a.titulo)) || (a.tipo === "recurso" && /:(razoes|contrarrazoes):/.test(a.id))) && !(U.diasAte(a.quando) < 0);
+    const prioridades = al.filter(ehPrioridade).sort((x, y) => String(x.quando).localeCompare(String(y.quando))).slice(0, 8);
     const agenda = eventosAgenda(7);
     const porDia = {};
     agenda.forEach(ev => { (porDia[U.soData(ev.data)] = porDia[U.soData(ev.data)] || []).push(ev); });
@@ -712,8 +714,9 @@
       "</section>" +
 
       '<div class="grade-2"><div class="pilha">' +
-      '<section class="card"><div class="card-h"><h2>Prioridades de agora</h2><span class="muted">' + U.plural(al.length, "alerta ativo", "alertas ativos") + "</span></div>" +
-      (prioridades.length ? '<div class="alertas">' + prioridades.map(a => alertaHTML(a)).join("") + "</div>" : vazio("check", "Nada urgente. Tudo em dia!")) + "</section>" +
+      '<section class="card"><div class="card-h"><h2>Prioridades de agora</h2><a class="link-btn" href="#alertas">' + U.plural(al.length, "alerta ativo", "alertas ativos") + "</a></div>" +
+      '<p class="muted" style="font-size:13px;margin:-4px 0 10px">Propostas para cadastrar e recursos e contrarrazões para responder.</p>' +
+      (prioridades.length ? '<div class="alertas">' + prioridades.map(a => alertaHTML(a)).join("") + "</div>" : vazio("check", "Nenhuma proposta para cadastrar nem recurso para responder agora.")) + "</section>" +
       '<section class="card"><div class="card-h"><h2>Agenda dos próximos 7 dias</h2><button class="link-btn" data-acao="exportarAgenda">Levar para minha agenda</button></div>' +
       (agenda.length ? '<div class="agenda">' + Object.keys(porDia).map(dia => {
         const d = U.parse(dia);

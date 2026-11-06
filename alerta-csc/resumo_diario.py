@@ -327,6 +327,9 @@ def montar(S):
     secoes.append(("Chats dos pregões (últimas 24 h)", [x for _, x in sorted(chats, key=lambda t: t[0], reverse=True)]))
     secoes.append(("Portais vencendo (informativo)", [x for _, x in sorted(ports, key=lambda t: t[0])]))
 
+    # Prioridade da equipe primeiro: propostas para cadastrar e recursos/contrarrazões para responder
+    ordem = ["Propostas a cadastrar", "Recursos e contrarrazões"]
+    secoes = [x for t in ordem for x in secoes if x[0] == t] + [x for x in secoes if x[0] not in ordem]
     return {"secoes": secoes, "vencidos_antigos": vencidos_antigos, "docs_omitidos": docs_omitidos, "dias_doc": maior, "empresa": (S.get("empresa") or {}).get("nome") or ""}
 
 
@@ -370,7 +373,7 @@ def assunto(r):
     H = hoje()
     cont = {t: len(i) for t, i in r["secoes"]}
     partes = []
-    hoje_sess = sum(1 for i in r["secoes"][0][1] if i["quando"].startswith("Hoje"))
+    hoje_sess = sum(1 for t, it in r["secoes"] if t.startswith("Sessões") for i in it if i["quando"].startswith("Hoje"))
     if hoje_sess:
         partes.append(f"{hoje_sess} sessão hoje" if hoje_sess == 1 else f"{hoje_sess} sessões hoje")
     for titulo, sing, plur in (("Propostas a cadastrar", "proposta", "propostas"), ("Recursos e contrarrazões", "prazo de recurso", "prazos de recurso"),
