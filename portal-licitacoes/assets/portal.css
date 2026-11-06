@@ -693,3 +693,9 @@ table.tabela.res-tabela{min-width:720px}
 .hab-lista small{display:block;font-size:12.5px;margin-top:2px}
 .hab-ok{font-size:12.5px;display:flex;gap:5px;align-items:center;white-space:nowrap}
 @media (max-width:560px){.hab-lista li{grid-template-columns:1fr}}
+
+/* Garimpo */
+.grade-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.grade-form .campo input{width:100%}
+@media (max-width:860px){.grade-form{grid-template-columns:1fr}}
+.gar .susp-obj{margin:8px 0}
