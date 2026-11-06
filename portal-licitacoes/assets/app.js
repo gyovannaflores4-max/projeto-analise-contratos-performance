@@ -460,6 +460,7 @@
     if (ORDEM_ETAPAS.indexOf(alvo) <= ORDEM_ETAPAS.indexOf(e.etapa)) return; // nunca volta etapa
     const de = ETAPA(e.etapa).nome;
     e.etapa = alvo;
+    if (alvo === "ganho" && !e.nossoValor) { const v = pos.filter(x => x.vencemos).reduce((t, x) => t + (Number(x.nossa.negociado || x.nossa.valor) || 0), 0); if (v) e.nossoValor = v; }
     (e.historico = e.historico || []).unshift({ data: U.hojeISO(), texto: "Etapa atualizada sozinha pelo e-compras.AM: " + de + " → " + ETAPA(alvo).nome + " (" + c.status + ")." });
     registrar(e.numero + " passou para \"" + ETAPA(alvo).nome + "\" (situação no portal: " + c.status + ").", "editais");
     notificar(e.numero + ": " + ETAPA(alvo).nome, "A etapa foi atualizada pela situação no e-compras.AM (" + c.status + ").", alvo === "ganho" ? "pop" : "", { rotulo: "Ver edital", rota: "editais", ref: e.id });
@@ -825,6 +826,7 @@
       "<div><dt>Nossa proposta</dt><dd>" + U.moeda(e.nossoValor) + (e.valorEstimado && e.nossoValor ? ' <span class="muted">(' + (100 * (1 - e.nossoValor / e.valorEstimado)).toFixed(1).replace(".", ",") + "% abaixo)</span>" : "") + "</dd></div>" +
       "<div><dt>Responsável</dt><dd>" + h(e.responsavel || "—") + "</dd></div></dl>" +
 
+      (e.etapa === "ganho" ? ganhoHTML(e) : "") +
       '<div class="bloco"><h3>Etapa</h3><div class="etapas">' + ETAPAS.map(x => '<button data-acao="definirEtapa" data-id="' + e.id + '" data-etapa="' + x.id + '" aria-pressed="' + (x.id === e.etapa) + '">' + h(x.curto || x.nome) + "</button>").join("") + "</div></div>" +
 
       '<div class="bloco"><h3>Proposta</h3><div class="ferramentas"><select data-mudar="propStatus" data-id="' + e.id + '" aria-label="Situação da proposta">' + PROP_STATUS.map(p => '<option value="' + p[0] + '"' + (p[0] === e.propostaStatus ? " selected" : "") + ">" + p[1] + "</option>").join("") + "</select>" +
@@ -1503,6 +1505,208 @@
       '<span class="muted" style="margin-left:auto;font-size:12.5px">' + (it.consultadoEm ? "conferido " + U.desde(U.isoDataHora(new Date(it.consultadoEm))) : "") + "</span></div>";
   }
 
+  /* ---------- Resultados do ano ---------- */
+  // Ganhos achados no PNCP (dados abertos do Compras.gov.br) pelo CNPJ da empresa e do grupo.
+  // Cada ganho novo entra sozinho nos editais, na etapa "Ganho", com os itens e valores homologados.
+  const INTERVALO_RES = 6 * 3600000;
+  const CHECK_GANHO = ["Ata ou contrato assinado", "Garantia contratual entregue (se exigida)", "Ordem de serviço / início da execução", "Equipe e escalas montadas", "Primeira nota fiscal emitida"];
+  const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+  const cnpjsGrupo = () => [...new Set([S.empresa.cnpj].concat(String(S.empresa.grupo || "").match(/\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}/g) || [])
+    .map(x => String(x || "").replace(/\D/g, "")).filter(x => x.length === 14))];
+  const resCache = () => (S.resultadosPncp = S.resultadosPncp || {});
+  // Ano do processo: o do resultado (homologação), senão o da sessão
+  const dataDoProcesso = e => String((e.resultado && e.resultado.data) || e.sessao || e.criadoEm || "");
+  const idGanho = p => "pncp-" + String(p.id).replace(/\W+/g, "-");
+  const numeroCurto = s => { const m = String(s || "").match(/(\d+)\s*\/\s*(\d{4})/); return m ? [String(+m[1]), String(+(String(+m[1]).replace(/^9(?=\d{4}$)/, ""))), m[2]] : null; };
+  const PALAVRAS_ORGAO = new Set("secretaria estado estadual municipal saude publica publico fundacao fundo hospital governo prefeitura".split(" "));
+  const palavrasOrgao = s => new Set(U.semAcento(String(s || "")).toLowerCase().split(/[^a-z]+/).filter(w => w.length >= 5 && !PALAVRAS_ORGAO.has(w)));
+
+  function editalDoGanho(p) {
+    const nn = numeroCurto(p.numero);
+    return S.editais.find(e => e.pncpId === p.id || e.id === idGanho(p) || (p.compra && String(e.link || "").includes(p.compra))) ||
+      S.editais.find(e => {
+        const ne = numeroCurto(e.numero);
+        if (!nn || !ne || ne[2] !== nn[2] || !(ne[0] === nn[0] || ne[1] === nn[1] || ne[0] === nn[1])) return false;
+        if (e.uasg && p.uasg) return String(e.uasg).replace(/\D/g, "") === p.uasg;
+        const a = palavrasOrgao(e.orgao), b = palavrasOrgao(p.orgao + " " + p.unidade);
+        return e.uf && p.uf ? e.uf === p.uf : [...a].filter(w => b.has(w)).length >= 1; // mesmo número e ano: basta a UF bater
+      });
+  }
+  function resumoResultado(p) {
+    return { data: p.dataResultado, valor: p.valorGanho, valorEstimado: p.valorEstimadoGanho, vigente: p.vigente, fonte: "PNCP", conferidoEm: U.agoraISO(),
+      itens: (p.itens || []).map(x => ({ numero: x.numero, descricao: x.descricao, quantidade: x.quantidade, unidade: x.unidade, valorUnit: x.valorUnit, valor: x.valor, valorEstimado: x.valorEstimado, data: x.data, fornecedor: x.fornecedor, vigente: x.vigente, atual: x.atual })) };
+  }
+  const itensTexto = p => (p.itens || []).filter(x => x.vigente).map(x => x.numero).join(", ");
+  // Coloca cada ganho do PNCP nos editais (novo ou existente) e devolve o que mudou
+  function incorporarGanhos(processos) {
+    const mudou = [];
+    (processos || []).filter(p => !p.erro && p.numero).forEach(p => {
+      const e = editalDoGanho(p), res = resumoResultado(p);
+      const quem = ((p.itens || []).find(x => x.vigente) || {}).fornecedor || apelido();
+      if (e) {
+        const antes = e.resultado;
+        e.pncpId = p.id; e.resultado = res;
+        if (!e.uasg && p.uasg) e.uasg = p.uasg;
+        if (!e.nossoValor && p.valorGanho) e.nossoValor = p.valorGanho;
+        if (!e.valorEstimado && p.valorEstimadoCompra) e.valorEstimado = p.valorEstimadoCompra;
+        if (!e.link && (p.link || p.linkPncp)) e.link = p.link || p.linkPncp;
+        if (p.vigente && e.etapa !== "ganho" && e.etapa !== "descartado") {
+          const de = ETAPA(e.etapa).nome;
+          e.etapa = "ganho"; e.propostaStatus = "cadastrada";
+          (e.historico = e.historico || []).unshift({ data: U.hojeISO(), texto: "Homologado no PNCP para " + quem + " (itens " + itensTexto(p) + ", " + U.moeda(p.valorGanho) + "): " + de + " → Ganho." });
+          registrar(e.numero + " foi homologado para " + quem + " (PNCP).", "resultados");
+          mudou.push({ e, tipo: "ganho" });
+        } else if (antes && antes.vigente && !p.vigente) {
+          (e.historico = e.historico || []).unshift({ data: U.hojeISO(), texto: "No PNCP saiu outro resultado para os itens que tínhamos ganhado. Confira no portal." });
+          mudou.push({ e, tipo: "substituido" });
+        }
+        return;
+      }
+      if (!p.vigente || (S.apagados || []).includes(idGanho(p))) return;
+      const novo = {
+        id: idGanho(p), pncpId: p.id, origem: "pncp", numero: p.numero, modalidade: /^PE /.test(p.numero) ? "Pregão eletrônico" : /^DE /.test(p.numero) ? "Dispensa eletrônica" : /^CE /.test(p.numero) ? "Concorrência eletrônica" : "Outra",
+        orgao: p.orgao || p.unidade, municipio: p.municipio, uf: p.uf, objeto: p.objeto, sessao: p.sessao, valorEstimado: p.valorEstimadoCompra || null, nossoValor: p.valorGanho,
+        portal: p.compra ? "Compras.gov.br" : "PNCP", etapa: "ganho", propostaStatus: "cadastrada", prioridade: "media", responsavel: "", processo: p.processo, link: p.link || p.linkPncp, uasg: p.uasg,
+        resultado: res, checklist: {}, posGanho: {}, notas: "", criadoEm: U.hojeISO(),
+        historico: [{ data: U.hojeISO(), texto: "Ganho encontrado no PNCP: itens " + itensTexto(p) + " homologados para " + quem + " em " + U.fmtData(p.dataResultado) + " (" + U.moeda(p.valorGanho) + ")." }]
+      };
+      S.editais.push(novo);
+      registrar("Ganho do PNCP entrou no acompanhamento: " + novo.numero + " · " + U.corta(novo.orgao, 50) + ".", "resultados");
+      mudou.push({ e: novo, tipo: "novo" });
+    });
+    return mudou;
+  }
+  async function buscarResultados(ano, forcar) {
+    ano = String(ano || new Date().getFullYear());
+    const cnpjs = cnpjsGrupo(), c = resCache()[ano];
+    if (!cnpjs.length) { if (forcar) toast("Falta o CNPJ da empresa", "Preencha em Ajustes → Empresa.", "crit"); return; }
+    const espera = c && c.erro ? 30 * 60000 : INTERVALO_RES;
+    if (ui.lendoRes || (!forcar && c && Date.now() - new Date(c.tentadoEm || c.consultadoEm || 0).getTime() < espera)) return;
+    ui.lendoRes = true; if (rotaAtual() === "resultados") renderSeLivre();
+    try {
+      const d = await api("/api/resultados?cnpj=" + cnpjs.join(",") + "&ano=" + ano, 70000);
+      resCache()[ano] = { consultadoEm: d.consultadoEm, tentadoEm: U.agoraISO(), processos: d.processos, erro: "" };
+      const mud = incorporarGanhos(d.processos);
+      const novos = mud.filter(m => m.tipo !== "substituido"), subst = mud.filter(m => m.tipo === "substituido");
+      if (novos.length) notificar(U.plural(novos.length, "ganho novo", "ganhos novos") + " no PNCP", novos.map(m => m.e.numero + " · " + U.corta(m.e.orgao, 40)).join("; ") + ". Já estão nos editais, na etapa Ganho.", "pop", { rotulo: "Ver resultados", rota: "resultados" });
+      if (subst.length) notificar("Resultado mudou no PNCP", subst.map(m => m.e.numero).join("; ") + ": saiu outro resultado para itens que estavam com a empresa.", "crit", { rotulo: "Ver resultados", rota: "resultados" });
+      if (forcar && !mud.length) toast("Resultados conferidos", U.plural((d.processos || []).length, "processo ganho", "processos ganhos") + " no PNCP em " + ano + ". Nada novo.");
+    } catch (e) {
+      resCache()[ano] = Object.assign({}, c || {}, { erro: e.message, tentadoEm: U.agoraISO() });
+      if (forcar) toast("Não consegui buscar os resultados", e.message, "crit");
+    } finally {
+      ui.lendoRes = false; salvar();
+      if (rotaAtual() === "resultados") renderSeLivre(); else atualizarNav();
+    }
+  }
+  const pctRes = v => (v === null || v === undefined || isNaN(v)) ? "—" : (Math.round(v * 10) / 10).toString().replace(".", ",") + "%";
+  function posicaoTexto(e) {
+    const ps = posicaoDisputa(chatDoEdital(e.id)).filter(x => x.pos);
+    return ps.length ? ps.slice(0, 2).map(x => x.pos + "º de " + x.total).join(", ") + (ps.length > 2 ? "…" : "") : "";
+  }
+  const valorGanhoDe = e => Number(e.resultado && e.resultado.vigente !== false ? e.resultado.valor : e.nossoValor) || 0;
+  const estimadoGanhoDe = e => Number(e.resultado && e.resultado.valorEstimado) || Number(e.valorEstimado) || 0;
+  function dadosAno(ano) {
+    const eds = S.editais.filter(e => dataDoProcesso(e).slice(0, 4) === ano);
+    const disputados = eds.filter(e => e.etapa !== "descartado" && e.etapa !== "triagem");
+    const ganhos = disputados.filter(e => e.etapa === "ganho"), perdidos = disputados.filter(e => e.etapa === "perdido");
+    const andamento = disputados.filter(e => !ETAPA(e.etapa).final);
+    return { eds, disputados, ganhos, perdidos, andamento, descartados: eds.filter(e => e.etapa === "descartado"), triagem: eds.filter(e => e.etapa === "triagem") };
+  }
+  function pgResultados() {
+    const anoAtual = new Date().getFullYear(), ano = String(ui.resAno || anoAtual);
+    const d = dadosAno(ano), cache = resCache()[ano] || {}, cnpjs = cnpjsGrupo();
+    const valorGanho = d.ganhos.reduce((s, e) => s + valorGanhoDe(e), 0);
+    const comEst = d.ganhos.filter(e => estimadoGanhoDe(e) && valorGanhoDe(e));
+    const est = comEst.reduce((s, e) => s + estimadoGanhoDe(e), 0), val = comEst.reduce((s, e) => s + valorGanhoDe(e), 0);
+    const desconto = est ? 100 * (1 - val / est) : null;
+    const taxa = d.ganhos.length + d.perdidos.length ? 100 * d.ganhos.length / (d.ganhos.length + d.perdidos.length) : null;
+    const emDisputa = d.andamento.reduce((s, e) => s + (Number(e.valorEstimado) || 0), 0);
+
+    // Por mês (data do resultado ou da sessão)
+    const meses = MESES.map(() => ({ ganho: 0, perdido: 0, andamento: 0 }));
+    d.disputados.forEach(e => { const m = +dataDoProcesso(e).slice(5, 7) - 1; if (m >= 0 && m < 12) meses[m][e.etapa === "ganho" ? "ganho" : e.etapa === "perdido" ? "perdido" : "andamento"]++; });
+    const maxM = Math.max(1, ...meses.map(m => m.ganho + m.perdido + m.andamento));
+    const SERIES = [["ganho", "Ganhos", "ok"], ["perdido", "Perdidos", "crit"], ["andamento", "Em andamento", "brand"]];
+    const grafico = '<div class="res-legenda">' + SERIES.map(s => '<span><i class="res-cor ' + s[2] + '"></i>' + s[1] + "</span>").join("") + "</div>" +
+      '<div class="res-meses" role="img" aria-label="Processos por mês em ' + ano + '">' + meses.map((m, i) => {
+        const tot = m.ganho + m.perdido + m.andamento;
+        const dica = MESES[i] + "/" + ano + ": " + (tot ? SERIES.filter(s => m[s[0]]).map(s => m[s[0]] + " " + s[1].toLowerCase()).join(", ") : "nenhum processo");
+        return '<div class="res-mes" title="' + h(dica) + '"><span class="res-n">' + (tot || "") + '</span><span class="res-pilha" style="height:' + Math.round(100 * tot / maxM) + '%">' +
+          SERIES.filter(s => m[s[0]]).map(s => '<i class="' + s[2] + '" style="flex:' + m[s[0]] + '"></i>').join("") + '</span><span class="res-rot">' + MESES[i] + "</span></div>";
+      }).join("") + "</div>";
+
+    // Por órgão e por portal
+    const porOrgao = {};
+    d.disputados.forEach(e => { const k = (e.orgao || "—").trim(); const o = porOrgao[k] = porOrgao[k] || { orgao: k, uf: e.uf, n: 0, ganhos: 0, valor: 0 }; o.n++; if (e.etapa === "ganho") { o.ganhos++; o.valor += valorGanhoDe(e); } });
+    const orgaos = Object.values(porOrgao).sort((a, b) => b.valor - a.valor || b.n - a.n).slice(0, 8);
+    const porPortal = {};
+    d.disputados.forEach(e => { const k = e.portal || "Não informado"; const o = porPortal[k] = porPortal[k] || { n: 0, ganhos: 0 }; o.n++; if (e.etapa === "ganho") o.ganhos++; });
+    const portais = Object.entries(porPortal).sort((a, b) => b[1].n - a[1].n), maxP = Math.max(1, ...portais.map(p => p[1].n));
+
+    const lista = d.disputados.slice().sort((a, b) => dataDoProcesso(b).localeCompare(dataDoProcesso(a)));
+    const linha = e => {
+      const et = ETAPA(e.etapa), v = e.etapa === "ganho" ? valorGanhoDe(e) : Number(e.nossoValor) || 0, es = e.etapa === "ganho" ? estimadoGanhoDe(e) : Number(e.valorEstimado) || 0;
+      return '<tr class="clicavel" data-acao="abrirEdital" data-id="' + e.id + '" tabindex="0"><td class="forte">' + h(e.numero) + '<span class="sub">' + U.fmtData(U.soData(dataDoProcesso(e))) + (e.resultado ? " · homologado" : "") + "</span></td>" +
+        "<td>" + h(U.corta(e.orgao, 70)) + (e.uf ? " <span class=\"muted\">(" + h(e.uf) + ")</span>" : "") + '<span class="sub">' + h(U.corta(e.objeto || "", 110)) + "</span></td>" +
+        '<td><span class="tag-portal" style="--cor:' + corPortal(e.portal) + '">' + h(e.portal || "—") + "</span></td>" +
+        '<td><span class="pill ' + et.cls + '">' + h(et.curto || et.nome) + "</span>" + (posicaoTexto(e) ? '<span class="sub">' + h(posicaoTexto(e)) + "</span>" : "") + "</td>" +
+        '<td class="num" style="text-align:right">' + (v ? "<b>" + U.moeda(v) + "</b>" : U.moeda(es || null)) + (v && es ? '<span class="sub">estimado ' + U.moedaCurta(es) + " · " + pctRes(100 * (1 - v / es)) + " abaixo</span>" : v ? "" : es ? '<span class="sub">estimado</span>' : "") + "</td></tr>";
+    };
+
+    const pncp = (cache.processos || []).filter(p => !p.erro);
+    const ganhoPncp = p => '<article class="res-ganho' + (p.vigente ? "" : " fora") + '"><div class="res-ganho-h"><div><b>' + h(p.numero) + "</b> · " + h(U.corta(p.orgao, 70)) + (p.uf ? " (" + h(p.municipio ? p.municipio + "/" + p.uf : p.uf) + ")" : "") +
+      '<p class="muted">' + h(U.corta(p.objeto, 220)) + '</p></div><div class="res-valor"><b>' + U.moeda(p.valorGanho) + '</b><span class="muted">homologado em ' + U.fmtData(p.dataResultado) + "</span></div></div>" +
+      '<div class="tabela-wrap"><table class="tabela res-itens"><thead><tr><th>Item</th><th>Descrição</th><th style="text-align:right">Qtd.</th><th style="text-align:right">Estimado (un.)</th><th style="text-align:right">Homologado (un.)</th><th style="text-align:right">Total</th><th>Situação</th></tr></thead><tbody>' +
+      (p.itens || []).map(x => "<tr><td>" + x.numero + "</td><td>" + h(U.corta(x.descricao, 70)) + '<span class="sub">' + h(x.fornecedor || "") + '</span></td><td class="num" style="text-align:right">' + (x.quantidade || "—").toLocaleString("pt-BR") + " " + h(String(x.unidade || "").toLowerCase()) +
+        '</td><td class="num" style="text-align:right">' + U.moeda(x.valorUnitEstimado) + '</td><td class="num" style="text-align:right">' + U.moeda(x.valorUnit) + '</td><td class="num" style="text-align:right">' + U.moeda(x.valor) + "</td><td>" +
+        (x.vigente ? '<span class="pill ok">Com a empresa</span>' : '<span class="pill crit">Substituído</span><span class="sub">' + h(x.atual ? x.atual.fornecedor + " · " + U.fmtData(x.atual.data) : "") + "</span>") + "</td></tr>").join("") + "</tbody></table></div>" +
+      '<div class="linha-acoes">' + (p.link ? '<a class="btn peq ghost" href="' + h(p.link) + '" target="_blank" rel="noopener">' + ic("link") + "Compras.gov.br</a>" : "") + '<a class="btn peq ghost" href="' + h(p.linkPncp) + '" target="_blank" rel="noopener">' + ic("link") + "Ver no PNCP</a>" +
+      (editalDoGanho(p) ? '<button class="btn peq ghost" data-acao="abrirEdital" data-id="' + editalDoGanho(p).id + '">' + ic("editais") + "Abrir no acompanhamento</button>" : "") + "</div></article>";
+
+    const status = !cnpjs.length ? '<p class="nota">Informe o CNPJ da empresa em <a href="#ajustes">Ajustes → Empresa</a> para o portal buscar os ganhos no PNCP.</p>'
+      : '<p class="muted res-status">' + (ui.lendoRes ? "Buscando os ganhos no PNCP (leva uns 30 segundos)…" : cache.consultadoEm ? "Conferido " + U.desde(U.isoDataHora(new Date(cache.consultadoEm))) + " · CNPJ " + cnpjs.map(c => c.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5")).join(", ") : "Ainda não conferido.") +
+        (cache.erro ? ' · <span style="color:var(--crit)">última tentativa falhou: ' + h(cache.erro) + "</span>" : "") + "</p>";
+
+    return '<div class="cab"><div><span class="eyebrow">Análise e jurídico</span><h1>Resultados de ' + ano + '</h1><p>Todos os processos do ano: ganhos, perdidos e em andamento. Os ganhos homologados no PNCP (Compras.gov.br) entram sozinhos no acompanhamento, com os itens e valores.</p></div>' +
+      '<div class="cab-acoes"><select data-mudar="resAno" aria-label="Ano">' + [anoAtual, anoAtual - 1].map(a => "<option" + (String(a) === ano ? " selected" : "") + ">" + a + "</option>").join("") + "</select>" +
+      '<button class="btn ghost" data-acao="exportarResultados">' + ic("download") + 'Exportar planilha</button><button class="btn primario" data-acao="buscarResultados"' + (ui.lendoRes ? " disabled" : "") + ">" + ic("atualizar") + (ui.lendoRes ? "Buscando…" : "Buscar ganhos no PNCP") + "</button></div></div>" + status +
+      '<section class="kpis" aria-label="Indicadores do ano">' +
+      '<div class="kpi destaque"><span class="rot">Processos disputados</span><span class="val">' + d.disputados.length + '</span><span class="sub">' + U.plural(d.descartados.length, "descartado", "descartados") + " na triagem</span></div>" +
+      '<div class="kpi"><span class="rot">Ganhos</span><span class="val">' + d.ganhos.length + '</span><span class="sub">' + U.moedaCurta(valorGanho) + " homologados</span></div>" +
+      '<div class="kpi"><span class="rot">Taxa de sucesso</span><span class="val">' + (taxa === null ? "–" : Math.round(taxa) + "%") + '</span><span class="sub">' + d.ganhos.length + " ganhos × " + d.perdidos.length + " perdidos</span></div>" +
+      '<div class="kpi"><span class="rot">Em andamento</span><span class="val">' + d.andamento.length + '</span><span class="sub">' + U.moedaCurta(emDisputa) + " estimados</span></div>" +
+      '<div class="kpi"><span class="rot">Desconto médio</span><span class="val">' + (desconto === null ? "–" : pctRes(desconto)) + '</span><span class="sub">ganho × estimado dos itens</span></div></section>' +
+      '<div class="grade-2"><section class="card"><div class="card-h"><h2>Processos por mês</h2><span class="muted">pela data do resultado ou da sessão</span></div>' + (d.disputados.length ? grafico : vazio("editais", "Nenhum processo em " + ano + " ainda.")) + "</section>" +
+      '<section class="card"><div class="card-h"><h2>Por portal</h2></div>' + (portais.length ? '<div class="barras res-portais">' + portais.map(([p, o]) => '<div class="barra"><span>' + h(p) + '</span><span class="trilho"><span class="enchimento" style="width:' + Math.round(100 * o.n / maxP) + '%"></span></span><span class="n">' + o.n + (o.ganhos ? ' <span class="muted">· ' + o.ganhos + " ganho" + (o.ganhos > 1 ? "s" : "") + "</span>" : "") + "</span></div>").join("") + "</div>" : vazio("portais", "Sem processos.")) + "</section></div>" +
+      '<section class="card"><div class="card-h"><h2>Por órgão</h2><span class="muted">os que mais renderam primeiro</span></div>' + (orgaos.length ? '<div class="tabela-wrap"><table class="tabela"><thead><tr><th>Órgão</th><th style="text-align:right">Processos</th><th style="text-align:right">Ganhos</th><th style="text-align:right">Valor ganho</th></tr></thead><tbody>' +
+        orgaos.map(o => "<tr><td>" + h(U.corta(o.orgao, 90)) + (o.uf ? ' <span class="muted">(' + h(o.uf) + ")</span>" : "") + '</td><td class="num" style="text-align:right">' + o.n + '</td><td class="num" style="text-align:right">' + o.ganhos + '</td><td class="num" style="text-align:right">' + U.moeda(o.valor || null) + "</td></tr>").join("") + "</tbody></table></div>" : vazio("editais", "Sem processos.")) + "</section>" +
+      '<section class="card"><div class="card-h"><h2>Todos os processos de ' + ano + '</h2><span class="muted">' + U.plural(lista.length, "processo", "processos") + "</span></div>" +
+      (lista.length ? '<div class="tabela-wrap"><table class="tabela res-tabela"><thead><tr><th>Edital</th><th>Órgão e objeto</th><th>Portal</th><th>Resultado</th><th style="text-align:right">Valor</th></tr></thead><tbody>' + lista.map(linha).join("") + "</tbody></table></div>" : vazio("editais", "Nenhum processo em " + ano + ".")) + "</section>" +
+      '<section class="card"><div class="card-h"><h2>Ganhos homologados no PNCP</h2><span class="muted">' + U.plural(pncp.length, "processo", "processos") + " · " + U.moedaCurta(pncp.reduce((s, p) => s + (p.valorGanho || 0), 0)) + "</span></div>" +
+      (pncp.length ? '<div class="res-ganhos">' + pncp.map(ganhoPncp).join("") + "</div>" : vazio("check", ui.lendoRes ? "Buscando…" : "Nenhum ganho homologado no PNCP em " + ano + " ainda.")) +
+      '<p class="nota">Fonte: dados abertos do Compras.gov.br e PNCP (resultados por CNPJ do fornecedor). Processos do e-compras.AM e de portais fora do PNCP seguem pelo ranking da disputa. Para incluir outras empresas do grupo, coloque o CNPJ junto do nome em Ajustes → Empresa → Empresas do grupo.</p></section>';
+  }
+  function exportarResultados() {
+    const ano = String(ui.resAno || new Date().getFullYear()), d = dadosAno(ano);
+    const cel = v => '"' + String(v === null || v === undefined ? "" : v).replace(/"/g, '""') + '"';
+    const num = v => v ? String(Math.round(v * 100) / 100).replace(".", ",") : "";
+    const linhas = [["Edital", "Órgão", "UF", "Objeto", "Portal", "Data", "Resultado", "Posição", "Valor estimado", "Valor ganho / proposta", "Desconto %", "Itens ganhos", "Link"]];
+    d.disputados.sort((a, b) => dataDoProcesso(a).localeCompare(dataDoProcesso(b))).forEach(e => {
+      const g = e.etapa === "ganho", v = g ? valorGanhoDe(e) : Number(e.nossoValor) || 0, es = g ? estimadoGanhoDe(e) : Number(e.valorEstimado) || 0;
+      linhas.push([e.numero, e.orgao, e.uf, e.objeto, e.portal, U.fmtData(U.soData(dataDoProcesso(e))), ETAPA(e.etapa).nome, posicaoTexto(e), num(es), num(v), es && v ? num(100 * (1 - v / es)) : "",
+        e.resultado ? (e.resultado.itens || []).filter(x => x.vigente).map(x => x.numero).join(", ") : "", e.link]);
+    });
+    U.baixar("resultados-" + ano + ".csv", "﻿" + linhas.map(l => l.map(cel).join(";")).join("\r\n"), "text/csv;charset=utf-8");
+    toast("Planilha gerada", "resultados-" + ano + ".csv (abre no Excel)");
+  }
+  function ganhoHTML(e) {
+    const r = e.resultado, c = e.posGanho || {};
+    return '<div class="bloco"><h3>Depois do ganho</h3>' +
+      (r ? '<p class="muted" style="font-size:13px">Homologado em ' + U.fmtData(r.data) + " · " + U.moeda(r.valor) + " · itens " + h((r.itens || []).filter(x => x.vigente).map(x => x.numero).join(", ")) + (r.vigente === false ? ' · <b style="color:var(--crit)">resultado substituído no PNCP</b>' : "") + "</p>" : "") +
+      '<div class="checklist">' + CHECK_GANHO.map((k, i) => '<label class="' + (c[k] ? "feito" : "") + '"><input type="checkbox" data-mudar="checkGanho" data-id="' + e.id + '" data-item="' + i + '"' + (c[k] ? " checked" : "") + "><span>" + h(k) + "</span></label>").join("") + "</div></div>";
+  }
+
   function pgChats() {
     const cab = '<div class="cab"><div><span class="eyebrow">Operação</span><h1>Chats dos pregões</h1><p>Acompanhe o que o pregoeiro escreve. Mensagens de retomada, suspensão, convocação e recurso ficam destacadas, e qualquer menção à ' + h(apelido()) + ' acende o alerta.</p></div><div class="cab-acoes">' +
       (S.exemplo || S._exploracao ? '<button class="btn ghost" data-acao="simularMsg">' + ic("raio") + "Simular mensagem</button>" : "") + '<button class="btn primario" data-acao="novoChat">' + ic("mais") + "Monitorar pregão</button></div></div>";
@@ -2088,7 +2292,7 @@
       campo("aj-nome", "Razão social", e.nome, "empresa.nome") + campo("aj-apelido", "Como a empresa aparece no chat (apelido)", e.apelido, "empresa.apelido", 'placeholder="Ex.: Vitalis"') + campo("aj-cnpj", "CNPJ", e.cnpj, "empresa.cnpj", 'inputmode="numeric"') +
       '<div class="campo"><label for="aj-porte">Porte</label><select id="aj-porte" data-mudar="ajuste" data-chave="empresa.porte"><option value="demais"' + (e.porte !== "me" ? " selected" : "") + '>Demais portes</option><option value="me"' + (e.porte === "me" ? " selected" : "") + ">ME / EPP</option></select><small>Usado na análise de editais exclusivos para ME/EPP.</small></div>" +
       campo("aj-equipe", "Como chamar a equipe no painel", e.equipe, "empresa.equipe") +
-      '<div class="campo"><label for="aj-grupo">Empresas do grupo (como aparecem nos portais)</label><textarea id="aj-grupo" rows="3" data-mudar="ajuste" data-chave="empresa.grupo" placeholder="DIMPI GESTAO EM SAUDE LTDA&#10;RC ...&#10;CETUS SERVICOS LTDA">' + h(e.grupo || "") + "</textarea><small>Uma por linha. O portal acha essas empresas no ranking da disputa e mostra a posição.</small></div></section>" +
+      '<div class="campo"><label for="aj-grupo">Empresas do grupo (como aparecem nos portais)</label><textarea id="aj-grupo" rows="3" data-mudar="ajuste" data-chave="empresa.grupo" placeholder="DIMPI GESTAO EM SAUDE LTDA&#10;RC ...&#10;CETUS SERVICOS LTDA">' + h(e.grupo || "") + "</textarea><small>Uma por linha. O portal acha essas empresas no ranking da disputa e mostra a posição. Coloque o CNPJ junto do nome (ex.: CETUS SERVICOS LTDA 00.000.000/0001-00) para os ganhos dela entrarem em Resultados do ano.</small></div></section>" +
       '<section class="card"><h2>Alertas</h2><p>Quando cada aviso começa a aparecer.</p>' +
       campo("aj-dprop", "Avisar propostas com quantos dias de antecedência", a.diasProposta, "ajustes.diasProposta", 'type="number" min="1" max="30"') +
       campo("aj-ddoc", "Avisos de documentos (dias antes do vencimento)", Array.isArray(a.diasDoc) ? a.diasDoc.join(", ") : a.diasDoc, "ajustes.diasDoc", "", "Ex.: 30, 15, 7") +
@@ -2117,7 +2321,7 @@
      Roteamento e renderização
      ================================================================= */
   const PAGINAS = {
-    painel: { html: pgPainel }, editais: { html: pgEditais, depois: ligarArraste }, propostas: { html: pgPropostas }, precos: { html: pgPrecos }, suspensos: { html: pgSuspensos },
+    painel: { html: pgPainel }, editais: { html: pgEditais, depois: ligarArraste }, propostas: { html: pgPropostas }, precos: { html: pgPrecos }, suspensos: { html: pgSuspensos }, resultados: { html: pgResultados },
     chats: { html: pgChats, depois: depoisChats }, analise: { html: pgAnalise, depois: ligarAnalise }, recursos: { html: pgRecursos },
     documentos: { html: pgDocumentos }, portais: { html: pgPortais }, alertas: { html: pgAlertas }, ajustes: { html: pgAjustes }
   };
@@ -2297,6 +2501,8 @@
     novoEdital: () => formEdital(),
     editarEdital: d => formEdital(d.id),
     abrirEdital: d => abrirEdital(d.id),
+    buscarResultados: () => buscarResultados(ui.resAno, true),
+    exportarResultados: () => exportarResultados(),
     excluirEdital: d => { const e = edital(d.id); excluir("editais", d.id, e.numero, "edital"); },
     definirEtapa: d => moverEtapa(d.id, d.etapa),
     propCadastrada: d => {
@@ -2436,6 +2642,8 @@
       if (e.etapa === "triagem" || e.etapa === "analise") e.etapa = "proposta";
       atualizar();
     },
+    checkGanho: el => { const e = edital(el.dataset.id); (e.posGanho = e.posGanho || {})[CHECK_GANHO[+el.dataset.item]] = el.checked; atualizar(); },
+    resAno: el => { ui.resAno = el.value; render(); buscarResultados(el.value); },
     checkItem: el => { const e = edital(el.dataset.id); (e.checklist = e.checklist || {})[CHECK_PROPOSTA[+el.dataset.item]] = el.checked; atualizar(); },
     notasEdital: el => { const e = edital(el.dataset.id); e.notas = el.value; salvar(); toast("Anotação salva"); },
     statusRec: el => { const r = S.recursos.find(x => x.id === el.dataset.id); r.status = el.value; registrar(r.pregao + ": recurso agora está \"" + nomeLista(STATUS_REC, el.value) + "\".", "recursos"); atualizar(); },
@@ -2725,13 +2933,14 @@
       garantirSuspensos();
       verificarChats();
       setTimeout(() => verificarSuspensos(), 5000);
+      setTimeout(() => buscarResultados(), 9000);
       sincronizarRobo();
     }, 900);
     // A cada minuto: atualiza contadores, lê chats automáticos e redesenha telas sem formulário aberto
     let minuto = 0;
     setInterval(() => {
       minuto++;
-      if (minuto % 5 === 0) { garantirMonitoramento(); garantirSuspensos(); verificarSuspensos(); }
+      if (minuto % 5 === 0) { garantirMonitoramento(); garantirSuspensos(); verificarSuspensos(); buscarResultados(); }
       verificarChats();
       sincronizarRobo();
       if (minuto % 2 === 0) puxarNuvem();

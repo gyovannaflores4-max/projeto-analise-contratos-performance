@@ -655,3 +655,33 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:
 .susp.voltou{border-color:var(--ok);box-shadow:0 0 0 1px var(--ok)}
 .susp-h .org a{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;word-break:break-all}
 .kpi.kpi-volta .val{color:var(--ok)}
+
+/* Resultados do ano */
+.res-status{font-size:13px;margin:-6px 0 14px}
+.res-legenda{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--ink-2);margin-bottom:10px}
+.res-legenda span{display:inline-flex;align-items:center;gap:6px}
+.res-cor{width:10px;height:10px;border-radius:3px;display:inline-block}
+.res-cor.ok,.res-pilha i.ok{background:var(--ok)}
+.res-cor.crit,.res-pilha i.crit{background:var(--crit)}
+.res-cor.brand,.res-pilha i.brand{background:var(--brand)}
+.res-meses{display:grid;grid-template-columns:repeat(12,1fr);gap:6px;height:180px;align-items:end}
+.res-mes{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}
+.res-pilha{display:flex;flex-direction:column-reverse;gap:2px;width:min(26px,80%);min-height:0;border-radius:4px 4px 0 0;overflow:hidden}
+.res-pilha i{display:block;min-height:3px}
+.res-n{font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--ink-2);min-height:16px}
+.res-rot{font-size:11.5px;color:var(--ink-3);margin-top:6px;border-top:1px solid var(--line);width:100%;text-align:center;padding-top:4px}
+.res-ganhos{display:flex;flex-direction:column;gap:14px}
+.res-ganho{border:1px solid var(--line);border-radius:var(--r-sm);padding:14px;display:flex;flex-direction:column;gap:10px}
+.res-ganho.fora{border-color:var(--crit)}
+.res-ganho-h{display:flex;gap:16px;justify-content:space-between;align-items:flex-start}
+.res-ganho-h p{margin:4px 0 0;font-size:13px}
+.res-valor{text-align:right;display:flex;flex-direction:column;white-space:nowrap}
+.res-valor b{font-size:18px;color:var(--ok);font-variant-numeric:tabular-nums}
+.res-valor span{font-size:12.5px}
+table.tabela.res-itens{min-width:640px;font-size:13px}
+@media (max-width:640px){.res-ganho-h{flex-direction:column}.res-valor{text-align:left}.res-meses{gap:3px;height:150px}}
+.res-portais .barra{grid-template-columns:minmax(90px,140px) 1fr auto}
+.res-portais .barra .n{white-space:nowrap}
+table.tabela.res-tabela{min-width:720px}
+.res-tabela td:nth-child(2){max-width:300px}
+.res-tabela td:last-child{white-space:nowrap}
