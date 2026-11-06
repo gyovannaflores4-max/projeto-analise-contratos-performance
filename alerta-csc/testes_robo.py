@@ -26,6 +26,14 @@ casos = [
     ("Contratação de empresa para fornecimento de mão de obra de médico do trabalho presencial", False),
     ("Aquisição de 58 cardioversores para unidades de terapia intensiva", False),
     ("Contratação de serviços de alimentação coletiva para hospitais", False),
+    ("Prestação de serviços continuados de natureza assistencial, com predominância de mão de obra especializada, destinados à prestação de serviços médicos", True),
+    ("CONTRATAÇÃO DE PRESTAÇÃO DE SERVIÇOS MÉDICOS NA ESPECIALIDADE DE ANESTESIOLOGIA", True),
+    ("Registro de Preços para aquisição de MATERIAIS MÉDICO-HOSPITALARES (bolsa coletora de urina), destinados às Unidades de Pronto Atendimento", False),
+    ("Registro de Preços para futura e eventual aquisição de materiais de diálise e hemodiálise grupo 1", False),
+    ("Registro de preços para aquisição de medicamentos para a farmácia municipal na Unidade de Saúde e plantão 24 horas", False),
+    ("Contratação de clínica veterinária para serviços de castração por médico-veterinário, com anestesia", False),
+    ("Agência de turismo para transporte rodoviário de passageiros e seguro viagem com assistência médica", False),
+    ("Aquisição de Equipamentos Médicos", False),
 ]
 for objeto, esperado in casos:
     n, _ = garimpo.nota(objeto, p)
