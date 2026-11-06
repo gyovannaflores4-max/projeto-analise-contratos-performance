@@ -685,3 +685,11 @@ table.tabela.res-itens{min-width:640px;font-size:13px}
 table.tabela.res-tabela{min-width:720px}
 .res-tabela td:nth-child(2){max-width:300px}
 .res-tabela td:last-child{white-space:nowrap}
+
+/* Pacote de habilitação */
+.hab-lista{list-style:none;margin:10px 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.hab-lista li{display:grid;grid-template-columns:150px 1fr auto;gap:10px;align-items:start;font-size:13.5px}
+.hab-lista li .pill{justify-self:start}
+.hab-lista small{display:block;font-size:12.5px;margin-top:2px}
+.hab-ok{font-size:12.5px;display:flex;gap:5px;align-items:center;white-space:nowrap}
+@media (max-width:560px){.hab-lista li{grid-template-columns:1fr}}

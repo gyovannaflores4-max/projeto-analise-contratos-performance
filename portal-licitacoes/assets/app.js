@@ -217,6 +217,13 @@
         titulo: (s.dias < 0 ? "Documento vencido: " : "Renovar documento: ") + d.nome + (d.empresa ? " (" + empresaCurta(d.empresa) + ")" : ""),
         detalhe: s.rotulo + (afeta ? " · antes da sessão do " + afeta.numero : ""), rota: "documentos", ref: d.id });
     });
+    // Habilitação: edital com sessão nos próximos 10 dias e documento faltando ou vencendo antes dela
+    S.editais.filter(e => ativo(e) && e.etapa !== "triagem" && e.sessao && !U.passou(e.sessao) && U.diasAte(e.sessao) <= 10).forEach(e => {
+      const pk = pacoteHabilitacao(e);
+      if (!pk.problemas.length || !pk.empresa) return;
+      add({ id: "hab:" + e.id + ":" + pk.problemas.map(x => x.ref.chave + x.st).join(","), tipo: "documento", icone: "documentos", quando: U.soData(e.sessao), nivel: "atencao",
+        titulo: "Habilitação do " + e.numero + ": " + U.plural(pk.problemas.length, "pendência", "pendências"), detalhe: pk.problemas.map(x => x.ref.nome + " (" + HAB_ST[x.st][1].toLowerCase() + ")").join(", ") + " · " + empresaCurta(pk.empresa), rota: "editais", ref: e.id });
+    });
     // Cadastro e plano dos portais: só informativo (não entra em prioridades, alertas críticos nem resumo)
     S.portais.forEach(p => {
       [["validadeCadastro", "Cadastro"], ["validadePlano", "Plano/mensalidade"]].forEach(([campo, rot]) => {
@@ -836,6 +843,7 @@
       '<div class="bloco"><h3>Proposta</h3><div class="ferramentas"><select data-mudar="propStatus" data-id="' + e.id + '" aria-label="Situação da proposta">' + PROP_STATUS.map(p => '<option value="' + p[0] + '"' + (p[0] === e.propostaStatus ? " selected" : "") + ">" + p[1] + "</option>").join("") + "</select>" +
       '<span class="muted" style="font-size:13px">' + progresso(e) + " de " + CHECK_PROPOSTA.length + ' itens prontos</span></div><div class="progresso"><i style="width:' + Math.round(100 * progresso(e) / CHECK_PROPOSTA.length) + '%"></i></div>' + checklistHTML(e) + "</div>" +
 
+      (ativo(e) && e.etapa !== "triagem" ? habilitacaoHTML(e) : "") +
       (chat && (chat.status || chat.disputa) ? '<div class="bloco"><h3>Acompanhamento no portal</h3>' + disputaHTML(chat, true) + "</div>" : "") +
       '<div class="bloco"><h3>Atalhos</h3><div class="linha-acoes">' +
       (e.link ? '<a class="btn peq ghost" href="' + h(e.link) + '" target="_blank" rel="noopener">' + ic("link") + "Abrir no portal</a>" : "") +
@@ -888,7 +896,7 @@
       salvar: v => {
         if (e) { Object.assign(e, v); (e.historico = e.historico || []).unshift({ data: U.hojeISO(), texto: "Dados do edital atualizados." }); }
         else {
-          const novo = Object.assign({ id: U.uid(), checklist: {}, notas: "", criadoEm: U.hojeISO(), historico: [{ data: U.hojeISO(), texto: "Edital cadastrado no portal." }] }, v);
+          const novo = Object.assign({ id: U.uid(), checklist: {}, notas: "", criadoEm: U.hojeISO(), historico: [{ data: U.hojeISO(), texto: "Edital cadastrado no portal." }] }, preset && preset.exigidos && preset.exigidos.length ? { exigidos: preset.exigidos } : {}, v);
           S.editais.push(novo);
           registrar("Novo edital cadastrado: " + novo.numero + ".", "editais");
           const ident = ui.importChat && (ui.importChat.link.match(/ident=(\d+)/) || [])[1];
@@ -1714,6 +1722,66 @@
       '<div class="checklist">' + CHECK_GANHO.map((k, i) => '<label class="' + (c[k] ? "feito" : "") + '"><input type="checkbox" data-mudar="checkGanho" data-id="' + e.id + '" data-item="' + i + '"' + (c[k] ? " checked" : "") + "><span>" + h(k) + "</span></label>").join("") + "</div></div>";
   }
 
+  /* ---------- Pacote de habilitação do edital ---------- */
+  // Cruza os documentos exigidos (da análise do edital, ou a lista padrão) com a pasta da empresa
+  // que vai participar (matriz ou filial) e mostra o que falta ou vence antes da sessão.
+  const HAB_PADRAO = ["contrato_social", "cnd_federal", "fgts", "cndt", "estadual", "municipal", "falencia", "balanco", "conselho", "atestado", "declaracoes"];
+  const HAB_FORA_PASTA = ["balanco", "atestado", "declaracoes", "responsavel_tecnico"]; // costumam ser montados para cada edital
+  const empresasDocs = () => [...new Set(docsAtivos().map(d => d.empresa).filter(Boolean))].sort();
+  // Empresa sugerida: filial da mesma UF/cidade do órgão, senão a matriz da empresa principal
+  function empresaSugerida(e) {
+    const lista = empresasDocs(), ap = U.semAcento(S.empresa.apelido || S.empresa.nome || "").toLowerCase().split(/\s+/)[0] || "";
+    const norm = x => U.semAcento(x).toLowerCase();
+    const minhas = lista.filter(x => !ap || norm(x).includes(ap));
+    const base = minhas.length ? minhas : lista;
+    const cidade = norm(e.municipio || ""), uf = norm(e.uf || "");
+    return (cidade && base.find(x => norm(x).includes("filial") && norm(x).includes(cidade))) ||
+      (uf && base.find(x => new RegExp("filial\\s+" + uf + "\\b").test(norm(x)))) ||
+      base.find(x => /matriz/.test(norm(x))) || base[0] || "";
+  }
+  function pacoteHabilitacao(e) {
+    const empresa = e.empresaHab || empresaSugerida(e);
+    const limite = U.soData(e.sessao || limiteDe(e) || "") || U.hojeISO();
+    const docs = docsAtivos().filter(d => d.empresa === empresa);
+    const exigidos = (e.exigidos && e.exigidos.length ? e.exigidos : HAB_PADRAO).filter(k => k !== "declaracoes" || true);
+    const itens = exigidos.map(k => {
+      const ref = A.HABILITACAO.find(x => x.chave === k) || { chave: k, nome: k, grupo: "Outros" };
+      const cands = docs.filter(d => d.tipo === k).sort((a, b) => (b.validade ? b.validade : "9999").localeCompare(a.validade ? a.validade : "9999"));
+      const marcado = (e.habOk || {})[k];
+      if (!cands.length) return { ref, st: marcado ? "ok" : HAB_FORA_PASTA.includes(k) ? "manual" : "falta", docs: [] };
+      // Vários documentos do mesmo tipo (ex.: estadual: ICMS e dívida ativa): vale o pior
+      const pior = cands.reduce((p, d) => (d.validade && (!p.validade || d.validade < p.validade) ? d : p), cands[0]);
+      const st = !pior.validade || pior.validade >= limite ? "ok" : pior.validade < U.hojeISO() ? "vencido" : "antes";
+      return { ref, st, docs: cands, pior };
+    });
+    if (/compras\.gov/i.test(e.portal || "")) {
+      const sicaf = docs.find(d => /sicaf/i.test(d.nome));
+      itens.push({ ref: { chave: "sicaf", nome: "SICAF", grupo: "Cadastro" }, st: !sicaf ? "falta" : !sicaf.validade || sicaf.validade >= limite ? "ok" : sicaf.validade < U.hojeISO() ? "vencido" : "antes", docs: sicaf ? [sicaf] : [], pior: sicaf });
+    }
+    const problemas = itens.filter(x => ["falta", "vencido", "antes"].includes(x.st));
+    return { empresa, limite, itens, problemas, padrao: !(e.exigidos && e.exigidos.length) };
+  }
+  const HAB_ST = { ok: ["ok", "Em dia"], antes: ["warn", "Vence antes da sessão"], vencido: ["crit", "Vencido"], falta: ["crit", "Não está na pasta"], manual: ["info", "Montar para o edital"] };
+  function habilitacaoHTML(e) {
+    const p = pacoteHabilitacao(e), lista = empresasDocs();
+    return '<div class="bloco"><h3>Habilitação</h3>' +
+      '<div class="ferramentas"><select data-mudar="empresaHab" data-id="' + e.id + '" aria-label="Empresa que participa">' + (lista.length ? lista.map(x => '<option' + (x === p.empresa ? " selected" : "") + ">" + h(x) + "</option>").join("") : "<option>Nenhuma empresa na pasta de documentos</option>") + "</select>" +
+      '<span class="muted" style="font-size:13px">' + (p.problemas.length ? '<b style="color:var(--crit)">' + U.plural(p.problemas.length, "pendência", "pendências") + "</b>" : "tudo em dia") + " para " + U.fmtData(p.limite) + "</span></div>" +
+      (p.padrao ? '<p class="nota">Lista padrão. Analise o edital (Análise de edital → Criar edital) para usar os documentos exigidos nele.</p>' : "") +
+      '<ul class="hab-lista">' + p.itens.map(x => {
+        const [cls, rot] = HAB_ST[x.st];
+        const det = x.pior ? (x.docs.length > 1 ? x.docs.map(d => d.nome + " (" + (d.validade ? U.fmtData(d.validade) : "IND") + ")").join(" · ") : x.pior.nome + " · " + (x.pior.validade ? "vence " + U.fmtData(x.pior.validade) : "validade indeterminada")) : "";
+        return '<li><span class="pill ' + cls + '">' + rot + "</span><div><b>" + h(x.ref.nome) + "</b>" + (det ? '<small class="muted">' + h(det) + "</small>" : "") + "</div>" +
+          (x.st === "manual" || x.st === "falta" && HAB_FORA_PASTA.includes(x.ref.chave) || (e.habOk || {})[x.ref.chave] ? '<label class="hab-ok"><input type="checkbox" data-mudar="habOk" data-id="' + e.id + '" data-chave="' + x.ref.chave + '"' + ((e.habOk || {})[x.ref.chave] ? " checked" : "") + "> pronto</label>" : "") + "</li>";
+      }).join("") + "</ul>" +
+      '<div class="linha-acoes"><button class="btn peq ghost" data-acao="copiarHab" data-id="' + e.id + '">' + ic("copiar") + 'Copiar lista</button><a class="btn peq ghost" href="#documentos">' + ic("documentos") + "Abrir documentos</a></div></div>";
+  }
+  function textoHab(e) {
+    const p = pacoteHabilitacao(e);
+    return ["Habilitação · " + e.numero + " · " + e.orgao, "Empresa: " + p.empresa + " · documentos válidos até " + U.fmtData(p.limite), ""]
+      .concat(p.itens.map(x => (x.st === "ok" ? "[ok] " : "[  ] ") + x.ref.nome + " — " + HAB_ST[x.st][1] + (x.pior && x.pior.validade ? " (vence " + U.fmtData(x.pior.validade) + ")" : ""))).join("\n");
+  }
+
   function pgChats() {
     const cab = '<div class="cab"><div><span class="eyebrow">Operação</span><h1>Chats dos pregões</h1><p>Acompanhe o que o pregoeiro escreve. Mensagens de retomada, suspensão, convocação e recurso ficam destacadas, e qualquer menção à ' + h(apelido()) + ' acende o alerta.</p></div><div class="cab-acoes">' +
       (S.exemplo || S._exploracao ? '<button class="btn ghost" data-acao="simularMsg">' + ic("raio") + "Simular mensagem</button>" : "") + '<button class="btn primario" data-acao="novoChat">' + ic("mais") + "Monitorar pregão</button></div></div>";
@@ -2509,6 +2577,7 @@
     editarEdital: d => formEdital(d.id),
     abrirEdital: d => abrirEdital(d.id),
     buscarResultados: () => buscarResultados(ui.resAno, true),
+    copiarHab: async d => { const t = textoHab(edital(d.id)); if (await U.copiar(t)) toast("Lista de habilitação copiada"); else mostrarTexto("Habilitação", t); },
     exportarResultados: () => exportarResultados(),
     excluirEdital: d => { const e = edital(d.id); excluir("editais", d.id, e.numero, "edital"); },
     definirEtapa: d => moverEtapa(d.id, d.etapa),
@@ -2597,7 +2666,7 @@
     copiarAnalise: async () => { const t = textoAnalise(ui.analise); if (await U.copiar(t)) toast("Resumo copiado", "Cole no e-mail, Teams ou WhatsApp."); else mostrarTexto("Resumo da análise", t); },
     criarDaAnalise: () => {
       const c = ui.analise.campos;
-      formEdital(null, { numero: c.numero, modalidade: c.modalidade, orgao: c.orgao, objeto: c.objeto, sessao: c.sessao && c.sessao.length > 10 ? c.sessao : c.sessao ? c.sessao + "T09:00" : "", limiteProposta: c.limiteProposta && c.limiteProposta.length > 10 ? c.limiteProposta : "", valorEstimado: c.valorEstimado, portal: c.plataforma || "Compras.gov.br", processo: c.processo, etapa: "analise", prioridade: ui.analise.termometro.nivel === "ok" ? "alta" : "media" });
+      formEdital(null, { numero: c.numero, modalidade: c.modalidade, orgao: c.orgao, objeto: c.objeto, sessao: c.sessao && c.sessao.length > 10 ? c.sessao : c.sessao ? c.sessao + "T09:00" : "", limiteProposta: c.limiteProposta && c.limiteProposta.length > 10 ? c.limiteProposta : "", valorEstimado: c.valorEstimado, portal: c.plataforma || "Compras.gov.br", processo: c.processo, etapa: "analise", prioridade: ui.analise.termometro.nivel === "ok" ? "alta" : "media", exigidos: ui.analise.habilitacao.filter(x => x.exigido).map(x => x.chave) });
     },
 
     filtroAlerta: d => { ui.alertaFiltro = d.f; render(); },
@@ -2649,6 +2718,8 @@
       if (e.etapa === "triagem" || e.etapa === "analise") e.etapa = "proposta";
       atualizar();
     },
+    empresaHab: el => { const e = edital(el.dataset.id); e.empresaHab = el.value; atualizar(); },
+    habOk: el => { const e = edital(el.dataset.id); (e.habOk = e.habOk || {})[el.dataset.chave] = el.checked; atualizar(); },
     checkGanho: el => { const e = edital(el.dataset.id); (e.posGanho = e.posGanho || {})[CHECK_GANHO[+el.dataset.item]] = el.checked; atualizar(); },
     resAno: el => { ui.resAno = el.value; render(); buscarResultados(el.value); },
     checkItem: el => { const e = edital(el.dataset.id); (e.checklist = e.checklist || {})[CHECK_PROPOSTA[+el.dataset.item]] = el.checked; atualizar(); },
