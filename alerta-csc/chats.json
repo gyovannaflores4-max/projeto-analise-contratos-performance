@@ -1,6 +1,6 @@
 {
  "fonte": "e-compras.AM (robô alerta-csc)",
- "atualizado_em": "2026-11-05T18:21:57+00:00",
+ "atualizado_em": "2026-11-06T18:30:24+00:00",
  "pregoes": {
   "255223": {
    "edital": "PE 328/26",
@@ -2979,15 +2979,15 @@
   },
   "256855": {
    "edital": "DLE 061/26",
-   "status": "Em Negociação",
+   "status": "Aguardando envio ao CSC",
    "objeto": "SERV MEDICINA URGÊNCIA E EMERGÊNCIA-FCEC",
    "disputa": {
-    "situacao": "Em Negociação",
+    "situacao": "Aguardando envio ao CSC",
     "lotes": [
      {
       "numero": "1",
       "nome": "Lote 1",
-      "situacao": "Encerrado",
+      "situacao": "Encerrado com Vencedor",
       "participantes": [],
       "semLances": false
      }
@@ -2995,6 +2995,46 @@
    },
    "link": "https://www.e-compras.am.gov.br/publico/licitacoes_acompanhamento.asp?ident=256855",
    "mensagens": [
+    {
+     "hora": "06/11/2026 09:01:51",
+     "autor": "Sistema",
+     "texto": "Sessão do Chat Fechada"
+    },
+    {
+     "hora": "06/11/2026 09:01:30",
+     "autor": "Sistema",
+     "texto": "Declarado Vencedor para o Lote 1: Proponente 4."
+    },
+    {
+     "hora": "06/11/2026 09:01:17",
+     "autor": "Auxiliar",
+     "texto": "o proponente 4 será declarado vencedor do lote 1."
+    },
+    {
+     "hora": "06/11/2026 09:00:59",
+     "autor": "Auxiliar",
+     "texto": "Embora o lance ofertado para o Lote 1 esteja abaixo dos parâmetros estabelecidos no item 9.8.1 do Edital, o proponente 4 apresentou, em anexo à proposta, documentação comprobatória de sua exequibilidade, incluindo notas fiscais e cópias de contratos, demonstrando a compatibilidade do valor ofertado com os preços efetivamente praticados."
+    },
+    {
+     "hora": "06/11/2026 09:00:56",
+     "autor": "Proponente 6",
+     "texto": "Bom dia!"
+    },
+    {
+     "hora": "06/11/2026 09:00:50",
+     "autor": "Auxiliar",
+     "texto": "Após análise da documentação apresentada, verificou-se que o Proponente 4 atendeu às exigências de habilitação previstas no Edital e no Termo de Referência."
+    },
+    {
+     "hora": "06/11/2026 09:00:29",
+     "autor": "Auxiliar",
+     "texto": "bom dia"
+    },
+    {
+     "hora": "06/11/2026 09:00:15",
+     "autor": "Sistema",
+     "texto": "Sessão do Chat Aberta"
+    },
     {
      "hora": "05/11/2026 09:17:36",
      "autor": "Sistema",

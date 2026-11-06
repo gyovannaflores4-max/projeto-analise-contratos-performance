@@ -543,26 +543,34 @@
     },
     "256855": {
       "edital": "DLE 061/26",
-      "status": "Em Negociação",
+      "status": "Aguardando envio ao CSC",
       "posicao": "",
       "vistas": [
+        "03251a59589c",
         "03da850f815a",
         "0ffba2807c2b",
         "25456e88dc37",
         "2baff6602c0d",
         "331aa35aedb0",
+        "367a18da1515",
+        "44964427e92f",
         "45460505cadd",
+        "4cec21abab4f",
         "4f568b398985",
         "5121dda960f2",
         "548bdd9a2cb0",
+        "6d228eb1d20b",
+        "780194a42b79",
         "7c68a294e5bb",
+        "81170f7174f4",
         "a022665c0975",
         "a350e4919f9e",
         "b177475569dd",
         "bb0ecdae3ce1",
+        "d6c2e78dcd58",
         "fa30498398f6"
       ]
     }
   },
-  "atualizado_em": "2026-11-05T18:22:00+00:00"
+  "atualizado_em": "2026-11-06T18:30:27+00:00"
 }
