@@ -23,6 +23,9 @@
     },
     "api/concorrentes.js": {
       "maxDuration": 60
+    },
+    "api/contratos.js": {
+      "maxDuration": 60
     }
   }
 }

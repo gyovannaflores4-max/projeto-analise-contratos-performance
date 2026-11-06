@@ -699,3 +699,10 @@ table.tabela.res-tabela{min-width:720px}
 .grade-form .campo input{width:100%}
 @media (max-width:860px){.grade-form{grid-template-columns:1fr}}
 .gar .susp-obj{margin:8px 0}
+
+/* Contratos */
+.ctr-barra{display:block;height:5px;border-radius:99px;background:var(--surface-2);margin-top:6px;overflow:hidden;max-width:120px}
+.ctr-barra i{display:block;height:100%;background:var(--brand);border-radius:99px}
+.btn-icone{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);cursor:pointer;margin-right:4px}
+.btn-icone:hover{background:var(--surface-2);color:var(--ink)}
+.btn-icone .i{width:16px;height:16px}
