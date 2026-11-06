@@ -1513,6 +1513,9 @@
   const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
   const cnpjsGrupo = () => [...new Set([S.empresa.cnpj].concat(String(S.empresa.grupo || "").match(/\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}/g) || [])
     .map(x => String(x || "").replace(/\D/g, "")).filter(x => x.length === 14))];
+  // Nomes para achar os contratos no PNCP: apelido (ou nome) da empresa e nomes do grupo, sem o CNPJ
+  const nomesGrupo = () => [...new Set([S.empresa.apelido || S.empresa.nome].concat(String(S.empresa.grupo || "").split(/\n|;/))
+    .map(x => String(x || "").replace(/\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}/g, "").replace(/[()\-–:]+\s*$/, "").trim()).filter(x => x.length >= 3))].slice(0, 4);
   const resCache = () => (S.resultadosPncp = S.resultadosPncp || {});
   // Ano do processo: o do resultado (homologação), senão o da sessão
   const dataDoProcesso = e => String((e.resultado && e.resultado.data) || e.sessao || e.criadoEm || "");
@@ -1584,7 +1587,7 @@
     if (ui.lendoRes || (!forcar && c && Date.now() - new Date(c.tentadoEm || c.consultadoEm || 0).getTime() < espera)) return;
     ui.lendoRes = true; if (rotaAtual() === "resultados") renderSeLivre();
     try {
-      const d = await api("/api/resultados?cnpj=" + cnpjs.join(",") + "&ano=" + ano, 70000);
+      const d = await api("/api/resultados?cnpj=" + cnpjs.join(",") + "&ano=" + ano + "&nome=" + encodeURIComponent(nomesGrupo().join(",")), 90000);
       resCache()[ano] = { consultadoEm: d.consultadoEm, tentadoEm: U.agoraISO(), processos: d.processos, erro: "" };
       const mud = incorporarGanhos(d.processos);
       const novos = mud.filter(m => m.tipo !== "substituido"), subst = mud.filter(m => m.tipo === "substituido");
@@ -1685,7 +1688,7 @@
       (lista.length ? '<div class="tabela-wrap"><table class="tabela res-tabela"><thead><tr><th>Edital</th><th>Órgão e objeto</th><th>Portal</th><th>Resultado</th><th style="text-align:right">Valor</th></tr></thead><tbody>' + lista.map(linha).join("") + "</tbody></table></div>" : vazio("editais", "Nenhum processo em " + ano + ".")) + "</section>" +
       '<section class="card"><div class="card-h"><h2>Ganhos homologados no PNCP</h2><span class="muted">' + U.plural(pncp.length, "processo", "processos") + " · " + U.moedaCurta(pncp.reduce((s, p) => s + (p.valorGanho || 0), 0)) + "</span></div>" +
       (pncp.length ? '<div class="res-ganhos">' + pncp.map(ganhoPncp).join("") + "</div>" : vazio("check", ui.lendoRes ? "Buscando…" : "Nenhum ganho homologado no PNCP em " + ano + " ainda.")) +
-      '<p class="nota">Fonte: dados abertos do Compras.gov.br e PNCP (resultados por CNPJ do fornecedor). Processos do e-compras.AM e de portais fora do PNCP seguem pelo ranking da disputa. Para incluir outras empresas do grupo, coloque o CNPJ junto do nome em Ajustes → Empresa → Empresas do grupo.</p></section>';
+      '<p class="nota">Fonte: dados abertos do Compras.gov.br (resultados por CNPJ do fornecedor) e contratos do PNCP com o nome da empresa, que trazem também filiais e compras de portais estaduais e municipais que os dados abertos não mostram. Processos do e-compras.AM e de portais fora do PNCP seguem pelo ranking da disputa. Para incluir outras empresas do grupo, coloque o CNPJ junto do nome em Ajustes → Empresa → Empresas do grupo.</p></section>';
   }
   function exportarResultados() {
     const ano = String(ui.resAno || new Date().getFullYear()), d = dadosAno(ano);
