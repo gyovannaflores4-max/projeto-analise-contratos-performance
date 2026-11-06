@@ -1,6 +1,6 @@
 {
  "fonte": "e-compras.AM (robô alerta-csc)",
- "atualizado_em": "2026-11-06T18:30:24+00:00",
+ "atualizado_em": "2026-11-06T23:29:18+00:00",
  "pregoes": {
   "255223": {
    "edital": "PE 328/26",
@@ -2979,10 +2979,10 @@
   },
   "256855": {
    "edital": "DLE 061/26",
-   "status": "Aguardando envio ao CSC",
+   "status": "Aguardando aprovação CSC",
    "objeto": "SERV MEDICINA URGÊNCIA E EMERGÊNCIA-FCEC",
    "disputa": {
-    "situacao": "Aguardando envio ao CSC",
+    "situacao": "Aguardando aprovação CSC",
     "lotes": [
      {
       "numero": "1",
@@ -2995,6 +2995,11 @@
    },
    "link": "https://www.e-compras.am.gov.br/publico/licitacoes_acompanhamento.asp?ident=256855",
    "mensagens": [
+    {
+     "hora": "06/11/2026 14:47:26",
+     "autor": "Sistema",
+     "texto": "Licitação enviada para o CSC"
+    },
     {
      "hora": "06/11/2026 09:01:51",
      "autor": "Sistema",

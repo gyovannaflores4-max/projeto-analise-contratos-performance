@@ -543,7 +543,7 @@
     },
     "256855": {
       "edital": "DLE 061/26",
-      "status": "Aguardando envio ao CSC",
+      "status": "Aguardando aprovação CSC",
       "posicao": "",
       "vistas": [
         "03251a59589c",
@@ -568,9 +568,10 @@
         "b177475569dd",
         "bb0ecdae3ce1",
         "d6c2e78dcd58",
+        "db0a80873b2c",
         "fa30498398f6"
       ]
     }
   },
-  "atualizado_em": "2026-11-06T18:30:27+00:00"
+  "atualizado_em": "2026-11-06T23:29:21+00:00"
 }
