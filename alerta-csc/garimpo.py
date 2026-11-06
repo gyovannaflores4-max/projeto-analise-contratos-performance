@@ -40,6 +40,7 @@ EXCLUIR_PADRAO = ["aquisicao", "fornecimento de", "medicamento", "material", "ma
                   "manutencao", "alimentacao", "combustive", "veiculo", "locacao de", "obra", "reforma", "medico do trabalho",
                   "exames laboratoriais", "gases medicinais", "uniforme", "limpeza"]
 NOTA_MINIMA = 4
+FALHAS = []  # páginas que o PNCP não devolveu
 
 
 def sem_acento(s):
@@ -75,15 +76,24 @@ def nota(objeto, p, orgaos_conhecidos=(), cnpj=""):
 
 
 def ler_pagina(uf, mod, pagina, ate):
+    """Uma página da consulta. O PNCP responde 429 quando chegam muitas consultas: espera e tenta de novo."""
     url = f"{PNCP}?dataFinal={ate}&codigoModalidadeContratacao={mod}&uf={uf}&pagina={pagina}&tamanhoPagina=50"
     req = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": USER_AGENT})
-    for tentativa in range(3):
+    for tentativa in range(6):
         try:
             with urllib.request.urlopen(req, timeout=90) as r:
                 return json.loads(r.read() or b"{}") if r.status != 204 else {}
-        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as erro:
-            if tentativa == 2:
+        except urllib.error.HTTPError as erro:
+            espera = int(erro.headers.get("Retry-After") or 0) if erro.code == 429 else 0
+            if tentativa == 5 or erro.code not in (429, 500, 502, 503, 504):
                 log(f"Garimpo: {uf}/{mod} página {pagina}: {erro}")
+                FALHAS.append(f"{uf}/{mod}/{pagina}")
+                return None
+            time.sleep(max(espera, 10 * (tentativa + 1)))
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as erro:
+            if tentativa == 5:
+                log(f"Garimpo: {uf}/{mod} página {pagina}: {erro}")
+                FALHAS.append(f"{uf}/{mod}/{pagina}")
                 return None
             time.sleep(5 * (tentativa + 1))
 
@@ -91,7 +101,7 @@ def ler_pagina(uf, mod, pagina, ate):
 def varrer(p, ate):
     """Todas as contratações abertas das UFs e modalidades do perfil (páginas em paralelo)."""
     primeiras = {}
-    with ThreadPoolExecutor(6) as ex:
+    with ThreadPoolExecutor(2) as ex:  # poucas consultas juntas: o PNCP bloqueia (429) acima disso
         for (uf, mod), d in zip([(u, m) for u in p["ufs"] for m in p["modalidades"]],
                                 ex.map(lambda um: ler_pagina(um[0], um[1], 1, ate), [(u, m) for u in p["ufs"] for m in p["modalidades"]])):
             primeiras[(uf, mod)] = d or {}
@@ -149,6 +159,8 @@ def main():
             bons.append(item(mod, c, n, achados))
     bons.sort(key=lambda x: (-x["nota"], x["dados"]["encerramento"]))
     log(f"Garimpo: {len(vistos)} contratações abertas lidas, {len(bons)} com o perfil.")
+    if FALHAS:
+        log(f"Garimpo: {len(FALHAS)} página(s) não vieram do PNCP: {', '.join(FALHAS[:20])}")
     novos = gravar(chave, bons[:1500])
     if novos is None:
         return log("Garimpo: a chave do robô não foi aceita para gravar.")
