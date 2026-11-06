@@ -217,12 +217,13 @@
         titulo: (s.dias < 0 ? "Documento vencido: " : "Renovar documento: ") + d.nome + (d.empresa ? " (" + empresaCurta(d.empresa) + ")" : ""),
         detalhe: s.rotulo + (afeta ? " · antes da sessão do " + afeta.numero : ""), rota: "documentos", ref: d.id });
     });
+    // Cadastro e plano dos portais: só informativo (não entra em prioridades, alertas críticos nem resumo)
     S.portais.forEach(p => {
       [["validadeCadastro", "Cadastro"], ["validadePlano", "Plano/mensalidade"]].forEach(([campo, rot]) => {
         const s = situacaoPortal(p[campo]);
         if (s.cls !== "crit" && s.cls !== "warn") return;
         add({ id: "portal:" + p.id + ":" + campo + ":" + p[campo], tipo: "portal", icone: "portais", quando: p[campo],
-          nivel: s.dias < 0 || s.dias <= 7 ? "critico" : "atencao", titulo: rot + " no " + p.nome + (p.empresa ? " (" + empresaCurta(p.empresa) + ")" : "") + (s.dias < 0 ? " vencido" : " vencendo"), detalhe: s.rotulo + (p.responsavel ? " · responsável: " + p.responsavel : ""), rota: "portais", ref: p.id });
+          nivel: "info", titulo: rot + " no " + p.nome + (p.empresa ? " (" + empresaCurta(p.empresa) + ")" : "") + (s.dias < 0 ? " vencido" : " vencendo"), detalhe: s.rotulo + (p.responsavel ? " · responsável: " + p.responsavel : ""), rota: "portais", ref: p.id });
       });
     });
 
@@ -2355,7 +2356,7 @@
       chats: S.chats.reduce((s, c) => s + naoLidas(c).length, 0),
       recursos: al.filter(a => a.tipo === "recurso" && a.nivel !== "info").length,
       documentos: docsAtivos().filter(d => situacaoDoc(d).cls === "crit").length,
-      portais: S.portais.filter(p => situacaoPortal(p.validadeCadastro).cls === "crit" || situacaoPortal(p.validadePlano).cls === "crit").length,
+      portais: 0, // cadastro de portal não é prioridade
       alertas: al.filter(a => a.nivel === "critico").length
     };
     Object.keys(cont).forEach(k => { const b = $('[data-cont="' + k + '"]'); if (b) { b.textContent = cont[k]; b.hidden = !cont[k]; } });

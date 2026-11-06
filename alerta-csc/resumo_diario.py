@@ -292,7 +292,7 @@ def montar(S):
     docs_omitidos = max(0, len(proximos) - 10)
     secoes.append(("Documentos vencendo", urgentes + proximos[:10]))
 
-    # Portais (cadastro e plano)
+    # Portais (cadastro e plano): só informativo, a equipe não trata como prioridade
     dias_portal = int(aj.get("diasPortal") or 30)
     ports = []
     for p in S.get("portais") or []:
@@ -302,9 +302,8 @@ def montar(S):
                 continue
             n = (d - H).days
             if -30 <= n <= dias_portal:
-                ports.append((d, {"nivel": "crit" if n <= 7 else "warn", "titulo": f"{rot} · {p.get('nome', '')}" + (f" ({p['empresa']})" if p.get("empresa") else ""),
+                ports.append((d, {"nivel": "info", "titulo": f"{rot} · {p.get('nome', '')}" + (f" ({p['empresa']})" if p.get("empresa") else ""),
                                   "quando": ("Vencido em " + data_br(d)) if n < 0 else f"Vence {data_br(d)} · {contagem(d)}", "detalhe": p.get("cadastro") or ""}))
-    secoes.append(("Portais vencendo", [x for _, x in sorted(ports, key=lambda t: t[0])]))
 
     # Chats: mensagens das últimas 24 horas
     agora = datetime.now(BRASILIA).replace(tzinfo=None)
@@ -326,6 +325,7 @@ def montar(S):
                                          "quando": f"Última às {novas[-1][0]:%H:%M} ({ult.get('autor') or 'sistema'})",
                                          "detalhe": texto[:220] + ("…" if len(texto) > 220 else "")}))
     secoes.append(("Chats dos pregões (últimas 24 h)", [x for _, x in sorted(chats, key=lambda t: t[0], reverse=True)]))
+    secoes.append(("Portais vencendo (informativo)", [x for _, x in sorted(ports, key=lambda t: t[0])]))
 
     return {"secoes": secoes, "vencidos_antigos": vencidos_antigos, "docs_omitidos": docs_omitidos, "dias_doc": maior, "empresa": (S.get("empresa") or {}).get("nome") or ""}
 
