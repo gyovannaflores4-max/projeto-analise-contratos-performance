@@ -1,23 +1,19 @@
 {
-  "ultima_leitura": "2026-11-07T23:57:29+00:00",
+  "ultima_leitura": "2026-11-08T05:21:09+00:00",
   "pregoes": {
     "susp-macae-82": {
       "situacao": "Suspensa",
       "novaData": null,
-      "docs": [
-        "SERVICOS DE TERAPIAS RENAIS.pdf|2026-10-08T16:36"
-      ],
+      "docs": [],
       "parecidos": []
     },
     "susp-santacasa-15": {
       "situacao": "Divulgada no PNCP",
       "novaData": null,
-      "docs": [
-        "EDITAL P.E SRP 15.2026 - UTI MATERNO E NEO.pdf|2026-10-14T10:58",
-        "ANEXO I - TERMO DE REFERENCIA.pdf|2026-10-14T10:59",
-        "ANEXO VII - MINUTA CONTRATUAL.pdf|2026-10-14T10:59"
-      ],
-      "parecidos": []
+      "docs": [],
+      "parecidos": [
+        "https://pncp.gov.br/app/editais/04929345000185/2026/228"
+      ]
     },
     "susp-inova-100": {
       "situacao": "Suspenso - Antes da Abertura",
@@ -38,17 +34,13 @@
     "susp-sesma-12": {
       "situacao": "Suspensa",
       "novaData": null,
-      "docs": [
-        "Edital PE SRP n 12-2026 - Serv. Dialise Aguda - SESMA.zip|2026-09-23T08:11"
-      ],
+      "docs": [],
       "parecidos": []
     },
     "susp-mariogatti-82": {
       "situacao": "Suspensa",
       "novaData": null,
-      "docs": [
-        "PE901882026 - GOV 82.pdf|2026-10-08T09:36"
-      ],
+      "docs": [],
       "parecidos": []
     }
   }
