@@ -1,5 +1,5 @@
 {
-  "ultima_leitura": "2026-11-08T05:21:09+00:00",
+  "ultima_leitura": "2026-11-08T12:07:05+00:00",
   "pregoes": {
     "susp-macae-82": {
       "situacao": "Suspensa",
@@ -10,7 +10,11 @@
     "susp-santacasa-15": {
       "situacao": "Divulgada no PNCP",
       "novaData": null,
-      "docs": [],
+      "docs": [
+        "EDITAL P.E SRP 15.2026 - UTI MATERNO E NEO.pdf|2026-10-14T10:58",
+        "ANEXO I - TERMO DE REFERENCIA.pdf|2026-10-14T10:59",
+        "ANEXO VII - MINUTA CONTRATUAL.pdf|2026-10-14T10:59"
+      ],
       "parecidos": [
         "https://pncp.gov.br/app/editais/04929345000185/2026/228"
       ]
