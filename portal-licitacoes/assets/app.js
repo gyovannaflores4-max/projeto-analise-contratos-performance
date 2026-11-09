@@ -2037,7 +2037,7 @@
       const pct = tot ? Math.min(100, Math.max(0, 100 * (Date.now() - new Date(x.inicio)) / 86400000 / tot)) : null;
       const prox = marcosContrato(x).find(m => m.dias >= 0);
       const e = S.editais.find(ed => ed.pncpId && ed.pncpId === x.compra);
-      return '<tr><td class="forte">' + h(x.numero) + (e ? '<span class="sub"><a href="#editais" data-acao="ir" data-rota="editais" data-ref="' + e.id + '">' + h(e.numero) + "</a></span>" : "") +
+      return '<tr class="clicavel" data-acao="abrirContrato" data-id="' + h(x.id) + '" tabindex="0"><td class="forte">' + h(x.numero) + (e ? '<span class="sub"><a href="#editais" data-acao="ir" data-rota="editais" data-ref="' + e.id + '">' + h(e.numero) + "</a></span>" : "") +
         ((x.termos || []).length ? '<span class="sub" title="' + h(x.termos.map(t => t.numero + " · " + t.tipo + " · " + U.fmtData(t.assinatura) + " · " + t.objeto).join("\n")) + '">' + U.plural(x.termos.length, "termo", "termos") + (x.ultimoReajuste ? " · reajuste " + dataCurta(x.ultimoReajuste) : "") + "</span>" : "") +
         (x.rescindido ? '<span class="sub" style="color:var(--crit)">rescindido</span>' : "") + "</td>" +
         "<td>" + h(U.corta(x.orgao, 60)) + (x.uf ? ' <span class="muted">(' + h(x.uf) + ")</span>" : "") + '<span class="sub">' + h(U.corta(x.objeto, 80)) + "</span></td>" +
@@ -2045,7 +2045,7 @@
         '<td class="num" style="text-align:right">' + U.moeda(x.valorGlobal) + (x.valorParcela >= 100 && x.valorParcela < x.valorGlobal ? '<span class="sub">' + U.moeda(x.valorParcela) + "/mês</span>" : "") + "</td>" +
         "<td>" + (prox ? '<span class="pill ' + (prox.dias <= 30 ? "crit" : prox.dias <= ALERTA_MARCO[prox.tipo] ? "warn" : "neutral") + ' sem-ponto" title="' + h(prox.rot + " em " + U.fmtData(prox.data)) + '">' + ({ prorrogacao: "Vigência", reajuste: "Reajuste", garantia: "Garantia" }[prox.tipo]) + "</span>" + '<span class="sub">em ' + U.plural(prox.dias, "dia", "dias") + "</span>" : "—") +
         (inf.gestor ? '<span class="sub">Gestor: ' + h(inf.gestor) + "</span>" : "") + "</td>" +
-        '<td style="white-space:nowrap"><button class="btn-icone" data-acao="editarContrato" data-id="' + h(x.id) + '" title="Controle do contrato (reajuste, garantia, gestor)" aria-label="Controle do contrato">' + ic("editar") + '</button><a class="btn-icone" href="' + h(x.linkPncp) + '" target="_blank" rel="noopener" title="Ver no PNCP" aria-label="Ver no PNCP">' + ic("link") + "</a></td></tr>";
+        '<td style="white-space:nowrap"><button class="btn-icone" data-acao="editarContrato" data-id="' + h(x.id) + '" title="Controle do contrato (reajuste, garantia, gestor)" aria-label="Controle do contrato">' + ic("editar") + '</button><a class="btn-icone" data-acao="externo" href="' + h(x.linkPncp) + '" target="_blank" rel="noopener" title="Ver no PNCP" aria-label="Ver no PNCP">' + ic("link") + "</a></td></tr>";
     };
     return '<div class="cab"><div><span class="eyebrow">Operação</span><h1>Contratos</h1><p>Contratos da ' + h(apelido()) + ' (matriz e filiais) publicados no PNCP, com os prazos de prorrogação, reajuste e garantia.</p></div>' +
       '<div class="cab-acoes"><button class="btn primario" data-acao="buscarContratos"' + (ui.lendoCtr ? " disabled" : "") + ">" + ic("atualizar") + (ui.lendoCtr ? "Buscando…" : "Buscar no PNCP") + "</button></div></div>" +
@@ -2061,6 +2061,25 @@
         : vazio("documentos", ui.lendoCtr ? "Buscando…" : "Nenhum contrato vigente encontrado no PNCP.")) + "</section>" +
       (enc.length ? '<section class="card"><div class="card-h"><h2>Encerrados nos últimos 6 meses</h2></div><div class="tabela-wrap"><table class="tabela res-tabela"><thead><tr><th>Contrato</th><th>Órgão e objeto</th><th>Vigência</th><th style="text-align:right">Valor global</th><th>Próximo prazo</th><th></th></tr></thead><tbody>' + enc.map(linha).join("") + "</tbody></table></div></section>" : "") +
       '<p class="nota">Fonte: contratos publicados no PNCP com o nome da empresa e CNPJ da mesma raiz (matriz e filiais). A data-base do reajuste, quando não informada, é estimada pela assinatura; confirme no contrato (o índice e a data-base costumam estar na cláusula de reajuste).</p>';
+  }
+  // Gaveta com o contrato: dados, prazos, termos aditivos e controle da equipe
+  function abrirContrato(id) {
+    const x = (ctrCache().lista || []).find(c => c.id === id);
+    if (!x) { toast("Contrato não encontrado", "Clique em Buscar no PNCP para atualizar a lista.", "crit"); return; }
+    const inf = ctrInfo(id), e = S.editais.find(ed => ed.pncpId && ed.pncpId === x.compra);
+    const marcos = marcosContrato(x);
+    const corpo = '<div class="det-topo"><div class="chips"><span class="pill ' + (x.vigente ? "ok" : "neutral") + '">' + (x.rescindido ? "Rescindido" : x.vigente ? "Vigente" : "Encerrado") + "</span>" + (x.uf ? '<span class="pill neutral sem-ponto">' + h(x.uf) + "</span>" : "") + "</div>" +
+      '<h3 style="font-size:18px">' + h(x.unidade || x.orgao) + "</h3>" + '<span class="org">' + h([x.orgao !== x.unidade ? x.orgao : "", x.municipio, x.processo ? "Processo " + x.processo : ""].filter(Boolean).join(" · ")) + "</span>" +
+      (x.objeto ? "<p>" + h(x.objeto) + "</p>" : "") + "</div>" +
+      '<dl class="datas" style="margin-top:14px"><div><dt>Assinatura</dt><dd>' + U.fmtData(x.assinatura) + "</dd></div><div><dt>Vigência</dt><dd>" + U.fmtData(x.inicio) + " a " + U.fmtData(x.fim) + "</dd></div>" +
+      "<div><dt>Valor global</dt><dd>" + U.moeda(x.valorGlobal) + "</dd></div>" + (x.valorParcela >= 100 && x.valorParcela < x.valorGlobal ? "<div><dt>Parcela mensal</dt><dd>" + U.moeda(x.valorParcela) + "</dd></div>" : "") +
+      "<div><dt>Último reajuste</dt><dd>" + (x.ultimoReajuste ? U.fmtData(x.ultimoReajuste) : "—") + "</dd></div><div><dt>Gestor no órgão</dt><dd>" + h(inf.gestor || "—") + "</dd></div></dl>" +
+      '<div class="bloco"><h3>Próximos prazos</h3>' + (marcos.length ? '<ul class="hab-lista">' + marcos.map(m => '<li><span class="pill ' + (m.dias < 0 ? "neutral" : m.dias <= 30 ? "crit" : m.dias <= ALERTA_MARCO[m.tipo] ? "warn" : "ok") + '">' + h(m.rot) + "</span><div><b>" + U.fmtData(m.data) + (m.dias >= 0 ? " · em " + U.plural(m.dias, "dia", "dias") : "") + '</b><small class="muted">' + h(m.acao) + "</small></div></li>").join("") + "</ul>" : '<p class="muted">Sem prazos.</p>') + "</div>" +
+      '<div class="bloco"><h3>Termos do contrato no PNCP</h3>' + ((x.termos || []).length ? '<ul class="hist">' + x.termos.slice().reverse().map(t => "<li><time>" + U.fmtData(t.assinatura) + "</time><span><b>" + h(t.numero + " · " + t.tipo) + "</b> " + h(U.corta(t.objeto, 220)) + (t.fim ? " · vigência até " + U.fmtData(t.fim) : "") + "</span></li>").join("") + "</ul>" : '<p class="muted">Nenhum termo aditivo publicado.</p>') + "</div>" +
+      (inf.indice || inf.dataBase || inf.garantiaValor || inf.obs ? '<div class="bloco"><h3>Controle da equipe</h3><p class="muted">' + h([inf.dataBase ? "Data-base " + U.fmtData(inf.dataBase) : "", inf.indice ? "Índice " + inf.indice : "", inf.garantiaValor ? "Garantia " + U.moeda(inf.garantiaValor) + (inf.garantiaVence ? " até " + U.fmtData(inf.garantiaVence) : "") : "", inf.obs || ""].filter(Boolean).join(" · ")) + "</p></div>" : "");
+    abrirModal({ lateral: true, titulo: "Contrato " + h(x.numero), corpo,
+      rodape: '<a class="btn ghost" href="' + h(x.linkPncp) + '" target="_blank" rel="noopener">' + ic("link") + "Ver no PNCP</a>" + (e ? '<button class="btn ghost" data-acao="ir" data-rota="editais" data-ref="' + e.id + '">' + ic("editais") + h(e.numero) + "</button>" : "") +
+        '<span style="flex:1"></span><button class="btn primario" data-acao="editarContrato" data-id="' + h(x.id) + '">' + ic("editar") + "Controle</button>" });
   }
   function formContrato(id) {
     const x = (ctrCache().lista || []).find(c => c.id === id); if (!x) return;
@@ -2739,6 +2758,7 @@
     if (rota === "chats" && ref) { ui.chatSel = ref; ui.chatFiltro = "todas"; }
     if ((rota === "editais" || rota === "propostas") && ref && edital(ref)) ui.abrirApos = ref;
     if (rota === "precos" && ref && edital(ref)) { ui.precoSel = ref; ui.precoLance = ""; }
+    if (rota === "contratos" && ref) setTimeout(() => abrirContrato(ref), 60); // o Abrir do alerta mostra o contrato
     if (rota === "recursos" && ref && ref.startsWith("novo:")) { setTimeout(() => formRecurso(null, ref.slice(5)), 50); }
     if (location.hash === "#" + rota) render(); else location.hash = "#" + rota;
   }
@@ -2877,6 +2897,7 @@
     atualizarConcorrencia: () => verificarConcorrencia(true),
     buscarContratos: () => buscarContratos(true),
     editarContrato: d => formContrato(d.id),
+    abrirContrato: d => abrirContrato(d.id),
     recarregarGarimpo: () => { carregarGarimpo(true); toast("Recarregando o garimpo"); },
     garimpoTriagem: d => garimpoParaTriagem(d.id),
     garimpoDescartar: async d => {
