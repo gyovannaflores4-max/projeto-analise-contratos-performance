@@ -2008,12 +2008,19 @@
   // Próximos marcos de um contrato: fim da vigência (prorrogação), aniversário do reajuste, garantia
   function marcosContrato(c) {
     const inf = ctrInfo(c.id), out = [];
-    if (c.fim) { const n = U.diasAte(c.fim); out.push({ tipo: "prorrogacao", data: c.fim, dias: n, rot: n < 0 ? "Vigência encerrada" : "Fim da vigência", acao: "Negociar a prorrogação (aditivo) com o órgão" }); }
-    const base = inf.dataBase || c.assinatura || c.inicio;
+    const up = c.ultimaProrrogacao;
+    if (c.fim) {
+      const n = U.diasAte(c.fim), curta = up && up.meses && up.meses < 12;
+      out.push({ tipo: "prorrogacao", data: c.fim, dias: n, rot: n < 0 ? "Vigência encerrada" : "Fim da vigência",
+        acao: curta ? "Prorrogação curta (" + up.meses + " meses): acompanhar a nova licitação do órgão" : "Negociar a prorrogação (aditivo) com o órgão" });
+    }
+    // Reajuste anual: conta do último reajuste feito em aditivo; sem ele, da data-base informada ou da assinatura
+    const base = inf.dataBase || c.ultimoReajuste || c.assinatura || c.inicio;
     if (base) {
-      const y = +U.hojeISO().slice(0, 4);
-      let ani = y + base.slice(4); if (ani <= U.hojeISO()) ani = (y + 1) + base.slice(4);
-      if (!c.fim || ani <= c.fim || U.diasAte(c.fim) > -1) out.push({ tipo: "reajuste", data: ani, dias: U.diasAte(ani), rot: "Aniversário do reajuste", acao: "Pedir reajuste/repactuação" + (inf.dataBase ? "" : " (data-base estimada pela assinatura)") });
+      let ani = base;
+      while (ani <= U.hojeISO()) ani = (+ani.slice(0, 4) + 1) + ani.slice(4);
+      if (!c.fim || ani <= c.fim) out.push({ tipo: "reajuste", data: ani, dias: U.diasAte(ani), rot: "Aniversário do reajuste",
+        acao: "Pedir reajuste/repactuação" + (inf.dataBase ? "" : c.ultimoReajuste ? " (um ano do último reajuste, de " + U.fmtData(c.ultimoReajuste) + ")" : " (data-base estimada pela assinatura)") });
     }
     if (inf.garantiaVence) out.push({ tipo: "garantia", data: inf.garantiaVence, dias: U.diasAte(inf.garantiaVence), rot: "Vencimento da garantia", acao: "Renovar a apólice/caução da garantia contratual" });
     return out.sort((a, b) => a.data.localeCompare(b.data));
@@ -2030,7 +2037,9 @@
       const pct = tot ? Math.min(100, Math.max(0, 100 * (Date.now() - new Date(x.inicio)) / 86400000 / tot)) : null;
       const prox = marcosContrato(x).find(m => m.dias >= 0);
       const e = S.editais.find(ed => ed.pncpId && ed.pncpId === x.compra);
-      return '<tr><td class="forte">' + h(x.numero) + (e ? '<span class="sub"><a href="#editais" data-acao="ir" data-rota="editais" data-ref="' + e.id + '">' + h(e.numero) + "</a></span>" : "") + "</td>" +
+      return '<tr><td class="forte">' + h(x.numero) + (e ? '<span class="sub"><a href="#editais" data-acao="ir" data-rota="editais" data-ref="' + e.id + '">' + h(e.numero) + "</a></span>" : "") +
+        ((x.termos || []).length ? '<span class="sub" title="' + h(x.termos.map(t => t.numero + " · " + t.tipo + " · " + U.fmtData(t.assinatura) + " · " + t.objeto).join("\n")) + '">' + U.plural(x.termos.length, "termo", "termos") + (x.ultimoReajuste ? " · reajuste " + dataCurta(x.ultimoReajuste) : "") + "</span>" : "") +
+        (x.rescindido ? '<span class="sub" style="color:var(--crit)">rescindido</span>' : "") + "</td>" +
         "<td>" + h(U.corta(x.orgao, 60)) + (x.uf ? ' <span class="muted">(' + h(x.uf) + ")</span>" : "") + '<span class="sub">' + h(U.corta(x.objeto, 80)) + "</span></td>" +
         '<td class="num" style="white-space:nowrap">' + dataCurta(x.inicio) + " → " + dataCurta(x.fim) + (pct !== null ? '<span class="ctr-barra"><i style="width:' + pct.toFixed(0) + '%"></i></span>' : "") + "</td>" +
         '<td class="num" style="text-align:right">' + U.moeda(x.valorGlobal) + (x.valorParcela >= 100 && x.valorParcela < x.valorGlobal ? '<span class="sub">' + U.moeda(x.valorParcela) + "/mês</span>" : "") + "</td>" +
