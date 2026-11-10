@@ -1,5 +1,5 @@
 {
-  "ultima_leitura": "2026-11-10T17:01:30+00:00",
+  "ultima_leitura": "2026-11-10T22:19:41+00:00",
   "pregoes": {
     "susp-macae-82": {
       "situacao": "Divulgada no PNCP",
@@ -61,7 +61,9 @@
       "docs": [
         "PE 301 2026 CONTR DOS MEDICOS SEI GEGOV AMPLA SRP.doc|2026-10-22T10:01"
       ],
-      "parecidos": []
+      "parecidos": [
+        "https://pncp.gov.br/app/editais/32512501000143/2026/437"
+      ]
     }
   }
 }
