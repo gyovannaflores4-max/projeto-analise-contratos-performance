@@ -1,16 +1,22 @@
 {
-  "ultima_leitura": "2026-11-10T09:01:11+00:00",
+  "ultima_leitura": "2026-11-10T17:01:30+00:00",
   "pregoes": {
     "susp-macae-82": {
       "situacao": "Divulgada no PNCP",
       "novaData": "2026-11-25T10:01",
-      "docs": [],
+      "docs": [
+        "ERRATA 001.pdf|2026-11-09T14:44"
+      ],
       "parecidos": []
     },
     "susp-santacasa-15": {
       "situacao": "Divulgada no PNCP",
       "novaData": null,
-      "docs": [],
+      "docs": [
+        "EDITAL P.E SRP 15.2026 - UTI MATERNO E NEO.pdf|2026-10-14T10:58",
+        "ANEXO I - TERMO DE REFERENCIA.pdf|2026-10-14T10:59",
+        "ANEXO VII - MINUTA CONTRATUAL.pdf|2026-10-14T10:59"
+      ],
       "parecidos": [
         "https://pncp.gov.br/app/editais/04929345000185/2026/228"
       ]
@@ -29,18 +35,32 @@
         "Pedidos de Impugnação - IMPUGNAÇÃO AO EDITAL DE PREGÃO ELETRÔNICO.pdf|",
         "Ata de Suspensões|"
       ],
-      "parecidos": []
+      "parecidos": [
+        "https://pncp.gov.br/app/editais/36901264000163/2026/755"
+      ]
     },
     "susp-sesma-12": {
       "situacao": "Suspensa",
       "novaData": null,
-      "docs": [],
+      "docs": [
+        "Edital PE SRP n 12-2026 - Serv. Dialise Aguda - SESMA.zip|2026-09-23T08:11"
+      ],
       "parecidos": []
     },
     "susp-mariogatti-82": {
       "situacao": "Suspensa",
       "novaData": null,
-      "docs": [],
+      "docs": [
+        "PE901882026 - GOV 82.pdf|2026-10-08T09:36"
+      ],
+      "parecidos": []
+    },
+    "mwas030nntt7l": {
+      "situacao": "Suspensa",
+      "novaData": "2026-11-12T09:00",
+      "docs": [
+        "PE 301 2026 CONTR DOS MEDICOS SEI GEGOV AMPLA SRP.doc|2026-10-22T10:01"
+      ],
       "parecidos": []
     }
   }
