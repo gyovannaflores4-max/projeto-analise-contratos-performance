@@ -585,6 +585,13 @@
     let dados = null, origem = "ao vivo";
     try {
       if (!url) throw new Error("sem endereço");
+      // Repositório privado: o link raw do GitHub não abre mais no navegador. A função /api/robo da
+      // Vercel lê o arquivo com um token de leitura. Tenta ela primeiro; se não der, segue para o link.
+      if (/raw\.githubusercontent\.com\/gyovannaflores4-max\//.test(url) || url === "/api/robo") {
+        try { const j = await api("/api/robo", 20000); if (j && j.pregoes) { dados = j; origem = "ao vivo"; } }
+        catch (e) { if (url === "/api/robo") throw e; }
+      }
+      if (dados) throw { pronto: true };
       // O repositório das ferramentas mudou de nome (projeto-analise-contratos-performance -> ferramentas-licitacoes).
       // Tenta primeiro o endereço novo e, se falhar, o que está salvo nos Ajustes.
       const ANTIGO = "/projeto-analise-contratos-performance/", NOVO = "/ferramentas-licitacoes/";
@@ -601,9 +608,11 @@
       if (!dados) throw new Error("O arquivo do robô respondeu com erro " + (r ? r.status : "") + ".");
       ui.roboErro = "";
     } catch (e) {
+      if (e && e.pronto) { ui.roboErro = ""; } else {
       ui.roboErro = e.name === "AbortError" ? "O GitHub demorou para responder." : e.message === "sem endereço" ? "" : "Não consegui ler o arquivo do robô neste endereço.";
       // Versão publicada no Claude: o navegador bloqueia acesso externo; usa a cópia embutida na publicação.
       if (window.ROBO_FOTO && !ui.fotoAplicada) { dados = window.ROBO_FOTO; origem = "cópia de " + U.fmtDataHora(U.isoDataHora(new Date(dados.atualizado_em))); ui.fotoAplicada = true; }
+      }
     }
     if (dados) {
       const novos = aplicarRobo(dados, origem);

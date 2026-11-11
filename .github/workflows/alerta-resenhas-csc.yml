@@ -2,7 +2,10 @@ name: Alerta de resenhas do CSC
 
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    # De 15 em 15 minutos, de segunda a sexta, das 7h às 18h45 (Brasília = UTC-3).
+    # Conta do GitHub grátis com repositório privado: 2.000 minutos/mês. Cada verificação leva ~1 min;
+    # a parte lenta (pregões suspensos) roda só de 2 em 2 horas. Total estimado: ~1.750 min/mês.
+    - cron: "*/15 10-21 * * 1-5"
   workflow_dispatch:
     inputs:
       teste:
@@ -88,8 +91,17 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: python -u alerta-csc/monitor_pncp.py
 
-      - name: Pregões suspensos (situação, nova data e republicação)
+      - name: Ver se é hora dos pregões suspensos (de 2 em 2 horas)
+        id: hora
         if: always()
+        run: |
+          H=$(date -u +%H); M=$(date -u +%M)
+          if [ "${{ github.event_name }}" != "schedule" ] || { [ $((10#$H % 2)) -eq 1 ] && [ $((10#$M)) -lt 15 ]; }; then
+            echo "suspensos=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Pregões suspensos (situação, nova data e republicação)
+        if: always() && steps.hora.outputs.suspensos == '1'
         timeout-minutes: 8
         continue-on-error: true
         env:
