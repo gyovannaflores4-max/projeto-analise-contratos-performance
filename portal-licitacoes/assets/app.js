@@ -1954,19 +1954,32 @@
         '<a class="btn peq ghost" href="' + h(d.linkPncp) + '" target="_blank" rel="noopener">' + ic("link") + "PNCP</a>" + (d.link ? '<a class="btn peq ghost" href="' + h(d.link) + '" target="_blank" rel="noopener">' + ic("link") + "Portal de origem</a>" : "") +
         '<button class="btn peq ghost" data-acao="garimpoDescartar" data-id="' + h(x.id) + '">' + ic("lixo") + "Descartar</button></div></article>";
     };
-    return '<div class="cab"><div><span class="eyebrow">Operação</span><h1>Garimpo de editais</h1><p>Todo dia de manhã o robô lê no PNCP as licitações com proposta aberta nas UFs do perfil e separa as que têm a ver com a equipe, com uma nota de aderência.</p></div>' +
+    return '<div class="cab"><div><span class="eyebrow">Operação</span><h1>Garimpo de editais</h1><p>Todo dia de madrugada o robô lê no PNCP as licitações com proposta aberta nas UFs do perfil e separa as que têm a ver com a equipe, com uma nota de aderência.</p></div>' +
       '<div class="cab-acoes"><button class="btn ghost" data-acao="recarregarGarimpo">' + ic("atualizar") + "Recarregar</button></div></div>" +
       '<section class="card"><div class="card-h"><h2>Perfil da busca</h2><span class="muted">o robô usa na próxima rodada</span></div><div class="grade-form">' +
-      '<div class="campo"><label for="gar-ufs">UFs</label><input id="gar-ufs" data-mudar="garimpoPerfil" data-campo="ufs" value="' + h(pf.ufs || "") + '" placeholder="AM, RJ, PA, RN, PR"><small>Vazio: as UFs dos editais cadastrados + AM e RJ.</small></div>' +
       '<div class="campo"><label for="gar-termos">Termos que interessam</label><input id="gar-termos" data-mudar="garimpoPerfil" data-campo="termos" value="' + h(pf.termos || "") + '" placeholder="serviços médicos, plantão, UTI, hemodiálise"><small>Vazio: serviços médicos, plantões, UTI, hemodiálise, anestesia, pediatria e afins.</small></div>' +
-      '<div class="campo"><label for="gar-excluir">Termos que tiram o edital</label><input id="gar-excluir" data-mudar="garimpoPerfil" data-campo="excluir" value="' + h(pf.excluir || "") + '" placeholder="aquisição, medicamentos, manutenção"><small>Vazio: compras de material, medicamentos, obras, manutenção…</small></div></div></section>' +
+      '<div class="campo"><label for="gar-excluir">Termos que tiram o edital</label><input id="gar-excluir" data-mudar="garimpoPerfil" data-campo="excluir" value="' + h(pf.excluir || "") + '" placeholder="aquisição, medicamentos, manutenção"><small>Vazio: compras de material, medicamentos, obras, manutenção…</small></div></div>' + ufsGarimpoHTML(pf) + "</section>" +
       '<div class="ferramentas"><label class="campo-busca"><span class="sr">Buscar</span>' + ic("busca") + '<input type="search" data-digitar="garBusca" value="' + h(f.busca) + '" placeholder="Órgão, objeto, cidade…"></label>' +
-      '<select data-mudar="garUf" aria-label="UF"><option value="">Todas as UFs</option>' + ufs.map(u => "<option" + (f.uf === u ? " selected" : "") + ">" + u + "</option>").join("") + "</select>" +
+      '<select data-mudar="garUf" aria-label="UF"><option value="">Todas as UFs</option>' + UFS_BR.map(([u]) => "<option" + (f.uf === u ? " selected" : "") + (ufs.includes(u) ? "" : ' class="sem-edital"') + ">" + u + "</option>").join("") + "</select>" +
       '<select data-mudar="garMin" aria-label="Aderência mínima">' + [[4, "Aderência 4+"], [6, "Aderência 6+"], [8, "Aderência 8+"]].map(([v, r]) => '<option value="' + v + '"' + (+f.min === v ? " selected" : "") + ">" + r + "</option>").join("") + "</select>" +
       '<span class="muted" style="font-size:13px">' + U.plural(lista.length, "edital", "editais") + (novos ? " · " + U.plural(novos, "novo", "novos") + " hoje" : "") + "</span></div>" +
       (g.erro ? '<div class="card">' + vazio("aviso", h(g.erro)) + "</div>" : !g.itens ? '<div class="card">' + vazio("relogio", "Carregando…") + "</div>" :
         lista.length ? '<div class="susp-lista" id="gar-lista">' + lista.slice(0, 80).map(card).join("") + "</div>" + (lista.length > 80 ? '<p class="nota">Mostrando os 80 mais aderentes. Use a busca ou os filtros para ver os outros.</p>' : "")
-          : '<div class="card">' + vazio("check", (g.itens.length ? "Nenhum edital com esses filtros." : "O robô ainda não rodou ou não achou nada com o perfil. Ele roda todo dia às 5h23.")) + "</div>");
+          : '<div class="card">' + vazio("check", (g.itens.length ? "Nenhum edital com esses filtros." : "O robô ainda não rodou ou não achou nada com o perfil. Ele roda todo dia de madrugada (começa às 3h23 e leva 1 a 2 horas para ler o Brasil inteiro).")) + "</div>");
+  }
+  // Estados do perfil do garimpo: sem escolha = Brasil inteiro
+  const UFS_BR = [["AC", "Norte"], ["AP", "Norte"], ["AM", "Norte"], ["PA", "Norte"], ["RO", "Norte"], ["RR", "Norte"], ["TO", "Norte"],
+    ["AL", "Nordeste"], ["BA", "Nordeste"], ["CE", "Nordeste"], ["MA", "Nordeste"], ["PB", "Nordeste"], ["PE", "Nordeste"], ["PI", "Nordeste"], ["RN", "Nordeste"], ["SE", "Nordeste"],
+    ["DF", "Centro-Oeste"], ["GO", "Centro-Oeste"], ["MT", "Centro-Oeste"], ["MS", "Centro-Oeste"],
+    ["ES", "Sudeste"], ["MG", "Sudeste"], ["RJ", "Sudeste"], ["SP", "Sudeste"], ["PR", "Sul"], ["RS", "Sul"], ["SC", "Sul"]];
+  const ufsEscolhidas = pf => { const l = String(pf.ufs || "").toUpperCase().split(/[^A-Z]+/).filter(u => UFS_BR.some(x => x[0] === u)); return l.length ? l : UFS_BR.map(x => x[0]); };
+  function ufsGarimpoHTML(pf) {
+    const sel = new Set(ufsEscolhidas(pf)), todas = sel.size === UFS_BR.length;
+    const regioes = [...new Set(UFS_BR.map(x => x[1]))];
+    return '<div class="gar-ufs"><div class="gar-ufs-h"><b>Estados</b><span class="muted">' + (todas ? "Brasil inteiro (27 estados)" : U.plural(sel.size, "estado marcado", "estados marcados")) + '</span><span style="flex:1"></span>' +
+      '<button class="link-btn" data-acao="garUfsTodas">Marcar todos</button><button class="link-btn" data-acao="garUfsLimpar">Desmarcar todos</button></div>' +
+      regioes.map(r => '<div class="gar-regiao"><span class="gar-regiao-nome">' + r + "</span>" + UFS_BR.filter(x => x[1] === r).map(([u]) =>
+        '<label class="gar-uf"><input type="checkbox" id="gar-uf-' + u + '" data-mudar="garUf1" data-uf="' + u + '"' + (sel.has(u) ? " checked" : "") + "><span>" + u + "</span></label>").join("") + "</div>").join("") + "</div>";
   }
   function garimpoParaTriagem(id) {
     const x = ((ui.garimpo || {}).itens || []).find(i => i.id === id); if (!x) return;
@@ -2898,6 +2911,8 @@
     buscarContratos: () => buscarContratos(true),
     editarContrato: d => formContrato(d.id),
     abrirContrato: d => abrirContrato(d.id),
+    garUfsTodas: () => { perfilGarimpo().ufs = ""; ui.garUfsVazio = false; salvar(); render(); toast("Brasil inteiro", "O robô vai ler os 27 estados na próxima rodada."); },
+    garUfsLimpar: () => { ui.garUfsVazio = true; render(); document.querySelectorAll('[data-mudar="garUf1"]').forEach(c => { c.checked = false; }); toast("Marque os estados que quer acompanhar"); },
     recarregarGarimpo: () => { carregarGarimpo(true); toast("Recarregando o garimpo"); },
     garimpoTriagem: d => garimpoParaTriagem(d.id),
     garimpoDescartar: async d => {
@@ -3047,8 +3062,16 @@
     },
     empresaHab: el => { const e = edital(el.dataset.id); e.empresaHab = el.value; atualizar(); },
     habOk: el => { const e = edital(el.dataset.id); (e.habOk = e.habOk || {})[el.dataset.chave] = el.checked; atualizar(); },
-    garimpoPerfil: el => { perfilGarimpo()[el.dataset.campo] = el.value.trim(); salvar(); toast("Perfil salvo", "O robô usa na próxima rodada (todo dia às 5h23)."); },
+    garimpoPerfil: el => { perfilGarimpo()[el.dataset.campo] = el.value.trim(); salvar(); toast("Perfil salvo", "O robô usa na próxima rodada (todo dia de madrugada)."); },
     garUf: el => { ui.fGar.uf = el.value; render(); },
+    garUf1: el => {
+      const sel = new Set(ufsEscolhidas(perfilGarimpo()));
+      if (ui.garUfsVazio) { sel.clear(); ui.garUfsVazio = false; }
+      if (el.checked) sel.add(el.dataset.uf); else sel.delete(el.dataset.uf);
+      if (!sel.size) { el.checked = true; toast("Marque pelo menos um estado"); return; }
+      perfilGarimpo().ufs = sel.size === UFS_BR.length ? "" : UFS_BR.map(x => x[0]).filter(u => sel.has(u)).join(", ");
+      salvar(); render();
+    },
     garMin: el => { ui.fGar.min = +el.value; render(); },
     checkGanho: el => { const e = edital(el.dataset.id); (e.posGanho = e.posGanho || {})[CHECK_GANHO[+el.dataset.item]] = el.checked; atualizar(); },
     resAno: el => { ui.resAno = el.value; render(); buscarResultados(el.value); },

@@ -2,8 +2,8 @@ name: Garimpo de editais (PNCP)
 
 on:
   schedule:
-    # Todo dia às 05h23 de Brasília, para a lista estar pronta no começo do expediente
-    - cron: "23 8 * * *"
+    # Todo dia às 03h23 de Brasília: o Brasil inteiro leva 1 a 2 horas no PNCP
+    - cron: "23 6 * * *"
   workflow_dispatch:
 
 permissions:
@@ -16,7 +16,7 @@ concurrency:
 jobs:
   garimpar:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v4
 

@@ -17,7 +17,8 @@ def confere(nome, ok):
 
 
 p = garimpo.perfil({"editais": [{"uf": "PR"}]})
-confere("perfil padrão junta UFs dos editais com AM e RJ", p["ufs"] == ["AM", "PR", "RJ"])
+confere("perfil sem UF escolhida busca os 27 estados", len(p["ufs"]) == 27)
+confere("perfil com UFs escolhidas usa só elas", garimpo.perfil({"ajustes": {"garimpo": {"ufs": "go, sp; XX"}}})["ufs"] == ["GO", "SP"])
 casos = [
     ("Prestação de serviço técnico especializado em atendimento médico pré-hospitalar, por meio de Central de Regulação Médica", True),
     ("Contratação de empresa para prestação de serviços de plantões médicos em UTI neonatal e pediátrica", True),
