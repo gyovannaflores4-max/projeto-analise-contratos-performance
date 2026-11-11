@@ -11,7 +11,7 @@ Site para buscar editais de serviços médicos com prazo aberto no PNCP. Qualque
 ## Como publicar na Vercel (gratuito)
 
 1. Entre em https://vercel.com e clique em **Sign Up → Continue with GitHub**.
-2. Clique em **Add New… → Project** e escolha o repositório `projeto-analise-contratos-performance`.
+2. Clique em **Add New… → Project** e escolha o repositório `ferramentas-licitacoes`.
 3. Em **Root Directory**, clique em **Edit** e escolha a pasta `radar-licitacoes`.
 4. Em **Framework Preset**, deixe **Other**. Não precisa preencher comando de build.
 5. Clique em **Deploy**. Em cerca de 1 minuto a Vercel mostra o endereço do site, algo como `radar-licitacoes.vercel.app`.

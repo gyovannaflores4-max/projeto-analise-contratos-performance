@@ -12,7 +12,7 @@
 // Segunda fonte: os dados abertos às vezes deixam de fora compras de portais estaduais e
 // municipais (ex.: a Fundação Saúde do RJ, no compras.rj) e só acham o CNPJ exato, sem as
 // filiais. Por isso o portal também procura no PNCP os CONTRATOS com o nome da empresa
-// (?nome=DIMPI), fica com os de fornecedor da mesma raiz de CNPJ (matriz e filiais) e lê o
+// (?nome=EMPRESA), fica com os de fornecedor da mesma raiz de CNPJ (matriz e filiais) e lê o
 // resultado de cada item direto na compra de origem.
 
 const { exigirLogin } = require("./_auth.js");
@@ -171,7 +171,7 @@ module.exports = async (req, res) => {
   const q = req.query || {};
   const cnpjs = [...new Set(String(q.cnpj || "").split(/[,;\s]+/).map(x => x.replace(/\D/g, "")).filter(x => x.length === 14))].slice(0, 6);
   const ano = Number(q.ano) || new Date().getFullYear();
-  // Nomes da empresa e do grupo para achar os contratos no PNCP (ex.: "DIMPI")
+  // Nomes da empresa e do grupo para achar os contratos no PNCP (ex.: "EMPRESA")
   const nomes = [...new Set(String(q.nome || "").split(/[,;\n]+/).map(x => x.replace(/[^\p{L}\p{N} &.-]/gu, " ").replace(/\s+/g, " ").trim()).filter(x => x.length >= 3))].slice(0, 4);
   if (!cnpjs.length) return res.status(400).json({ erro: "Informe o CNPJ da empresa em Ajustes → Empresa." });
   if (ano < 2021 || ano > 2100) return res.status(400).json({ erro: "Ano inválido." });

@@ -585,11 +585,20 @@
     let dados = null, origem = "ao vivo";
     try {
       if (!url) throw new Error("sem endereço");
-      const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 20000);
-      const r = await fetch(url + (url.includes("?") ? "&" : "?") + "t=" + Math.floor(Date.now() / 60000), { signal: ctrl.signal, cache: "no-store" });
-      clearTimeout(t);
-      if (!r.ok) throw new Error("O arquivo do robô respondeu com erro " + r.status + ".");
-      dados = await r.json();
+      // O repositório das ferramentas mudou de nome (projeto-analise-contratos-performance -> ferramentas-licitacoes).
+      // Tenta primeiro o endereço novo e, se falhar, o que está salvo nos Ajustes.
+      const ANTIGO = "/projeto-analise-contratos-performance/", NOVO = "/ferramentas-licitacoes/";
+      const enderecos = url.includes(ANTIGO) ? [url.replace(ANTIGO, NOVO), url] : [url];
+      let r = null;
+      for (const e of enderecos) {
+        const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 20000);
+        try { r = await fetch(e + (e.includes("?") ? "&" : "?") + "t=" + Math.floor(Date.now() / 60000), { signal: ctrl.signal, cache: "no-store" }); }
+        finally { clearTimeout(t); }
+        if (r.ok) { try { dados = await r.json(); } catch (_) { dados = null; } }
+        if (dados && dados.pregoes) break;
+        dados = null;
+      }
+      if (!dados) throw new Error("O arquivo do robô respondeu com erro " + (r ? r.status : "") + ".");
       ui.roboErro = "";
     } catch (e) {
       ui.roboErro = e.name === "AbortError" ? "O GitHub demorou para responder." : e.message === "sem endereço" ? "" : "Não consegui ler o arquivo do robô neste endereço.";
@@ -2428,7 +2437,7 @@
   }
 
   /* ---------- Portais ---------- */
-  // "DIMPI - FILIAL AM - 10.893.674/0007-01" -> "DIMPI - FILIAL AM" (tira só o CNPJ do fim)
+  // "EMPRESA - FILIAL AM - 00.000.000/0002-00" -> "EMPRESA - FILIAL AM" (tira só o CNPJ do fim)
   const empresaCurta = e => String(e || "").replace(/\s*[-–]\s*\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}\s*$/, "").trim() || "Sem empresa";
   function situacaoDoPortal(p) {
     const a = situacaoPortal(p.validadeCadastro), b = situacaoPortal(p.validadePlano);
@@ -2477,7 +2486,7 @@
   }
   const camposPortal = () => [
     { nome: "nome", rotulo: "Portal", req: true, ph: "Compras.gov.br (SICAF)" },
-    { nome: "empresa", rotulo: "Empresa / filial", ph: "DIMPI MATRIZ - 10.893.674/0001-16" },
+    { nome: "empresa", rotulo: "Empresa / filial", ph: "EMPRESA MATRIZ - 00.000.000/0001-00" },
     { nome: "usuario", rotulo: "Usuário / login", dica: "Não guarde senhas aqui." },
     { nome: "responsavel", rotulo: "Responsável pelo cadastro" },
     { nome: "validadeCadastro", rotulo: "Cadastro válido até", tipo: "date" },
@@ -2603,7 +2612,7 @@
 
   /* ---------- Ajustes ---------- */
   /* Resumo diário por e-mail: o robô do GitHub lê os dados com uma chave própria (só o hash fica no banco) */
-  const LINK_SEGREDO = "https://github.com/gyovannaflores4-max/projeto-analise-contratos-performance/settings/secrets/actions/new";
+  const LINK_SEGREDO = "https://github.com/gyovannaflores4-max/ferramentas-licitacoes/settings/secrets/actions/new";
   function resumoDiarioHTML() {
     const c = ui.chaveRobo;
     if (!c) { carregarChaveRobo(); }

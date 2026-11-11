@@ -15,7 +15,7 @@
       pontosFacultativos: true, feriadosLocais: "",
       apiBase: "", intervaloChat: 5, notificacoes: false, som: true,
       // Arquivo que o robô do GitHub (alerta-csc) atualiza com as mensagens dos chats
-      arquivoRobo: "https://raw.githubusercontent.com/gyovannaflores4-max/projeto-analise-contratos-performance/main/alerta-csc/chats.json"
+      arquivoRobo: "https://raw.githubusercontent.com/gyovannaflores4-max/ferramentas-licitacoes/main/alerta-csc/chats.json"
     },
     editais: [], recursos: [], documentos: [], portais: [], chats: [], suspensos: [],
     resolvidos: {}, atividade: []

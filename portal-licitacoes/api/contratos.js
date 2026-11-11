@@ -1,5 +1,5 @@
 // Função da Vercel: contratos da empresa (e filiais) publicados no PNCP.
-// GET /api/contratos?cnpj=10893674000116[,outro]&nome=DIMPI[,outro]
+// GET /api/contratos?cnpj=00000000000100[,outro]&nome=EMPRESA[,outro]
 // Procura no PNCP os contratos com o nome da empresa, fica com os de fornecedor da mesma raiz de
 // CNPJ (matriz e filiais) e, para os vigentes, lê o contrato (compra de origem e processo).
 
