@@ -543,8 +543,8 @@
     },
     "256855": {
       "edital": "DLE 061/26",
-      "status": "Aguardando aprovação CSC",
-      "posicao": "",
+      "status": "Aguardando Homologação",
+      "posicao": "Lote 1: 1º de 6, melhor lance, habilitada, vencedora",
       "vistas": [
         "03251a59589c",
         "03da850f815a",
@@ -552,6 +552,7 @@
         "25456e88dc37",
         "2baff6602c0d",
         "331aa35aedb0",
+        "352b92641f6a",
         "367a18da1515",
         "44964427e92f",
         "45460505cadd",
@@ -573,5 +574,5 @@
       ]
     }
   },
-  "atualizado_em": "2026-11-06T23:29:21+00:00"
+  "atualizado_em": "2026-11-11T21:34:49+00:00"
 }

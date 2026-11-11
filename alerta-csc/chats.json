@@ -1,6 +1,6 @@
 {
  "fonte": "e-compras.AM (robô alerta-csc)",
- "atualizado_em": "2026-11-06T23:29:18+00:00",
+ "atualizado_em": "2026-11-11T21:34:47+00:00",
  "pregoes": {
   "255223": {
    "edital": "PE 328/26",
@@ -2979,22 +2979,100 @@
   },
   "256855": {
    "edital": "DLE 061/26",
-   "status": "Aguardando aprovação CSC",
+   "status": "Aguardando Homologação",
    "objeto": "SERV MEDICINA URGÊNCIA E EMERGÊNCIA-FCEC",
    "disputa": {
-    "situacao": "Aguardando aprovação CSC",
+    "situacao": "Aguardando Homologação",
     "lotes": [
      {
       "numero": "1",
       "nome": "Lote 1",
       "situacao": "Encerrado com Vencedor",
-      "participantes": [],
+      "participantes": [
+       {
+        "codigo": "4",
+        "nome": "DIMPI GESTAO EM SAUDE LTDA",
+        "vencedor": true,
+        "exame1": false,
+        "exame2": true,
+        "valor": 1803665.0,
+        "adjudicado": true,
+        "melhor": true,
+        "negociado": null,
+        "habilitado": true
+       },
+       {
+        "codigo": "3",
+        "nome": "SOCIEDADE DE CLINICA MEDICA DO AMAZONAS LTDA",
+        "vencedor": false,
+        "exame1": false,
+        "exame2": true,
+        "valor": 2033987.5,
+        "adjudicado": false,
+        "melhor": false,
+        "negociado": null,
+        "habilitado": true
+       },
+       {
+        "codigo": "1",
+        "nome": "HELPMED SAUDE LTDA",
+        "vencedor": false,
+        "exame1": false,
+        "exame2": true,
+        "valor": 2089464.0,
+        "adjudicado": false,
+        "melhor": false,
+        "negociado": null,
+        "habilitado": true
+       },
+       {
+        "codigo": "5",
+        "nome": "ISAM INSTITUTO DE SAUDE DA AMAZONIA S/S LTDA",
+        "vencedor": false,
+        "exame1": false,
+        "exame2": true,
+        "valor": 2488750.0,
+        "adjudicado": false,
+        "melhor": false,
+        "negociado": null,
+        "habilitado": true
+       },
+       {
+        "codigo": "6",
+        "nome": "KELP - SERVICOS MEDICOS LTDA",
+        "vencedor": false,
+        "exame1": false,
+        "exame2": true,
+        "valor": 2543050.0,
+        "adjudicado": false,
+        "melhor": false,
+        "negociado": null,
+        "habilitado": true
+       },
+       {
+        "codigo": "2",
+        "nome": "ORTHOS MED SERVIÇOS DE SAUDE LTDA",
+        "vencedor": false,
+        "exame1": false,
+        "exame2": true,
+        "valor": 3529500.0,
+        "adjudicado": false,
+        "melhor": false,
+        "negociado": null,
+        "habilitado": true
+       }
+      ],
       "semLances": false
      }
     ]
    },
    "link": "https://www.e-compras.am.gov.br/publico/licitacoes_acompanhamento.asp?ident=256855",
    "mensagens": [
+    {
+     "hora": "11/11/2026 11:46:54",
+     "autor": "Sistema",
+     "texto": "CSC APROVOU COM RESSALVAS A DLE: CONFORME PARECER JURÍDICO."
+    },
     {
      "hora": "06/11/2026 14:47:26",
      "autor": "Sistema",
