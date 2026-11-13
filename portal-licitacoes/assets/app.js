@@ -1994,9 +1994,9 @@
         '<label class="gar-uf"><input type="checkbox" id="gar-uf-' + u + '" data-mudar="garUf1" data-uf="' + u + '"' + (sel.has(u) ? " checked" : "") + "><span>" + u + "</span></label>").join("") + "</div>").join("") + "</div>";
   }
   // Procurar agora, num estado: o portal lê o PNCP página por página (50 licitações cada) e mostra as boas
-  const MODS_GAR = [[6, "Pregão"], [12, "Credenciamento"], [8, "Dispensa"], [4, "Concorrência"], [7, "Pregão presencial"], [5, "Concorrência presencial"]];
+  const MODS_GAR = [[6, "Pregão"], [8, "Dispensa"], [4, "Concorrência"], [7, "Pregão presencial"], [5, "Concorrência presencial"]];
   function buscaAgoraHTML(pf) {
-    const b = ui.buscaGar || {}, f = ui.fBuscaGar || (ui.fBuscaGar = { uf: ufsEscolhidas(pf).length === UFS_BR.length ? "RJ" : ufsEscolhidas(pf)[0], mods: [6, 12, 8] });
+    const b = ui.buscaGar || {}, f = ui.fBuscaGar || (ui.fBuscaGar = { uf: ufsEscolhidas(pf).length === UFS_BR.length ? "RJ" : ufsEscolhidas(pf)[0], mods: [6, 8] });
     const pct = b.total ? Math.round(100 * b.feitas / b.total) : 0;
     return '<section class="card busca-gar"><div class="card-h"><h2>Procurar editais agora</h2><span class="muted">sem esperar o robô da madrugada</span></div>' +
       '<div class="busca-gar-linha"><div class="campo"><label for="busca-gar-uf">Estado</label><select id="busca-gar-uf" data-mudar="buscaGarUf"' + (b.rodando ? " disabled" : "") + ">" +

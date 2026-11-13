@@ -18,7 +18,7 @@ def confere(nome, ok):
 
 p = garimpo.perfil({"editais": [{"uf": "PR"}]})
 confere("perfil sem UF escolhida busca os 27 estados", len(p["ufs"]) == 27)
-confere("credenciamento entra nas modalidades", 12 in p["modalidades"])
+confere("credenciamento não entra nas modalidades", 12 not in p["modalidades"])
 confere("hemodiálise é prioridade (nefrologia)", garimpo.categoria("Credenciamento para realização de hemodiálise") == "nefrologia")
 confere("plantonistas é prioridade (mão de obra médica)", garimpo.categoria("Contratação de médicos plantonistas para a UPA") == "mao_obra")
 servico_nefro = garimpo.nota("Prestação de serviços de terapia renal substitutiva (hemodiálise)", p)[0]

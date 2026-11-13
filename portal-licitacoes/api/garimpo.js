@@ -8,8 +8,8 @@ const { getJson } = require("./pncp.js");
 
 const PNCP = "https://pncp.gov.br/api/consulta/v1/contratacoes/proposta";
 const UFS = ["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"];
-const MODALIDADES = { 6: "Pregão eletrônico", 4: "Concorrência eletrônica", 8: "Dispensa", 12: "Credenciamento", 7: "Pregão presencial", 5: "Concorrência presencial" };
-const SIGLA = { 6: "PE", 4: "CE", 8: "DE", 12: "CRED", 7: "PP", 5: "CC" };
+const MODALIDADES = { 6: "Pregão eletrônico", 4: "Concorrência eletrônica", 8: "Dispensa", 7: "Pregão presencial", 5: "Concorrência presencial" }; // sem credenciamento: a equipe não disputa
+const SIGLA = { 6: "PE", 4: "CE", 8: "DE", 7: "PP", 5: "CC" };
 // Prioridade da equipe: nefrologia (terapia renal, hemodiálise, diálise peritoneal) e mão de obra médica
 const TERMOS_NEFRO = { "hemodialise": 6, "dialise peritoneal": 7, "peritoneal": 5, "dialise": 6, "nefrolog": 7, "terapia renal": 7, "renal substitutiva": 7,
   "hemodiafiltra": 6, "insuficiencia renal": 5, "doenca renal": 5, "doente renal": 5, "pacientes renais": 5, "renal cronic": 5, "fistula arteriovenosa": 4 };

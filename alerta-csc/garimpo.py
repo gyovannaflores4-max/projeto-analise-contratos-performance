@@ -24,8 +24,8 @@ from alerta_resenhas import USER_AGENT, enviar_email, log
 from resumo_diario import PORTAL_URL, config_supabase, ler_portal
 
 PNCP = "https://pncp.gov.br/api/consulta/v1/contratacoes/proposta"
-MODALIDADES = {6: "Pregão eletrônico", 4: "Concorrência eletrônica", 8: "Dispensa", 12: "Credenciamento", 7: "Pregão presencial", 5: "Concorrência presencial"}
-SIGLA = {6: "PE", 4: "CE", 8: "DE", 12: "CRED", 7: "PP", 5: "CC"}
+MODALIDADES = {6: "Pregão eletrônico", 4: "Concorrência eletrônica", 8: "Dispensa", 7: "Pregão presencial", 5: "Concorrência presencial"}  # credenciamento fica de fora (a equipe não disputa)
+SIGLA = {6: "PE", 4: "CE", 8: "DE", 7: "PP", 5: "CC"}
 BRASILIA = timezone(timedelta(hours=-3))
 
 # Termos com peso: o objeto precisa somar pelo menos NOTA_MINIMA
@@ -69,7 +69,7 @@ def perfil(S):
     ufs = [u.upper() for u in lista(g.get("ufs"))] or list(UFS_BRASIL)  # sem escolha: o Brasil inteiro
     termos = {t: 3 for t in lista(g.get("termos"))} or TERMOS_PADRAO
     excluir = lista(g.get("excluir")) or EXCLUIR_PADRAO
-    mods = [int(m) for m in re.findall(r"\d+", str(g.get("modalidades") or ""))] or [6, 12, 4, 8, 7, 5]
+    mods = [int(m) for m in re.findall(r"\d+", str(g.get("modalidades") or ""))] or [6, 4, 8, 7, 5]
     return {"ufs": [u for u in dict.fromkeys(ufs) if u in UFS_BRASIL], "termos": termos, "excluir": excluir, "modalidades": mods}
 
 
