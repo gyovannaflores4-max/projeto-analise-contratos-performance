@@ -35,6 +35,9 @@ jobs:
       - name: Comparação de objetos (suspensos)
         run: node testes/suspensos.test.js
 
+      - name: Nota de aderência do garimpo
+        run: node testes/garimpo.test.js
+
       - name: Instalar o navegador de teste
         run: |
           npm install --no-save --no-package-lock playwright@1.63.0

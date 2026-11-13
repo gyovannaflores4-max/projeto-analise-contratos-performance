@@ -714,3 +714,9 @@ table.tabela.res-tabela{min-width:720px}
 .gar-uf:has(input:checked){border-color:var(--brand);background:var(--brand-soft);color:var(--brand-strong)}
 .gar-uf input{accent-color:var(--brand);margin:0}
 @media (max-width:560px){.gar-regiao-nome{width:100%}}
+.busca-gar-linha{display:grid;grid-template-columns:minmax(200px,280px) 1fr auto;gap:14px;align-items:end}
+.busca-gar-mods{display:flex;flex-wrap:wrap;gap:6px}
+.busca-gar-acao{display:flex;align-items:end}
+.busca-gar-status{display:flex;flex-direction:column;gap:6px;margin-top:12px;font-size:13px}
+.rotulo-campo{font-size:13px;font-weight:600;color:var(--ink-2)}
+@media (max-width:720px){.busca-gar-linha{grid-template-columns:1fr}}
