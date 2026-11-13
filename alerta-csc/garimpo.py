@@ -24,21 +24,30 @@ from alerta_resenhas import USER_AGENT, enviar_email, log
 from resumo_diario import PORTAL_URL, config_supabase, ler_portal
 
 PNCP = "https://pncp.gov.br/api/consulta/v1/contratacoes/proposta"
-MODALIDADES = {6: "Pregão eletrônico", 4: "Concorrência eletrônica", 8: "Dispensa"}
-SIGLA = {6: "PE", 4: "CE", 8: "DE"}
+MODALIDADES = {6: "Pregão eletrônico", 4: "Concorrência eletrônica", 8: "Dispensa", 12: "Credenciamento", 7: "Pregão presencial", 5: "Concorrência presencial"}
+SIGLA = {6: "PE", 4: "CE", 8: "DE", 12: "CRED", 7: "PP", 5: "CC"}
 BRASILIA = timezone(timedelta(hours=-3))
 
 # Termos com peso: o objeto precisa somar pelo menos NOTA_MINIMA
-TERMOS_PADRAO = {
-    "servicos medicos": 4, "servico medico": 4, "profissionais medicos": 4, "plantao": 3, "plantoes": 3, "plantonista": 3,
-    "medico": 2, "medicos": 2, "medica": 2, "hemodialise": 4, "terapia renal": 4, "nefrolog": 4, "dialise": 4,
+# Prioridade da equipe: nefrologia (terapia renal, hemodiálise, diálise peritoneal) e mão de obra médica
+TERMOS_NEFRO = {
+    "hemodialise": 6, "dialise peritoneal": 7, "peritoneal": 5, "dialise": 6, "nefrolog": 7, "terapia renal": 7, "renal substitutiva": 7,
+    "hemodiafiltra": 6, "insuficiencia renal": 5, "doenca renal": 5, "doente renal": 5, "pacientes renais": 5, "renal cronic": 5, "fistula arteriovenosa": 4,
+}
+TERMOS_MAO_OBRA = {
+    "mao de obra medica": 6, "fornecimento de mao de obra": 3, "cessao de mao de obra": 3, "profissionais medicos": 5, "medicos plantonistas": 6,
+    "plantonista": 4, "plantao medico": 5, "plantoes medicos": 5, "escala medica": 5, "escalas medicas": 5, "servicos medicos": 5, "servico medico": 5,
+    "equipe medica": 4, "gestao de escalas": 4, "coordenacao medica": 4, "responsavel tecnico medico": 3,
+}
+TERMOS_PADRAO = dict({
+    "plantao": 3, "plantoes": 3, "medico": 2, "medicos": 2, "medica": 2,
     "uti": 3, "terapia intensiva": 3, "pediatr": 2, "neonat": 2, "anestesi": 3, "obstetr": 2, "ortoped": 2, "cirurg": 2,
     "enfermagem": 2, "pronto atendimento": 3, "pronto socorro": 3, "upa": 2, "urgencia e emergencia": 3, "radiolog": 2,
     "gestao hospitalar": 3, "assistencia medica": 4, "atendimento medico": 4, "telemedicina": 3, "regulacao medica": 3,
-}
+}, **TERMOS_MAO_OBRA, **TERMOS_NEFRO)
 EXCLUIR_PADRAO = ["aquisicao", "fornecimento de", "medicamento", "material", "materiais", "equipamento", "insumo",
                   "manutencao", "alimentacao", "combustive", "veiculo", "locacao de", "obra", "reforma", "medico do trabalho",
-                  "exames laboratoriais", "gases medicinais", "uniforme", "limpeza"]
+                  "gases medicinais", "uniforme", "limpeza"]
 # Fora sempre, mesmo sendo "prestação de serviço" (seguro viagem com assistência médica, veterinária…)
 SEMPRE_FORA = re.compile(r"veterinar|turismo|viagem|transporte (?:rodoviario|de passageiros|escolar)|manutencao (?:preventiva|corretiva)|locacao de veiculo")
 NOTA_MINIMA = 4
@@ -60,7 +69,7 @@ def perfil(S):
     ufs = [u.upper() for u in lista(g.get("ufs"))] or list(UFS_BRASIL)  # sem escolha: o Brasil inteiro
     termos = {t: 3 for t in lista(g.get("termos"))} or TERMOS_PADRAO
     excluir = lista(g.get("excluir")) or EXCLUIR_PADRAO
-    mods = [int(m) for m in re.findall(r"\d+", str(g.get("modalidades") or ""))] or [6, 4, 8]
+    mods = [int(m) for m in re.findall(r"\d+", str(g.get("modalidades") or ""))] or [6, 12, 4, 8, 7, 5]
     return {"ufs": [u for u in dict.fromkeys(ufs) if u in UFS_BRASIL], "termos": termos, "excluir": excluir, "modalidades": mods}
 
 
@@ -68,8 +77,17 @@ def perfil(S):
 RUIDO_MEDICO = re.compile(r"medic[oa]s?[- ]+hospitalar\w*|medico[- ]+laborator\w*|medico[- ]+odontolog\w*|"
                           r"(?:dispositivos?|equipamentos?|materia(?:l|is)|instrumenta(?:l|is)|instrumentos?|insumos?|produtos?|gases|aparelhos?)"
                           r"(?:\s+(?:e|de|para|permanentes|laboratoriais)\s+\w+){0,3}\s+medic\w*")
-SERVICO = re.compile(r"prestac\w* (?:de |complementar |continuad\w* )*servic|servicos? (?:medic|de saude|assistenc|de plant|de atendimento)|"
-                     r"plant(?:ao|oes|onista)|mao de obra|profissionais|equipe medica")
+SERVICO = re.compile(r"prestac\w* (?:de |complementar |continuad\w* )*servic|servicos? (?:medic|de saude|assistenc|de plant|de atendimento|de (?:hemo)?dialise|de terapia|de nefrolog)|"
+                     r"plant(?:ao|oes|onista)|mao de obra|profissionais|equipe medica|credenciamento|realizacao de (?:sessoes |procedimentos |tratamento )?(?:de )?(?:hemo)?dialise|"
+                     r"tratamento dialitico|realizacao de terapia")
+NEFRO = re.compile(r"hemodialise|dialise|dialitic|dialisador|diasafe|nefrolog|terapia renal|renal substitutiva|hemodiafiltra|insuficiencia renal|doen(?:ca|te)s? renal|pacientes renais|renal cronic")
+MAO_OBRA = re.compile(r"mao de obra medica|medicos plantonistas|plantonista|plant(?:ao|oes) medic|escalas? medica|profissionais medicos|servicos? medic|equipe medica|gestao de escalas")
+
+
+def categoria(objeto):
+    """Prioridade da equipe: nefrologia, depois mão de obra médica."""
+    o = RUIDO_MEDICO.sub(" ", sem_acento(objeto))
+    return "nefrologia" if NEFRO.search(o) else "mao_obra" if MAO_OBRA.search(o) else ""
 
 
 def nota(objeto, p, orgaos_conhecidos=(), cnpj=""):
@@ -78,12 +96,17 @@ def nota(objeto, p, orgaos_conhecidos=(), cnpj=""):
     achados = [t for t in p["termos"] if re.search(r"(^|[^a-z])" + re.escape(t), o)]
     n = sum(p["termos"][t] for t in achados)
     servico = bool(SERVICO.search(o))
+    if NEFRO.search(o) and "veterinar" not in o:
+        # nefrologia é prioridade: serviço sobe; compra/locação de máquina e insumo de diálise continua na lista, mais abaixo
+        return (n + 4 if servico else max(NOTA_MINIMA, n - 4)), achados
     if SEMPRE_FORA.search(o):
         return n - 10, achados
     if any(x in o for x in p["excluir"]):
         n -= 2 if servico else 8  # compra de material/medicamento/equipamento sai, mesmo com "médico" no texto
     elif not servico:
         n -= 2
+    if MAO_OBRA.search(o) and servico:
+        n += 3
     if cnpj and cnpj in orgaos_conhecidos:
         n += 1  # órgão com quem a equipe já disputou
     return n, achados
@@ -140,7 +163,7 @@ def item(mod, c, n, achados):
         "abertura": (c.get("dataAberturaProposta") or "")[:16], "encerramento": (c.get("dataEncerramentoProposta") or "")[:16],
         "srp": c.get("srp"), "link": c.get("linkSistemaOrigem") or "",
         "linkPncp": "https://pncp.gov.br/app/editais/{}/{}/{}".format(o.get("cnpj"), c.get("anoCompra"), c.get("sequencialCompra")),
-        "termos": achados[:8]}}
+        "termos": achados[:8], "categoria": categoria(c.get("objetoCompra"))}}
 
 
 def gravar(chave_robo, itens):
@@ -171,7 +194,8 @@ def main():
         n, achados = nota(c.get("objetoCompra"), p, conhecidos, (c.get("orgaoEntidade") or {}).get("cnpj", ""))
         if n >= NOTA_MINIMA and (c.get("linkSistemaOrigem") or "") not in ja:
             bons.append(item(mod, c, n, achados))
-    bons.sort(key=lambda x: (-x["nota"], x["dados"]["encerramento"]))
+    ordem = {"nefrologia": 0, "mao_obra": 1}
+    bons.sort(key=lambda x: (ordem.get(x["dados"].get("categoria"), 2), -x["nota"], x["dados"]["encerramento"]))
     log(f"Garimpo: {len(vistos)} contratações abertas lidas, {len(bons)} com o perfil.")
     if FALHAS:
         log(f"Garimpo: {len(FALHAS)} página(s) não vieram do PNCP: {', '.join(FALHAS[:20])}")

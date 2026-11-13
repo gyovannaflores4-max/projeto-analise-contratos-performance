@@ -18,6 +18,12 @@ def confere(nome, ok):
 
 p = garimpo.perfil({"editais": [{"uf": "PR"}]})
 confere("perfil sem UF escolhida busca os 27 estados", len(p["ufs"]) == 27)
+confere("credenciamento entra nas modalidades", 12 in p["modalidades"])
+confere("hemodiálise é prioridade (nefrologia)", garimpo.categoria("Credenciamento para realização de hemodiálise") == "nefrologia")
+confere("plantonistas é prioridade (mão de obra médica)", garimpo.categoria("Contratação de médicos plantonistas para a UPA") == "mao_obra")
+servico_nefro = garimpo.nota("Prestação de serviços de terapia renal substitutiva (hemodiálise)", p)[0]
+compra_nefro = garimpo.nota("Aquisição de insumos de hemodiálise", p)[0]
+confere("serviço de nefrologia fica acima da compra de insumo", servico_nefro > compra_nefro >= garimpo.NOTA_MINIMA)
 confere("perfil com UFs escolhidas usa só elas", garimpo.perfil({"ajustes": {"garimpo": {"ufs": "go, sp; XX"}}})["ufs"] == ["GO", "SP"])
 casos = [
     ("Prestação de serviço técnico especializado em atendimento médico pré-hospitalar, por meio de Central de Regulação Médica", True),
@@ -30,7 +36,10 @@ casos = [
     ("Prestação de serviços continuados de natureza assistencial, com predominância de mão de obra especializada, destinados à prestação de serviços médicos", True),
     ("CONTRATAÇÃO DE PRESTAÇÃO DE SERVIÇOS MÉDICOS NA ESPECIALIDADE DE ANESTESIOLOGIA", True),
     ("Registro de Preços para aquisição de MATERIAIS MÉDICO-HOSPITALARES (bolsa coletora de urina), destinados às Unidades de Pronto Atendimento", False),
-    ("Registro de Preços para futura e eventual aquisição de materiais de diálise e hemodiálise grupo 1", False),
+    ("Registro de Preços para futura e eventual aquisição de materiais de diálise e hemodiálise grupo 1", True),  # nefrologia entra, abaixo dos serviços
+    ("CREDENCIAMENTO DE EMPRESAS ESPECIALIZADAS NA REALIZAÇÃO DE HEMODIÁLISE EM PACIENTES ADULTOS, INCLUINDO OS EXAMES LABORATORIAIS", True),
+    ("Credenciamento de clínicas para tratamento dialítico: diálise peritoneal e hemodiálise", True),
+    ("Contratação de empresa para fornecimento de mão de obra médica (médicos plantonistas) para o hospital municipal", True),
     ("Registro de preços para aquisição de medicamentos para a farmácia municipal na Unidade de Saúde e plantão 24 horas", False),
     ("Contratação de clínica veterinária para serviços de castração por médico-veterinário, com anestesia", False),
     ("Agência de turismo para transporte rodoviário de passageiros e seguro viagem com assistência médica", False),
