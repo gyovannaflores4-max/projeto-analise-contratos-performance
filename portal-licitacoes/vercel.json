@@ -26,6 +26,9 @@
     },
     "api/contratos.js": {
       "maxDuration": 60
+    },
+    "api/garimpo.js": {
+      "maxDuration": 60
     }
   }
 }

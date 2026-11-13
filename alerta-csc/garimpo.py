@@ -39,7 +39,11 @@ TERMOS_PADRAO = {
 EXCLUIR_PADRAO = ["aquisicao", "fornecimento de", "medicamento", "material", "materiais", "equipamento", "insumo",
                   "manutencao", "alimentacao", "combustive", "veiculo", "locacao de", "obra", "reforma", "medico do trabalho",
                   "exames laboratoriais", "gases medicinais", "uniforme", "limpeza"]
+# Fora sempre, mesmo sendo "prestação de serviço" (seguro viagem com assistência médica, veterinária…)
+SEMPRE_FORA = re.compile(r"veterinar|turismo|viagem|transporte (?:rodoviario|de passageiros|escolar)|manutencao (?:preventiva|corretiva)|locacao de veiculo")
 NOTA_MINIMA = 4
+UFS_BRASIL = ("AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI",
+              "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO")
 FALHAS = []  # páginas que o PNCP não devolveu
 
 
@@ -53,22 +57,32 @@ def lista(txt):
 
 def perfil(S):
     g = (S.get("ajustes") or {}).get("garimpo") or {}
-    ufs = [u.upper() for u in lista(g.get("ufs"))] or sorted({(e.get("uf") or "").upper() for e in S.get("editais") or [] if e.get("uf")} | {"AM", "RJ"})
+    ufs = [u.upper() for u in lista(g.get("ufs"))] or list(UFS_BRASIL)  # sem escolha: o Brasil inteiro
     termos = {t: 3 for t in lista(g.get("termos"))} or TERMOS_PADRAO
     excluir = lista(g.get("excluir")) or EXCLUIR_PADRAO
     mods = [int(m) for m in re.findall(r"\d+", str(g.get("modalidades") or ""))] or [6, 4, 8]
-    return {"ufs": [u for u in ufs if re.fullmatch(r"[A-Z]{2}", u)][:12], "termos": termos, "excluir": excluir, "modalidades": mods}
+    return {"ufs": [u for u in dict.fromkeys(ufs) if u in UFS_BRASIL], "termos": termos, "excluir": excluir, "modalidades": mods}
+
+
+# "médico" que não é serviço: material, equipamento, dispositivo médico-hospitalar…
+RUIDO_MEDICO = re.compile(r"medic[oa]s?[- ]+hospitalar\w*|medico[- ]+laborator\w*|medico[- ]+odontolog\w*|"
+                          r"(?:dispositivos?|equipamentos?|materia(?:l|is)|instrumenta(?:l|is)|instrumentos?|insumos?|produtos?|gases|aparelhos?)"
+                          r"(?:\s+(?:e|de|para|permanentes|laboratoriais)\s+\w+){0,3}\s+medic\w*")
+SERVICO = re.compile(r"prestac\w* (?:de |complementar |continuad\w* )*servic|servicos? (?:medic|de saude|assistenc|de plant|de atendimento)|"
+                     r"plant(?:ao|oes|onista)|mao de obra|profissionais|equipe medica")
 
 
 def nota(objeto, p, orgaos_conhecidos=(), cnpj=""):
     """Nota de aderência do objeto ao perfil e os termos que pesaram."""
-    o = sem_acento(objeto)
+    o = RUIDO_MEDICO.sub(" ", sem_acento(objeto))
     achados = [t for t in p["termos"] if re.search(r"(^|[^a-z])" + re.escape(t), o)]
     n = sum(p["termos"][t] for t in achados)
-    inicio = o[:80]
-    if any(x in inicio for x in p["excluir"]) and not any(x in inicio for x in ("servico", "prestacao")):
-        n -= 6
-    elif any(x in o for x in p["excluir"]):
+    servico = bool(SERVICO.search(o))
+    if SEMPRE_FORA.search(o):
+        return n - 10, achados
+    if any(x in o for x in p["excluir"]):
+        n -= 2 if servico else 8  # compra de material/medicamento/equipamento sai, mesmo com "médico" no texto
+    elif not servico:
         n -= 2
     if cnpj and cnpj in orgaos_conhecidos:
         n += 1  # órgão com quem a equipe já disputou
@@ -101,11 +115,11 @@ def ler_pagina(uf, mod, pagina, ate):
 def varrer(p, ate):
     """Todas as contratações abertas das UFs e modalidades do perfil (páginas em paralelo)."""
     primeiras = {}
-    with ThreadPoolExecutor(2) as ex:  # poucas consultas juntas: o PNCP bloqueia (429) acima disso
+    with ThreadPoolExecutor(3) as ex:  # poucas consultas juntas: o PNCP bloqueia (429) acima disso
         for (uf, mod), d in zip([(u, m) for u in p["ufs"] for m in p["modalidades"]],
                                 ex.map(lambda um: ler_pagina(um[0], um[1], 1, ate), [(u, m) for u in p["ufs"] for m in p["modalidades"]])):
             primeiras[(uf, mod)] = d or {}
-        resto = [(uf, mod, pg) for (uf, mod), d in primeiras.items() for pg in range(2, min(int(d.get("totalPaginas") or 1), 40) + 1)]
+        resto = [(uf, mod, pg) for (uf, mod), d in primeiras.items() for pg in range(2, min(int(d.get("totalPaginas") or 1), 120) + 1)]
         demais = list(ex.map(lambda x: (x, ler_pagina(*x, ate)), resto))
     for (uf, mod), d in primeiras.items():
         for c in d.get("data") or []:

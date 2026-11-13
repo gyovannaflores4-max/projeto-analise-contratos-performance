@@ -17,7 +17,8 @@ def confere(nome, ok):
 
 
 p = garimpo.perfil({"editais": [{"uf": "PR"}]})
-confere("perfil padrão junta UFs dos editais com AM e RJ", p["ufs"] == ["AM", "PR", "RJ"])
+confere("perfil sem UF escolhida busca os 27 estados", len(p["ufs"]) == 27)
+confere("perfil com UFs escolhidas usa só elas", garimpo.perfil({"ajustes": {"garimpo": {"ufs": "go, sp; XX"}}})["ufs"] == ["GO", "SP"])
 casos = [
     ("Prestação de serviço técnico especializado em atendimento médico pré-hospitalar, por meio de Central de Regulação Médica", True),
     ("Contratação de empresa para prestação de serviços de plantões médicos em UTI neonatal e pediátrica", True),
@@ -26,6 +27,14 @@ casos = [
     ("Contratação de empresa para fornecimento de mão de obra de médico do trabalho presencial", False),
     ("Aquisição de 58 cardioversores para unidades de terapia intensiva", False),
     ("Contratação de serviços de alimentação coletiva para hospitais", False),
+    ("Prestação de serviços continuados de natureza assistencial, com predominância de mão de obra especializada, destinados à prestação de serviços médicos", True),
+    ("CONTRATAÇÃO DE PRESTAÇÃO DE SERVIÇOS MÉDICOS NA ESPECIALIDADE DE ANESTESIOLOGIA", True),
+    ("Registro de Preços para aquisição de MATERIAIS MÉDICO-HOSPITALARES (bolsa coletora de urina), destinados às Unidades de Pronto Atendimento", False),
+    ("Registro de Preços para futura e eventual aquisição de materiais de diálise e hemodiálise grupo 1", False),
+    ("Registro de preços para aquisição de medicamentos para a farmácia municipal na Unidade de Saúde e plantão 24 horas", False),
+    ("Contratação de clínica veterinária para serviços de castração por médico-veterinário, com anestesia", False),
+    ("Agência de turismo para transporte rodoviário de passageiros e seguro viagem com assistência médica", False),
+    ("Aquisição de Equipamentos Médicos", False),
 ]
 for objeto, esperado in casos:
     n, _ = garimpo.nota(objeto, p)

@@ -14,6 +14,7 @@ async function tentar(fn, vezes = 3) {
 }
 const json = (url, ms) => tentar(() => getJson(url, ms || 20000));
 const raiz = c => String(c || "").replace(/\D/g, "").slice(0, 8);
+const sem = s => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 const hoje = () => new Date(Date.now() - 3 * 3600000).toISOString().slice(0, 10);
 async function emLotes(itens, lim, fn) {
   const out = new Array(itens.length); let i = 0;
@@ -38,15 +39,30 @@ async function contratos(cnpjs, nomes) {
   const limite = new Date(Date.now() - 180 * 86400000).toISOString().slice(0, 10);
   const lista = [...achados.values()].filter(i => !i.data_fim_vigencia || i.data_fim_vigencia >= limite);
   const detalhes = await emLotes(lista, 4, i => json(PNCP + "/api/pncp/v1/orgaos/" + i.orgao_cnpj + "/contratos/" + i.ano + "/" + i.numero_sequencial));
+  // Termos aditivos e apostilamentos: prorrogações e reajustes já feitos mudam a vigência e o próximo reajuste
+  const termosDe = await emLotes(lista, 4, i => json(PNCP + "/api/pncp/v1/orgaos/" + i.orgao_cnpj + "/contratos/" + i.ano + "/" + i.numero_sequencial + "/termos"));
   return lista.map((i, k) => {
     const c = detalhes[k] || {};
+    const termos = (Array.isArray(termosDe[k]) ? termosDe[k] : []).map(t => {
+      const obj = String(t.objetoTermoContrato || "").replace(/\s+/g, " ").trim();
+      const meses = (sem(obj).match(/prorroga\w*[^.]{0,80}?por (?:mais )?(\d{1,2})/) || [])[1];
+      return { numero: t.numeroTermoContrato || "", tipo: t.tipoTermoContratoNome || "", assinatura: t.dataAssinatura || "", fim: t.dataVigenciaFim || "",
+        valorGlobal: Number(t.valorGlobal) || null, objeto: obj.slice(0, 300), reajuste: /reajust|repactua|reequilibr/.test(sem(obj)), prorrogacao: /prorroga/.test(sem(obj)), meses: meses ? +meses : null };
+    }).sort((a, b) => String(a.assinatura).localeCompare(String(b.assinatura)));
+    const reajustes = termos.filter(t => t.reajuste), prorrog = termos.filter(t => t.prorrogacao);
+    // só aditivo estende a vigência; termo de rescisão encerra o contrato
+    const rescisao = termos.find(t => /rescis/.test(sem(t.tipo)));
+    const fimTermos = termos.filter(t => /aditivo/.test(sem(t.tipo))).map(t => t.fim).filter(Boolean).sort().pop() || "";
+    const fimBase = c.dataVigenciaFim || i.data_fim_vigencia || "";
+    const fim = rescisao ? (rescisao.assinatura || fimBase) : [fimBase, fimTermos].filter(Boolean).sort().pop() || "";
     return {
+      termos, rescindido: !!rescisao, ultimoReajuste: reajustes.length ? reajustes[reajustes.length - 1].assinatura : "", ultimaProrrogacao: prorrog.length ? prorrog[prorrog.length - 1] : null,
       id: i.numero_controle_pncp, compra: c.numeroControlePncpCompra || "", numero: (i.numero_contrato_empenho || String(i.title || "").replace(/^Contrato nº\s*/i, "")) + (i.ano && !/\//.test(i.numero_contrato_empenho || "") ? "/" + i.ano : ""),
       tipo: i.tipo_contrato_nome || "", orgao: i.orgao_nome, orgaoCnpj: i.orgao_cnpj, unidade: i.unidade_nome, municipio: i.municipio_nome, uf: i.uf,
       objeto: String(i.description || c.objetoContrato || "").replace(/\s+/g, " ").trim().slice(0, 500), fornecedor: i.fornecedor_nome, cnpjFornecedor: i.fornecedor_ni,
-      assinatura: i.data_assinatura || c.dataAssinatura || "", inicio: i.data_inicio_vigencia || c.dataVigenciaInicio || "", fim: c.dataVigenciaFim || i.data_fim_vigencia || "",
+      assinatura: i.data_assinatura || c.dataAssinatura || "", inicio: i.data_inicio_vigencia || c.dataVigenciaInicio || "", fim,
       valorGlobal: Number(c.valorGlobal || i.valor_global) || null, valorParcela: Number(c.valorParcela) || null, parcelas: c.numeroParcelas || null, processo: c.processo || "",
-      vigente: !(c.dataVigenciaFim || i.data_fim_vigencia) || (c.dataVigenciaFim || i.data_fim_vigencia) >= hoje(),
+      vigente: !fim || fim >= hoje(),
       linkPncp: PNCP + "/app/contratos/" + i.orgao_cnpj + "/" + i.ano + "/" + i.numero_sequencial
     };
   }).sort((a, b) => String(a.fim || "9").localeCompare(String(b.fim || "9")));

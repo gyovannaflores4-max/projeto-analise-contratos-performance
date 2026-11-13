@@ -32,7 +32,7 @@ from alerta_resenhas import USER_AGENT, enviar_email, log
 BRASILIA = ZoneInfo("America/Sao_Paulo")
 ESTADO = Path(__file__).with_name("estado_resumo.json")
 CONFIG_PORTAL = Path(__file__).resolve().parent.parent / "portal-licitacoes" / "assets" / "config.js"
-PORTAL_URL = os.environ.get("PORTAL_URL", "").strip() or "https://projeto-analise-contratos-performan-phi.vercel.app/"
+PORTAL_URL = os.environ.get("PORTAL_URL", "").strip() or "https://equipe-comercial.vercel.app/"
 
 ETAPAS = {
     "triagem": "Triagem", "analise": "Em análise", "proposta": "Proposta em elaboração", "cadastrada": "Proposta cadastrada",
