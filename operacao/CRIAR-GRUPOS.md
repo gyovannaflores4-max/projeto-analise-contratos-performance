@@ -5,7 +5,7 @@ Tempo estimado: cerca de 2 minutos por grupo, umas 2 horas no total. É feito um
 ## Antes de começar
 - Use um **número de WhatsApp Business só da empresa** (chip próprio), não o pessoal de ninguém.
 - Adicione **2 ou 3 pessoas da equipe como administradoras** em todos os grupos, para o grupo não ficar sem dono se um número cair.
-- Tenha aberta a planilha `grupos.csv` (importada no Google Planilhas) para colar os links.
+- Tenha aberta a planilha `operacao/grupos.csv` (importada no Google Planilhas) para colar os links.
 
 ## Passo a passo para cada grupo
 1. WhatsApp → **Nova conversa → Novo grupo**. Adicione um colega da equipe (o WhatsApp exige ao menos 1 pessoa).
@@ -27,9 +27,9 @@ Tempo estimado: cerca de 2 minutos por grupo, umas 2 horas no total. É feito um
 O site passa a mandar os novos médicos para o grupo 2 sozinho.
 
 ## Como aprovar quem pede para entrar
-Cada médico deixa nome, CRM e WhatsApp no site antes de ir para o grupo. Esses dados chegam no seu e-mail e no painel do Formspree.
+Cada médico deixa nome, CRM e WhatsApp no site antes de ir para o grupo. Esses dados chegam na planilha de cadastros (aba Médicos) ou no Formspree, conforme o que você configurou em `site/dados.js`.
 1. Abra o pedido pendente no grupo.
-2. Confira o nome e o número no e-mail do Formspree.
+2. Confira o nome e o número na planilha de cadastros.
 3. Se quiser, confira o CRM e o RQE na consulta pública do CFM (portal.cfm.org.br → Busca por médicos).
 4. Aprove. No grupo "Com RQE", aprove só quem tem RQE na especialidade informada.
 

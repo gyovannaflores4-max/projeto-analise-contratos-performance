@@ -4,7 +4,7 @@ Protótipo navegável de uma plataforma no estilo Hub2Med / Quero Plantão. Ela 
 
 Arquivos:
 - `index.html`: protótipo navegável (site, app do médico, painel do hospital). Abra no navegador; não precisa de build.
-- O site público (lista de espera) fica em [`../site`](../site). Veja o README de lá para publicar.
+- O site público atual (grupos por estado) fica em [`../site`](../site). Veja [`../operacao/README.md`](../operacao/README.md) para publicar.
 
 ## Telas
 

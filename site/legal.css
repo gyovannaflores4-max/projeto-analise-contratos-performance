@@ -1,0 +1,15 @@
+/* Estilo das páginas de texto (privacidade, termos, 404) */
+@font-face{font-family:"Plus Jakarta Sans";src:url("fontes/plus-jakarta-sans-latin.woff2") format("woff2");font-weight:400 800;font-style:normal;font-display:swap}
+:root{--bg:#F2F7F5;--ink:#12302A;--muted:#4B655D;--brand:#1C6B58;--line:#D3DED8;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 "Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:68ch;margin-inline:auto;padding:40px 20px 64px}
+h1{font-size:clamp(28px,6vw,36px);font-weight:800;line-height:1.1;letter-spacing:-.02em;margin:16px 0 8px}
+h2{font-size:18px;margin:32px 0 6px}
+p,li{overflow-wrap:break-word}
+ul{padding-left:20px}
+.muted{color:var(--muted);font-size:14px}
+a{color:var(--brand)}
+a:focus-visible{outline:3px solid var(--brand);outline-offset:3px;border-radius:4px}
+.fill{background:#FDF3D7;color:#5C3D00;padding:0 4px;border-radius:4px}
+.btn{display:inline-block;margin-top:20px;background:var(--brand);color:#fff;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:12px}

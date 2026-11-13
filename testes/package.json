@@ -1,0 +1,14 @@
+{
+  "name": "revezo-site-testes",
+  "private": true,
+  "description": "Testes automáticos do site Revezo Plantões (pasta ../site).",
+  "scripts": {
+    "test": "node --test --test-concurrency=1 site.test.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "axe-core": "4.10.2",
+    "html-validate": "9.5.0"
+  },
+  "engines": { "node": ">=20" }
+}
