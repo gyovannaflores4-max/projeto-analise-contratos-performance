@@ -1928,16 +1928,24 @@
     if (rotaAtual() === "garimpo") renderSeLivre();
   }
   const perfilGarimpo = () => (S.ajustes.garimpo = S.ajustes.garimpo || {});
+  // Prioridade da equipe: nefrologia (terapia renal, hemodiálise, diálise peritoneal), depois mão de obra médica
+  const CAT_GAR = { nefrologia: ["Nefrologia", "ok", 0], mao_obra: ["Mão de obra médica", "info", 1] };
+  function categoriaGar(d) {
+    if (d.categoria !== undefined) return d.categoria;
+    const o = U.semAcento(d.objeto || "").toLowerCase().replace(/medic[oa]s?[- ]+hospitalar\w*/g, " ");
+    return /hemodialise|dialise|dialitic|dialisador|nefrolog|terapia renal|renal substitutiva|hemodiafiltra|insuficiencia renal|doen(?:ca|te)s? renal|pacientes renais|renal cronic/.test(o) ? "nefrologia"
+      : /mao de obra medica|medicos plantonistas|plantonista|plant(?:ao|oes) medic|escalas? medica|profissionais medicos|servicos? medic|equipe medica|gestao de escalas/.test(o) ? "mao_obra" : "";
+  }
   function garimpoVisiveis() {
-    const g = ui.garimpo || {}, f = ui.fGar || (ui.fGar = { uf: "", busca: "", min: 4 });
+    const g = ui.garimpo || {}, f = ui.fGar || (ui.fGar = { uf: "", busca: "", min: 4, cat: "" });
     const ja = new Set(S.editais.map(e => e.pncpId).concat(S.editais.map(e => e.link)).filter(Boolean));
     const b = U.semAcento(f.busca).toLowerCase();
     return (g.itens || []).filter(x => {
       const d = x.dados || {};
       if (ja.has(x.id) || ja.has(d.link) || ja.has(d.linkPncp) || (S.apagados || []).includes("gar:" + x.id)) return false;
       if (d.encerramento && d.encerramento.slice(0, 10) < U.hojeISO()) return false;
-      return (!f.uf || d.uf === f.uf) && x.nota >= f.min && (!b || U.semAcento([d.numero, d.orgao, d.objeto, d.municipio].join(" ")).toLowerCase().includes(b));
-    }).sort((a, b2) => b2.nota - a.nota || String(a.dados.encerramento).localeCompare(String(b2.dados.encerramento)));
+      return (!f.uf || d.uf === f.uf) && x.nota >= f.min && (!f.cat || categoriaGar(d) === f.cat) && (!b || U.semAcento([d.numero, d.orgao, d.objeto, d.municipio].join(" ")).toLowerCase().includes(b));
+    }).sort((a, b2) => ((CAT_GAR[categoriaGar(a.dados)] || [0, 0, 2])[2] - (CAT_GAR[categoriaGar(b2.dados)] || [0, 0, 2])[2]) || b2.nota - a.nota || String(a.dados.encerramento).localeCompare(String(b2.dados.encerramento)));
   }
   function pgGarimpo() {
     carregarGarimpo();
@@ -1948,7 +1956,7 @@
       const d = x.dados, dias = d.encerramento ? U.diasAte(d.encerramento.slice(0, 10)) : null;
       return '<article class="card gar"><div class="susp-h"><div><b>' + h(d.numero) + "</b> " + (x.aoVivo ? '<span class="pill info sem-ponto">Busca agora</span>' : Date.now() - new Date(x.achado_em).getTime() < 86400000 * 1.2 ? '<span class="pill pop sem-ponto">Novo</span>' : "") +
         '<span class="org">' + h(d.orgao || "") + (d.municipio ? " · " + h(d.municipio) + "/" + h(d.uf || "") : "") + "</span></div>" +
-        '<div class="chips"><span class="pill ' + (x.nota >= 8 ? "ok" : x.nota >= 6 ? "info" : "neutral") + ' sem-ponto">Aderência ' + x.nota + "</span><span class=\"pill neutral sem-ponto\">" + h(d.modalidade || "") + "</span></div></div>" +
+        '<div class="chips">' + (CAT_GAR[categoriaGar(d)] ? '<span class="pill ' + CAT_GAR[categoriaGar(d)][1] + '">' + CAT_GAR[categoriaGar(d)][0] + "</span>" : "") + '<span class="pill ' + (x.nota >= 8 ? "ok" : x.nota >= 6 ? "info" : "neutral") + ' sem-ponto">Aderência ' + x.nota + "</span><span class=\"pill neutral sem-ponto\">" + h(d.modalidade || "") + "</span></div></div>" +
         '<p class="susp-obj">' + h(U.corta(d.objeto, 300)) + "</p>" +
         '<dl class="datas susp-datas"><div><dt>Propostas até</dt><dd>' + (d.encerramento ? U.fmtDataHora(d.encerramento) + (dias !== null ? ' <span class="muted">(' + (dias <= 0 ? "hoje" : "em " + U.plural(dias, "dia", "dias")) + ")</span>" : "") : "—") + "</dd></div>" +
         "<div><dt>Valor estimado</dt><dd>" + U.moeda(d.valorEstimado || null) + "</dd></div><div><dt>Termos</dt><dd>" + h((d.termos || []).join(", ") || "—") + "</dd></div></dl>" +
@@ -1964,6 +1972,7 @@
       '<div class="campo"><label for="gar-excluir">Termos que tiram o edital</label><input id="gar-excluir" data-mudar="garimpoPerfil" data-campo="excluir" value="' + h(pf.excluir || "") + '" placeholder="aquisição, medicamentos, manutenção"><small>Vazio: compras de material, medicamentos, obras, manutenção…</small></div></div>' + ufsGarimpoHTML(pf) + "</section>" +
       '<div class="ferramentas"><label class="campo-busca"><span class="sr">Buscar</span>' + ic("busca") + '<input type="search" data-digitar="garBusca" value="' + h(f.busca) + '" placeholder="Órgão, objeto, cidade…"></label>' +
       '<select data-mudar="garUf" aria-label="UF"><option value="">Todas as UFs</option>' + UFS_BR.map(([u]) => "<option" + (f.uf === u ? " selected" : "") + (ufs.includes(u) ? "" : ' class="sem-edital"') + ">" + u + "</option>").join("") + "</select>" +
+      '<select data-mudar="garCat" aria-label="Prioridade"><option value="">Todas as áreas</option>' + Object.entries(CAT_GAR).map(([k, v]) => '<option value="' + k + '"' + (f.cat === k ? " selected" : "") + ">" + v[0] + "</option>").join("") + "</select>" +
       '<select data-mudar="garMin" aria-label="Aderência mínima">' + [[4, "Aderência 4+"], [6, "Aderência 6+"], [8, "Aderência 8+"]].map(([v, r]) => '<option value="' + v + '"' + (+f.min === v ? " selected" : "") + ">" + r + "</option>").join("") + "</select>" +
       '<span class="muted" style="font-size:13px">' + U.plural(lista.length, "edital", "editais") + (novos ? " · " + U.plural(novos, "novo", "novos") + " hoje" : "") + "</span></div>" +
       (g.erro && !(g.itens || []).length ? '<div class="card">' + vazio("aviso", h(g.erro)) + "</div>" : !g.itens ? '<div class="card">' + vazio("relogio", "Carregando…") + "</div>" :
@@ -1985,9 +1994,9 @@
         '<label class="gar-uf"><input type="checkbox" id="gar-uf-' + u + '" data-mudar="garUf1" data-uf="' + u + '"' + (sel.has(u) ? " checked" : "") + "><span>" + u + "</span></label>").join("") + "</div>").join("") + "</div>";
   }
   // Procurar agora, num estado: o portal lê o PNCP página por página (50 licitações cada) e mostra as boas
-  const MODS_GAR = [[6, "Pregão"], [4, "Concorrência"], [8, "Dispensa"]];
+  const MODS_GAR = [[6, "Pregão"], [12, "Credenciamento"], [8, "Dispensa"], [4, "Concorrência"], [7, "Pregão presencial"], [5, "Concorrência presencial"]];
   function buscaAgoraHTML(pf) {
-    const b = ui.buscaGar || {}, f = ui.fBuscaGar || (ui.fBuscaGar = { uf: ufsEscolhidas(pf).length === UFS_BR.length ? "RJ" : ufsEscolhidas(pf)[0], mods: [6, 8] });
+    const b = ui.buscaGar || {}, f = ui.fBuscaGar || (ui.fBuscaGar = { uf: ufsEscolhidas(pf).length === UFS_BR.length ? "RJ" : ufsEscolhidas(pf)[0], mods: [6, 12, 8] });
     const pct = b.total ? Math.round(100 * b.feitas / b.total) : 0;
     return '<section class="card busca-gar"><div class="card-h"><h2>Procurar editais agora</h2><span class="muted">sem esperar o robô da madrugada</span></div>' +
       '<div class="busca-gar-linha"><div class="campo"><label for="busca-gar-uf">Estado</label><select id="busca-gar-uf" data-mudar="buscaGarUf"' + (b.rodando ? " disabled" : "") + ">" +
@@ -3117,6 +3126,7 @@
     habOk: el => { const e = edital(el.dataset.id); (e.habOk = e.habOk || {})[el.dataset.chave] = el.checked; atualizar(); },
     garimpoPerfil: el => { perfilGarimpo()[el.dataset.campo] = el.value.trim(); salvar(); toast("Perfil salvo", "O robô usa na próxima rodada (todo dia de madrugada)."); },
     garUf: el => { ui.fGar.uf = el.value; render(); },
+    garCat: el => { ui.fGar.cat = el.value; render(); },
     buscaGarUf: el => { ui.fBuscaGar.uf = el.value; },
     buscaGarMod: el => { const m = +el.dataset.mod, l = ui.fBuscaGar.mods; ui.fBuscaGar.mods = el.checked ? [...new Set(l.concat(m))] : l.filter(x => x !== m); },
     garUf1: el => {
