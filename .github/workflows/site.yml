@@ -12,16 +12,17 @@ permissions:
 
 jobs:
   testes:
-    runs-on: ubuntu-latest
+    # Versão fixa de propósito: "ubuntu-latest" muda sozinho e pode quebrar o Playwright.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
       run:
         working-directory: testes
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
