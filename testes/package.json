@@ -3,12 +3,16 @@
   "private": true,
   "description": "Testes automáticos do site Revezo Plantões (pasta ../site).",
   "scripts": {
-    "test": "node --test --test-concurrency=1 site.test.js"
+    "test": "node --test --test-concurrency=1 apps-script.test.js site.test.js",
+    "simultaneos": "node simultaneos.js",
+    "carga": "node carga.js"
   },
   "devDependencies": {
     "@playwright/test": "1.56.1",
     "axe-core": "4.10.2",
     "html-validate": "9.5.0"
   },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": ">=20"
+  }
 }

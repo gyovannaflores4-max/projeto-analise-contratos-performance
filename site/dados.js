@@ -16,7 +16,11 @@
   2) planilhaCSV (opcional): endereço da planilha de grupos publicada como CSV.
      Se preenchido, os links dos grupos vêm da planilha e a lista "grupos" abaixo é ignorada.
 
-  3) grupos: links dos grupos, se você não usar a planilha.
+  3) goatcounter (opcional): contador de visitas sem cookies. Crie uma conta em goatcounter.com
+     e coloque só o código escolhido (ex.: "revezo" para revezo.goatcounter.com).
+     Mostra quantas pessoas visitaram e quantos cadastros foram feitos. Vazio = desligado.
+
+  4) grupos: links dos grupos, se você não usar a planilha.
      Colunas:
        uf      sigla do estado (SP, RJ, ...)
        tipo    "rqe" (médicos com RQE) ou "sem-rqe" (médicos sem RQE)
@@ -31,6 +35,8 @@ window.PORTAL = {
   formEndpoint: "",
 
   planilhaCSV: "",
+
+  goatcounter: "",
 
   grupos: [
     // Exemplo de como fica quando você tiver os links:

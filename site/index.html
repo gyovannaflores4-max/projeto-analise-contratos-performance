@@ -3,15 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Revezo Plantões</title>
+<title>Revezo Plantões · Grupos de WhatsApp de plantão médico por estado</title>
 <meta name="description" content="Grupos de WhatsApp de plantões médicos por estado, separados para médicos com RQE e sem RQE. Gratuito para médicos. Hospitais e coordenadores anunciam vagas.">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="pt_BR">
 <meta property="og:title" content="Revezo · O grupo de plantões do seu estado">
 <meta property="og:description" content="Escolha seu estado, diga se tem RQE e entre no grupo certo. Gratuito para médicos.">
-<!-- Ao publicar, troque og.jpg pelo endereço completo, ex.: https://seudominio.com.br/og.jpg (veja operacao/CHECKLIST-PUBLICACAO.md) -->
+<!-- dominio:inicio (preenchido por: node operacao/definir-dominio.js https://seudominio.com.br) -->
 <meta property="og:image" content="og.jpg">
+<!-- dominio:fim -->
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
@@ -569,6 +570,7 @@ $('#dados').addEventListener('submit',async e=>{e.preventDefault();const f=e.cur
   const res=await enviar(f,{tipo:'entrada_grupo',uf:S.uf,grupo:S.tipo,grupo_nome:nomeGrupo(S.uf,S.tipo,g),link_destino:g?g.link:'',...data});
   btn.disabled=false;btn.textContent='Entrar no grupo';
   if(res==='erro'){mostraErro(f,MSG_ERRO);return}
+  if(res==='ok')registra('cadastro-medico-'+S.tipo);
   const link=$('#done-link');
   if(g){$('#done-title').textContent=res==='demo'?'Modo demonstração':'Tudo certo! Abrindo o grupo…';
     $('#done-text').textContent=`Peça para entrar em ${nomeGrupo(S.uf,S.tipo,g)}. A equipe confere seu CRM e aprova em breve.`+(res==='demo'?' (Os dados não foram salvos: o envio ainda não foi configurado.)':'');
@@ -632,6 +634,7 @@ $('#cad').addEventListener('submit',async e=>{e.preventDefault();const f=e.curre
   const btn=f.querySelector('[type=submit]');btn.disabled=true;btn.textContent='Enviando…';
   const res=await enviar(f,data);btn.disabled=false;btn.textContent='Cadastrar instituição';
   if(res==='erro'){mostraErro(f,MSG_ERRO);return}
+  if(res==='ok')registra('cadastro-contratante');
   cadastro=data;f.hidden=true;$('#cad-done').hidden=false;
   $('#cad-title').textContent=`Cadastro recebido: ${data.instituicao}`;
   $('#cad-text').textContent=res==='ok'?'Vamos conferir o CNPJ'+(data.crm?' e o CRM':'')+' em até 1 dia útil e avisar no seu WhatsApp. Você já pode enviar a primeira vaga.':'Modo demonstração: nenhum dado foi salvo.';
@@ -649,8 +652,14 @@ $('#vaga').addEventListener('submit',async e=>{e.preventDefault();const f=e.curr
   const btn=f.querySelector('[type=submit]');btn.disabled=true;
   const res=await enviar(f,{tipo:'vaga',cadastrado:cadastro?'sim':'não',...Object.fromEntries(new FormData(f))});btn.disabled=false;
   if(res==='erro'){mostraErro(f,MSG_ERRO);return}
+  if(res==='ok')registra('vaga-enviada');
   const keep={contratante:f.contratante.value,cnpj:f.cnpj.value,contato:f.contato.value};f.reset();for(const k in keep)f[k].value=keep[k];
   toast(res==='ok'?'Vaga recebida. Depois de conferir o CNPJ, publicamos no grupo do estado.':'Modo demonstração: a vaga não foi salva.')});
+
+/* ============ contagem de visitas (opcional, sem cookies) ============ */
+const GC=String(CFG.goatcounter||'').trim().toLowerCase();
+function registra(evento){try{if(window.goatcounter&&window.goatcounter.count)window.goatcounter.count({path:evento,title:evento,event:true})}catch(e){}}
+if(/^[a-z0-9-]{2,40}$/.test(GC)){const sc=document.createElement('script');sc.async=true;sc.src='https://gc.zgo.at/count.js';sc.dataset.goatcounter=`https://${GC}.goatcounter.com/count`;document.head.appendChild(sc)}
 
 /* ============ início ============ */
 if(!FORM_ENDPOINT){$('#demo-banner').hidden=false;console.warn('Revezo: formEndpoint vazio em dados.js. Os formulários estão em modo demonstração.')}

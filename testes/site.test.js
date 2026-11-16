@@ -340,3 +340,76 @@ test('envio pelo Google Planilhas (Apps Script) usa o formato esperado', async (
   assert.match(await page.textContent('#done-text'), /Seus dados foram salvos/);
   await page.close();
 });
+
+test('contrato site → planilha: os três formulários são aceitos pelo script do Google', async () => {
+  const { carregarScript } = require('./gas-harness');
+  const g = carregarScript();
+  const url = 'https://script.google.com/macros/s/TESTE/exec';
+  const { page, erros } = await abrir({ config: { formEndpoint: url } });
+  const respostas = [];
+  await page.route('https://script.google.com/**', r => {
+    respostas.push(g.post(Object.fromEntries(new URLSearchParams(r.request().postData()))));
+    r.fulfill({ status: 200, body: 'ok' });
+  });
+  await preencheMedico(page, { uf: 'MG', tipo: 'rqe' });
+  await page.click('#go');
+  await page.waitForSelector('[data-step="4"]:not([hidden])');
+  await preencheContratante(page);
+  await page.click('#cad [type=submit]');
+  await page.waitForSelector('#cad-done:not([hidden])');
+  await page.click('#cad-to-vaga');
+  await page.fill('#vaga [name=vaga]', 'PS adulto noturno');
+  await page.selectOption('#vaga [name=grupo]', 'rqe');
+  await page.fill('#vaga [name=valor]', '1800');
+  await page.fill('#vaga [name=data]', new Date(Date.now() + 86400000).toISOString().slice(0, 10));
+  await page.fill('#vaga [name=horario]', '19:00–07:00');
+  await page.click('#vaga [type=submit]');
+  await page.waitForSelector('.toast:not([hidden])');
+  assert.deepEqual(respostas, ['ok', 'ok', 'ok'], 'o script deve aceitar os três envios');
+  assert.equal(g.abas['Médicos'].linhas.length, 2);
+  assert.equal(g.abas['Contratantes'].linhas.length, 2);
+  assert.equal(g.abas['Vagas'].linhas.length, 2);
+  assert.deepEqual(erros, []);
+  await page.close();
+});
+
+test('definir-dominio.js configura prévia, canonical, robots e sitemap (e pode rodar de novo)', () => {
+  const tmp = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'revezo-'));
+  for (const f of fs.readdirSync(SITE)) if (fs.statSync(path.join(SITE, f)).isFile()) fs.copyFileSync(path.join(SITE, f), path.join(tmp, f));
+  const script = path.resolve(__dirname, '..', 'operacao', 'definir-dominio.js');
+  const rodar = url => execFileSync(process.execPath, [script, url], { env: { ...process.env, SITE_DIR: tmp }, stdio: 'pipe' });
+  assert.throws(() => rodar('revezo.com.br'), 'sem https deve recusar');
+  rodar('https://primeiro.com.br');
+  rodar('https://Revezo.com.br/');
+  const idx = fs.readFileSync(path.join(tmp, 'index.html'), 'utf8');
+  assert.ok(idx.includes('<meta property="og:image" content="https://revezo.com.br/og.jpg">'));
+  assert.ok(idx.includes('<link rel="canonical" href="https://revezo.com.br/">'));
+  assert.ok(!idx.includes('primeiro.com.br'), 'segunda execução deve substituir a primeira');
+  assert.equal((idx.match(/dominio:inicio/g) || []).length, 1);
+  assert.match(fs.readFileSync(path.join(tmp, 'robots.txt'), 'utf8'), /Sitemap: https:\/\/revezo\.com\.br\/sitemap\.xml/);
+  assert.match(fs.readFileSync(path.join(tmp, 'sitemap.xml'), 'utf8'), /<loc>https:\/\/revezo\.com\.br\/<\/loc>/);
+  const cfg = path.join(__dirname, '.htmlvalidate.json');
+  try { execFileSync(process.execPath, [path.join(__dirname, 'node_modules', 'html-validate', 'bin', 'html-validate.mjs'), '-c', cfg, path.join(tmp, 'index.html')], { stdio: 'pipe' }); }
+  catch (e) { assert.fail(String(e.stdout || e.message)); }
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('contador de visitas (opcional) carrega e registra os cadastros', async () => {
+  const { page } = await abrir({ config: { goatcounter: 'revezo' } });
+  const eventos = [];
+  await page.route('https://gc.zgo.at/**', r => r.fulfill({ contentType: 'text/javascript', body: 'window.goatcounter={count:o=>window.__ev.push(o.path)};' }));
+  await page.evaluate(() => { window.__ev = []; });
+  await page.reload();
+  await page.evaluate(() => { window.__ev = window.__ev || []; });
+  await page.waitForTimeout(1600);
+  await page.waitForFunction(() => window.goatcounter && window.goatcounter.count);
+  await page.evaluate(() => { window.__ev = []; });
+  await preencheMedico(page);
+  await page.click('#go');
+  await page.waitForSelector('[data-step="4"]:not([hidden])');
+  eventos.push(...await page.evaluate(() => window.__ev));
+  assert.deepEqual(eventos, ['cadastro-medico-sem-rqe']);
+  const src = await page.$eval('script[src="https://gc.zgo.at/count.js"]', s => s.dataset.goatcounter);
+  assert.equal(src, 'https://revezo.goatcounter.com/count');
+  await page.close();
+});

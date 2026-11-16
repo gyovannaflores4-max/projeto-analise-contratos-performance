@@ -20,6 +20,17 @@
 | `og.jpg` | Imagem que aparece quando o link é compartilhado |
 | `_headers` | Segurança e cache no Netlify e no Cloudflare Pages |
 
+## Guias
+| Guia | Para quê |
+|---|---|
+| `CHECKLIST-PUBLICACAO.md` | Tudo o que precisa ser feito antes de colocar no ar, na ordem |
+| `SEGURANCA.md` | Como proteger as contas e os dados, e o que fazer se algo der errado |
+| `PILOTO.md` | Como rodar o teste com 30 empresas e 100 médicos e o que observar |
+| `DIVULGACAO.md` | Links com origem marcada, textos prontos e cuidados |
+| `CRIAR-GRUPOS.md` | Como criar os 54 grupos e o que fazer quando lotam |
+| `google-apps-script.gs` | Script que grava os cadastros numa Planilha Google |
+| `definir-dominio.js` | Configura o endereço do site (prévia do WhatsApp, Google, sitemap) |
+
 ## Primeira publicação
 Siga `operacao/CHECKLIST-PUBLICACAO.md`.
 
@@ -34,6 +45,7 @@ Siga `operacao/CHECKLIST-PUBLICACAO.md`.
 ## Se alguém for alterar o código
 1. Faça a alteração.
 2. Rode os testes: `cd testes && npm install && npx playwright install chromium && npm test`.
+   Teste com muitas pessoas ao mesmo tempo: `npm run simultaneos`. Carga no endereço real: `node carga.js <endereço /exec>`.
 3. Só publique se todos passarem. No GitHub, os mesmos testes rodam sozinhos a cada alteração na pasta `site` (aba Actions).
 
 Os testes conferem: HTML válido, nenhum erro de JavaScript, nenhuma rolagem lateral de 320 a 1440 px, acessibilidade, o fluxo completo do médico (incluindo grupo cheio e link malicioso), planilha fora do ar, cadastro de contratante, anúncio de vaga, envio duplicado, proteção contra robôs, modo demonstração e as regras de segurança do `_headers`.
