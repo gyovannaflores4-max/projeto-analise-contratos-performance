@@ -1,5 +1,5 @@
 {
-  "ultima_leitura": "2026-11-11T09:18:18+00:00",
+  "ultima_leitura": "2026-11-20T01:07:56+00:00",
   "pregoes": {
     "susp-macae-82": {
       "situacao": "Divulgada no PNCP",
@@ -51,18 +51,41 @@
       "situacao": "Suspensa",
       "novaData": null,
       "docs": [
-        "PE901882026 - GOV 82.pdf|2026-10-08T09:36"
+        "PE901882026 - GOV 82 REABERTURA.pdf|2026-11-19T12:57"
       ],
       "parecidos": []
     },
     "mwas030nntt7l": {
       "situacao": "Suspensa",
-      "novaData": "2026-11-12T09:00",
+      "novaData": null,
       "docs": [
         "PE 301 2026 CONTR DOS MEDICOS SEI GEGOV AMPLA SRP.doc|2026-10-22T10:01"
       ],
       "parecidos": [
         "https://pncp.gov.br/app/editais/32512501000143/2026/437"
+      ]
+    },
+    "mwf73efx2hmhz": {
+      "situacao": "Suspensa",
+      "novaData": null,
+      "docs": [
+        "Capa-Licitacao|2026-10-22T15:25",
+        "PREGAO-103-2026---CONTRATACAO-DE-EMPRESA-ESP...|2026-10-22T15:26",
+        "ETP---SERVICOS-MEDICOS-PLANTONISTAS-.pdf|2026-10-22T15:26",
+        "AVISO-DE-SUSPENSAO---PG-103-2026.pdf|2026-11-11T16:26"
+      ],
+      "parecidos": []
+    },
+    "mwf79pdrkhbrd": {
+      "situacao": "Revogada",
+      "novaData": null,
+      "docs": [
+        "TR AVISO SAMS E ANEXOS.zip|2026-11-13T11:24",
+        "SEI_78692899_Aviso_1106.pdf|2026-11-13T11:27",
+        "407/2026.pdf|2026-11-13T11:27"
+      ],
+      "parecidos": [
+        "https://pncp.gov.br/app/editais/00733062000102/2026/522"
       ]
     }
   }
